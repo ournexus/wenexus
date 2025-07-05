@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run conventional commit check
+pre-commit run --hook-stage commit-msg conventional-pre-commit --commit-msg-filename $1

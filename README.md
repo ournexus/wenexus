@@ -1,6 +1,14 @@
-# WeNexus: The Consensus Amplifier
+<div align="center">
+  <img src="docs/design/logos/wenexus-logo-complete.svg" alt="WeNexus Logo" width="120" height="120">
+  
+  # WeNexus: The Consensus Amplifier
+  
+  *Connecting minds, building consensus, amplifying understanding*
+</div>
 
-WeNexus is a platform designed to bridge information gaps and create meaningful connections in an age of information overload and polarizing echo chambers. We don't just need another network; we need a Nexus - a central point where We, as a society, can finally connect, understand, and agree.
+WeNexus is a platform designed to bridge information gaps and create meaningful connections in an
+age of information overload and polarizing echo chambers. We don't just need another network; we
+need a Nexus - a central point where We, as a society, can finally connect, understand, and agree.
 
 ## Project Structure
 
@@ -38,6 +46,7 @@ wenexus/
 ## Architecture Overview
 
 WeNexus follows a microservices architecture with:
+
 - **Frontend**: React-based web application with TypeScript
 - **Backend**: Java services for core business logic, Python services for AI/ML processing
 - **Shared Packages**: Common utilities and UI components across applications

@@ -1,0 +1,172 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # General code quality and formatting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: detect-private-key
+      - id: mixed-line-ending
+
+  # JavaScript/TypeScript/Node.js - Use local eslint
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: npx eslint --fix
+        language: system
+        files: \.(js|jsx|ts|tsx)$
+        types: [file]
+
+  # Prettier for code formatting - Use local prettier
+  - repo: local
+    hooks:
+      - id: prettier
+        name: Prettier
+        entry: npx prettier --write
+        language: system
+        files: \.(js|jsx|ts|tsx|json|css|scss|md|yml|yaml|html)$
+        exclude: |
+          (?x)^(
+            .*\.min\.(js|css)$|
+            .*\.bundle\.(js|css)$|
+            node_modules/.*|
+            dist/.*|
+            build/.*|
+            \.next/.*
+          )$
+
+  # Python formatting and linting (commented out for now)
+  # - repo: https://github.com/psf/black
+  #   rev: 23.12.1
+  #   hooks:
+  #     - id: black
+  #       files: \.py$
+  #       language_version: python3
+
+  # - repo: https://github.com/pycqa/isort
+  #   rev: 5.13.2
+  #   hooks:
+  #     - id: isort
+  #       files: \.py$
+  #       args: [--profile, black]
+
+  # - repo: https://github.com/pycqa/flake8
+  #   rev: 7.0.0
+  #   hooks:
+  #     - id: flake8
+  #       files: \.py$
+  #       args: [--max-line-length=88, --extend-ignore=E203,W503]
+
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       files: \.py$
+  #       additional_dependencies: [types-requests]
+  #       args: [--ignore-missing-imports]
+
+  # Java formatting with Google Java Format (commented out for now)
+  # - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  #   rev: v2.12.0
+  #   hooks:
+  #     - id: pretty-format-java
+  #       args: [--autofix]
+
+  # Markdown linting (commented out for now)
+  # - repo: https://github.com/igorshubovych/markdownlint-cli
+  #   rev: v0.39.0
+  #   hooks:
+  #     - id: markdownlint
+  #       args: [--fix]
+  #       exclude: |
+  #         (?x)^(
+  #           CHANGELOG\.md|
+  #           .*\.generated\.md$
+  #         )$
+
+  # Security checks (commented out for now)
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.4.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       args: [--baseline, .secrets.baseline]
+  #       exclude: |
+  #         (?x)^(
+  #           .*\.lock$|
+  #           .*\.min\.(js|css)$|
+  #           package-lock\.json$
+  #         )$
+
+  # Conventional Commits (commented out for now)
+  # - repo: https://github.com/compilerla/conventional-pre-commit
+  #   rev: v3.0.0
+  #   hooks:
+  #     - id: conventional-pre-commit
+  #       stages: [commit-msg]
+  #       args: [optional-scope]
+
+  # WeNexus specific checks
+  - repo: local
+    hooks:
+      # Check for TODO comments in production code
+      - id: check-todos
+        name: Check for TODO/FIXME comments
+        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules .; then echo "❌ TODO/FIXME comments found in code. Please resolve before committing."; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      # Ensure all TypeScript files have proper exports
+      - id: check-typescript-exports
+        name: Check TypeScript exports
+        entry: 'bash -c "find . -name \"*.ts\" -not -path \"./node_modules/*\" -not -path \"./.next/*\" -exec grep -L \"export\" {} \\; | while read file; do if [[ ! \"$file\" =~ \\.(d|test|spec)\\.ts$ ]]; then echo \"❌ TypeScript file without exports: $file\"; exit 1; fi; done"'
+        language: system
+        pass_filenames: false
+
+      # Check for console.log in production code
+      - id: no-console-logs
+        name: No console.log in production
+        entry: bash -c 'if grep -r "console\.\(log\|debug\|info\)" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude="*test*" --exclude="*spec*" .; then echo "❌ console.log found in production code. Use proper logging instead."; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      # Validate package.json files
+      - id: validate-package-json
+        name: Validate package.json files
+        entry: bash -c 'find . -name "package.json" -not -path "./node_modules/*" -exec node -e "try { JSON.parse(require(\"fs\").readFileSync(process.argv[1], \"utf8\")); } catch(e) { console.error(\"❌ Invalid JSON in\", process.argv[1]); process.exit(1); }" {} \;'
+        language: system
+        pass_filenames: false
+
+      # Check for WeNexus brand consistency
+      - id: brand-consistency
+        name: Check WeNexus brand consistency
+        entry: bash -c 'if grep -r -i "we-nexus\|wenexu[^s]" --include="*.md" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules .; then echo "❌ Inconsistent WeNexus branding found. Use \"WeNexus\" (capital W, capital N, no hyphen)"; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+# Global configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

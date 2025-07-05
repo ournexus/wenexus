@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WeNexus - The Consensus Amplifier</title>
+
+    <!-- TailwindCSS 3.0+ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
+
+      :root {
+        --tesla-red: #e31937;
+        --tesla-red-transparent: rgba(227, 25, 55, 0.1);
+        --tesla-red-glow: rgba(227, 25, 55, 0.3);
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #000000;
+        color: #ffffff;
+        overflow-x: hidden;
+      }
+
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .glow-red {
+        box-shadow: 0 0 20px var(--tesla-red-glow);
+      }
+
+      .gradient-red {
+        background: linear-gradient(
+          135deg,
+          var(--tesla-red) 0%,
+          rgba(227, 25, 55, 0.6) 100%
+        );
+      }
+
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1rem;
+        padding: 2rem;
+      }
+
+      .bento-item {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 1rem;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+      }
+
+      .bento-item:hover {
+        border-color: var(--tesla-red);
+        transform: translateY(-5px);
+      }
+
+      .hero-text {
+        font-size: clamp(4rem, 8vw, 12rem);
+        font-weight: 900;
+        line-height: 0.9;
+        background: linear-gradient(135deg, #ffffff 0%, var(--tesla-red) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .super-large {
+        font-size: clamp(8rem, 15vw, 20rem);
+        font-weight: 900;
+        line-height: 0.8;
+      }
+
+      .parallax-element {
+        transform: translateZ(0);
+      }
+
+      .star-field {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+      }
+
+      .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: white;
+        border-radius: 50%;
+        animation: twinkle 3s infinite;
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      .connection-line {
+        stroke: var(--tesla-red);
+        stroke-width: 1;
+        stroke-dasharray: 5, 5;
+        animation: dash 2s linear infinite;
+      }
+
+      @keyframes dash {
+        to {
+          stroke-dashoffset: -10;
+        }
+      }
+
+      .expert-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 2px solid var(--tesla-red);
+        background: linear-gradient(
+          135deg,
+          var(--tesla-red-transparent),
+          rgba(255, 255, 255, 0.1)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 1rem;
+      }
+
+      .consensus-meter {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .consensus-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--tesla-red), #ff6b6b);
+        border-radius: 4px;
+        transition: width 2s ease;
+      }
+
+      .floating-orb {
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 30% 30%,
+          var(--tesla-red-glow),
+          transparent
+        );
+        filter: blur(40px);
+        animation: float 6s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Star Field Background -->
+    <div class="star-field" id="starField"></div>
+
+    <!-- Floating Orbs -->
+    <div class="floating-orb" style="top: 10%; left: 10%"></div>
+    <div
+      class="floating-orb"
+      style="top: 60%; right: 15%; animation-delay: -2s"
+    ></div>
+    <div
+      class="floating-orb"
+      style="bottom: 20%; left: 30%; animation-delay: -4s"
+    ></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 px-8 py-6 backdrop-blur-md bg-black/20">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <!-- WeNexus Logo -->
+          <svg width="40" height="40" viewBox="0 0 64 64" class="glow-red">
+            <g stroke="#E31937" stroke-width="1.5" fill="none">
+              <line x1="32" y1="12" x2="32" y2="52" />
+              <line x1="12" y1="32" x2="52" y2="32" />
+              <line x1="20" y1="20" x2="44" y2="44" />
+              <line x1="44" y1="20" x2="20" y2="44" />
+            </g>
+            <g fill="#E31937">
+              <circle cx="32" cy="12" r="3" />
+              <circle cx="52" cy="32" r="3" />
+              <circle cx="32" cy="52" r="3" />
+              <circle cx="12" cy="32" r="3" />
+            </g>
+            <circle cx="32" cy="32" r="2" fill="#E31937" />
+          </svg>
+          <span class="text-xl font-bold">WeNexus</span>
+        </div>
+        <div class="hidden md:flex space-x-8 mono text-sm">
+          <a href="#explore" class="hover:text-red-500 transition-colors"
+            >EXPLORE</a
+          >
+          <a href="#experts" class="hover:text-red-500 transition-colors"
+            >EXPERTS</a
+          >
+          <a href="#consensus" class="hover:text-red-500 transition-colors"
+            >CONSENSUS</a
+          >
+          <a href="#community" class="hover:text-red-500 transition-colors"
+            >COMMUNITY</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section
+      class="min-h-screen flex items-center justify-center relative overflow-hidden"
+    >
+      <div class="text-center px-4 max-w-6xl">
+        <div class="hero-text mb-8" id="heroText">
+          共识<br />
+          放大器
+        </div>
+        <div
+          class="text-lg md:text-2xl mb-12 mono text-gray-300 max-w-2xl mx-auto"
+        >
+          THE CONSENSUS AMPLIFIER<br />
+          <span class="text-red-500">连接分歧 · 构建理解 · 放大共识</span>
+        </div>
+        <div
+          class="flex flex-col md:flex-row gap-6 justify-center items-center"
+        >
+          <button
+            class="px-8 py-4 gradient-red rounded-full text-white font-semibold hover:glow-red transition-all duration-300 transform hover:scale-105"
+          >
+            进入星图探索
+          </button>
+          <button
+            class="px-8 py-4 border border-red-500 rounded-full text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300"
+          >
+            观看演示
+          </button>
+        </div>
+      </div>
+
+      <!-- Animated Elements -->
+      <div class="absolute bottom-20 left-1/2 transform -translate-x-1/2">
+        <i class="fas fa-chevron-down text-red-500 text-2xl animate-bounce"></i>
+      </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="py-20" id="stats">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+          <div class="parallax-element">
+            <div class="super-large text-red-500" id="userCount">10K+</div>
+            <div class="text-lg mono text-gray-300">ACTIVE USERS</div>
+            <div class="text-sm text-gray-500 mt-2">活跃用户</div>
+          </div>
+          <div class="parallax-element">
+            <div class="super-large text-red-500" id="topicCount">500+</div>
+            <div class="text-lg mono text-gray-300">TOPICS</div>
+            <div class="text-sm text-gray-500 mt-2">讨论话题</div>
+          </div>
+          <div class="parallax-element">
+            <div class="super-large text-red-500" id="consensusRate">85%</div>
+            <div class="text-lg mono text-gray-300">CONSENSUS RATE</div>
+            <div class="text-sm text-gray-500 mt-2">共识达成率</div>
+          </div>
+          <div class="parallax-element">
+            <div class="super-large text-red-500" id="expertCount">50+</div>
+            <div class="text-lg mono text-gray-300">AI EXPERTS</div>
+            <div class="text-sm text-gray-500 mt-2">AI专家</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento Grid Main Content -->
+    <section class="py-20" id="explore">
+      <div class="container mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-6xl md:text-8xl font-black mb-6">
+            星图<span class="text-red-500">探索</span>
+          </h2>
+          <p class="text-xl mono text-gray-300">
+            CONSTELLATION MAP EXPLORATION
+          </p>
+        </div>
+
+        <div class="bento-grid">
+          <!-- Large Feature Card -->
+          <div
+            class="bento-item col-span-12 md:col-span-8 row-span-2 relative overflow-hidden"
+          >
+            <div class="flex flex-col h-full">
+              <div class="flex items-center mb-6">
+                <i class="fas fa-star text-red-500 text-2xl mr-4"></i>
+                <h3 class="text-3xl font-bold">共识星图</h3>
+                <span class="ml-4 mono text-sm text-gray-400"
+                  >CONSENSUS STARMAP</span
+                >
+              </div>
+
+              <!-- Interactive Star Map -->
+              <div
+                class="flex-1 relative bg-gradient-to-br from-gray-900 to-black rounded-lg p-6"
+              >
+                <svg width="100%" height="300" class="starmap">
+                  <!-- Connection Lines -->
+                  <line
+                    x1="20%"
+                    y1="30%"
+                    x2="50%"
+                    y2="50%"
+                    class="connection-line"
+                  />
+                  <line
+                    x1="50%"
+                    y1="50%"
+                    x2="80%"
+                    y2="70%"
+                    class="connection-line"
+                  />
+                  <line
+                    x1="30%"
+                    y1="80%"
+                    x2="50%"
+                    y2="50%"
+                    class="connection-line"
+                  />
+                  <line
+                    x1="70%"
+                    y1="20%"
+                    x2="50%"
+                    y2="50%"
+                    class="connection-line"
+                  />
+
+                  <!-- Expert Stars -->
+                  <circle
+                    cx="20%"
+                    cy="30%"
+                    r="8"
+                    fill="#E31937"
+                    class="glow-red"
+                  />
+                  <circle cx="80%" cy="70%" r="6" fill="#E31937" />
+                  <circle cx="30%" cy="80%" r="7" fill="#E31937" />
+                  <circle cx="70%" cy="20%" r="5" fill="#E31937" />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="10"
+                    fill="#ffffff"
+                    class="glow-red"
+                  />
+
+                  <!-- Labels -->
+                  <text
+                    x="20%"
+                    y="25%"
+                    fill="white"
+                    text-anchor="middle"
+                    class="text-xs"
+                  >
+                    苏格拉底
+                  </text>
+                  <text
+                    x="80%"
+                    y="65%"
+                    fill="white"
+                    text-anchor="middle"
+                    class="text-xs"
+                  >
+                    菜场大妈
+                  </text>
+                  <text
+                    x="30%"
+                    y="85%"
+                    fill="white"
+                    text-anchor="middle"
+                    class="text-xs"
+                  >
+                    爱因斯坦
+                  </text>
+                  <text
+                    x="70%"
+                    y="15%"
+                    fill="white"
+                    text-anchor="middle"
+                    class="text-xs"
+                  >
+                    经济学家
+                  </text>
+                  <text
+                    x="50%"
+                    y="45%"
+                    fill="#E31937"
+                    text-anchor="middle"
+                    class="text-sm font-bold"
+                  >
+                    共识中心
+                  </text>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Experts Card -->
+          <div class="bento-item col-span-12 md:col-span-4">
+            <div class="flex items-center mb-4">
+              <i class="fas fa-robot text-red-500 text-xl mr-3"></i>
+              <h3 class="text-xl font-bold">AI 专家团</h3>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center">
+                <div class="expert-avatar">
+                  <i class="fas fa-brain"></i>
+                </div>
+                <div class="text-sm font-semibold">苏格拉底</div>
+                <div class="text-xs text-gray-400 mono">PHILOSOPHER</div>
+              </div>
+              <div class="text-center">
+                <div class="expert-avatar">
+                  <i class="fas fa-atom"></i>
+                </div>
+                <div class="text-sm font-semibold">爱因斯坦</div>
+                <div class="text-xs text-gray-400 mono">PHYSICIST</div>
+              </div>
+              <div class="text-center">
+                <div class="expert-avatar">
+                  <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="text-sm font-semibold">菜场大妈</div>
+                <div class="text-xs text-gray-400 mono">LIFE EXPERT</div>
+              </div>
+              <div class="text-center">
+                <div class="expert-avatar">
+                  <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="text-sm font-semibold">经济学家</div>
+                <div class="text-xs text-gray-400 mono">ECONOMIST</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Consensus Meter -->
+          <div class="bento-item col-span-12 md:col-span-6">
+            <div class="flex items-center mb-4">
+              <i class="fas fa-gauge-high text-red-500 text-xl mr-3"></i>
+              <h3 class="text-xl font-bold">共识收敛度</h3>
+              <span class="ml-auto mono text-sm text-gray-400"
+                >CONSENSUS LEVEL</span
+              >
+            </div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span class="text-sm">教育内卷话题</span>
+                  <span class="text-sm text-red-500 mono">87%</span>
+                </div>
+                <div class="consensus-meter">
+                  <div class="consensus-fill" style="width: 87%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span class="text-sm">职场焦虑讨论</span>
+                  <span class="text-sm text-red-500 mono">72%</span>
+                </div>
+                <div class="consensus-meter">
+                  <div class="consensus-fill" style="width: 72%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span class="text-sm">环保议题</span>
+                  <span class="text-sm text-red-500 mono">94%</span>
+                </div>
+                <div class="consensus-meter">
+                  <div class="consensus-fill" style="width: 94%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-time Activity -->
+          <div class="bento-item col-span-12 md:col-span-6">
+            <div class="flex items-center mb-4">
+              <i class="fas fa-pulse text-red-500 text-xl mr-3"></i>
+              <h3 class="text-xl font-bold">实时动态</h3>
+              <span class="ml-auto mono text-sm text-gray-400"
+                >LIVE ACTIVITY</span
+              >
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center space-x-3 p-2 rounded bg-white/5">
+                <div
+                  class="w-2 h-2 bg-red-500 rounded-full animate-pulse"
+                ></div>
+                <span class="text-sm">苏格拉底加入了"AI伦理"讨论</span>
+              </div>
+              <div class="flex items-center space-x-3 p-2 rounded bg-white/5">
+                <div
+                  class="w-2 h-2 bg-red-500 rounded-full animate-pulse"
+                ></div>
+                <span class="text-sm">新话题"数字隐私"获得高关注</span>
+              </div>
+              <div class="flex items-center space-x-3 p-2 rounded bg-white/5">
+                <div
+                  class="w-2 h-2 bg-red-500 rounded-full animate-pulse"
+                ></div>
+                <span class="text-sm">经济学家提出创新解决方案</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics Chart -->
+          <div class="bento-item col-span-12 md:col-span-6">
+            <div class="flex items-center mb-4">
+              <i class="fas fa-chart-area text-red-500 text-xl mr-3"></i>
+              <h3 class="text-xl font-bold">参与趋势</h3>
+              <span class="ml-auto mono text-sm text-gray-400"
+                >ENGAGEMENT TRENDS</span
+              >
+            </div>
+            <canvas id="engagementChart" width="400" height="200"></canvas>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="bento-item col-span-12 md:col-span-6">
+            <div class="flex items-center mb-4">
+              <i class="fas fa-bolt text-red-500 text-xl mr-3"></i>
+              <h3 class="text-xl font-bold">快速操作</h3>
+              <span class="ml-auto mono text-sm text-gray-400"
+                >QUICK ACTIONS</span
+              >
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                class="p-4 border border-gray-700 rounded-lg hover:border-red-500 transition-colors text-center"
+              >
+                <i class="fas fa-plus text-red-500 text-lg mb-2"></i>
+                <div class="text-sm">发起话题</div>
+              </button>
+              <button
+                class="p-4 border border-gray-700 rounded-lg hover:border-red-500 transition-colors text-center"
+              >
+                <i class="fas fa-search text-red-500 text-lg mb-2"></i>
+                <div class="text-sm">探索观点</div>
+              </button>
+              <button
+                class="p-4 border border-gray-700 rounded-lg hover:border-red-500 transition-colors text-center"
+              >
+                <i class="fas fa-users text-red-500 text-lg mb-2"></i>
+                <div class="text-sm">加入讨论</div>
+              </button>
+              <button
+                class="p-4 border border-gray-700 rounded-lg hover:border-red-500 transition-colors text-center"
+              >
+                <i class="fas fa-lightbulb text-red-500 text-lg mb-2"></i>
+                <div class="text-sm">获取建议</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Showcase -->
+    <section class="py-20" id="features">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+          <h2 class="text-6xl md:text-8xl font-black mb-6">
+            核心<span class="text-red-500">功能</span>
+          </h2>
+          <p class="text-xl mono text-gray-300">CORE FEATURES</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="bento-item text-center">
+            <div class="text-6xl text-red-500 mb-4">
+              <i class="fas fa-star"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-4">星图漫游</h3>
+            <p class="text-gray-300 mb-4">
+              在3D星空中探索不同观点，每颗星星都是独特的专家视角
+            </p>
+            <div class="mono text-sm text-red-500">STARMAP EXPLORATION</div>
+          </div>
+
+          <div class="bento-item text-center">
+            <div class="text-6xl text-red-500 mb-4">
+              <i class="fas fa-comments"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-4">专家对话</h3>
+            <p class="text-gray-300 mb-4">
+              与AI专家群聊，获得多维度的深度分析和建议
+            </p>
+            <div class="mono text-sm text-red-500">EXPERT DIALOGUE</div>
+          </div>
+
+          <div class="bento-item text-center">
+            <div class="text-6xl text-red-500 mb-4">
+              <i class="fas fa-handshake"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-4">共识构建</h3>
+            <p class="text-gray-300 mb-4">
+              从分歧到理解，从理解到行动的完整解决方案
+            </p>
+            <div class="mono text-sm text-red-500">CONSENSUS BUILDING</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-20 border-t border-gray-800">
+      <div class="container mx-auto px-4">
+        <div class="text-center">
+          <div class="flex justify-center items-center mb-8">
+            <svg width="40" height="40" viewBox="0 0 64 64" class="mr-4">
+              <g stroke="#E31937" stroke-width="1.5" fill="none">
+                <line x1="32" y1="12" x2="32" y2="52" />
+                <line x1="12" y1="32" x2="52" y2="32" />
+                <line x1="20" y1="20" x2="44" y2="44" />
+                <line x1="44" y1="20" x2="20" y2="44" />
+              </g>
+              <g fill="#E31937">
+                <circle cx="32" cy="12" r="3" />
+                <circle cx="52" cy="32" r="3" />
+                <circle cx="32" cy="52" r="3" />
+                <circle cx="12" cy="32" r="3" />
+              </g>
+              <circle cx="32" cy="32" r="2" fill="#E31937" />
+            </svg>
+            <span class="text-2xl font-bold">WeNexus</span>
+          </div>
+          <p class="text-xl mb-8">连接分歧，构建共识，放大理解</p>
+          <div class="mono text-sm text-gray-400">
+            THE CONSENSUS AMPLIFIER © 2024
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Initialize star field
+      function createStarField() {
+        const starField = document.getElementById('starField');
+        const numberOfStars = 100;
+
+        for (let i = 0; i < numberOfStars; i++) {
+          const star = document.createElement('div');
+          star.className = 'star';
+          star.style.left = Math.random() * 100 + '%';
+          star.style.top = Math.random() * 100 + '%';
+          star.style.animationDelay = Math.random() * 3 + 's';
+          starField.appendChild(star);
+        }
+      }
+
+      // Initialize engagement chart
+      function initChart() {
+        const ctx = document.getElementById('engagementChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+            datasets: [
+              {
+                label: '参与度',
+                data: [65, 78, 85, 81, 92, 88, 95],
+                borderColor: '#E31937',
+                backgroundColor: 'rgba(227, 25, 55, 0.1)',
+                tension: 0.4,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+            scales: {
+              y: {
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.1)',
+                },
+                ticks: {
+                  color: '#666',
+                },
+              },
+              x: {
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.1)',
+                },
+                ticks: {
+                  color: '#666',
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Scroll animations
+      function handleScroll() {
+        const scrolled = window.pageYOffset;
+        const parallaxElements = document.querySelectorAll('.parallax-element');
+
+        parallaxElements.forEach(element => {
+          const speed = 0.5;
+          const yPos = -(scrolled * speed);
+          element.style.transform = `translateY(${yPos}px)`;
+        });
+      }
+
+      // Counter animation
+      function animateCounters() {
+        const counters = [
+          { id: 'userCount', target: 10000, suffix: 'K+' },
+          { id: 'topicCount', target: 500, suffix: '+' },
+          { id: 'consensusRate', target: 85, suffix: '%' },
+          { id: 'expertCount', target: 50, suffix: '+' },
+        ];
+
+        counters.forEach(counter => {
+          const element = document.getElementById(counter.id);
+          const duration = 2000;
+          const increment = counter.target / (duration / 16);
+          let current = 0;
+
+          const timer = setInterval(() => {
+            current += increment;
+            if (current >= counter.target) {
+              current = counter.target;
+              clearInterval(timer);
+            }
+
+            let displayValue = Math.floor(current);
+            if (counter.suffix === 'K+') {
+              displayValue = Math.floor(current / 1000) + 'K+';
+            } else {
+              displayValue = displayValue + counter.suffix;
+            }
+
+            element.textContent = displayValue;
+          }, 16);
+        });
+      }
+
+      // Smooth scrolling for navigation
+      function initSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+              target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }
+          });
+        });
+      }
+
+      // Initialize everything when DOM is loaded
+      document.addEventListener('DOMContentLoaded', function () {
+        createStarField();
+        initChart();
+        initSmoothScroll();
+
+        // Animate counters when they come into view
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              animateCounters();
+              observer.unobserve(entry.target);
+            }
+          });
+        });
+
+        observer.observe(document.getElementById('stats'));
+
+        // Add scroll listener
+        window.addEventListener('scroll', handleScroll);
+      });
+
+      // Add some interactive hover effects
+      document.addEventListener('DOMContentLoaded', function () {
+        const bentoItems = document.querySelectorAll('.bento-item');
+
+        bentoItems.forEach(item => {
+          item.addEventListener('mouseenter', function () {
+            this.style.borderColor = '#E31937';
+            this.style.boxShadow = '0 0 20px rgba(227, 25, 55, 0.3)';
+          });
+
+          item.addEventListener('mouseleave', function () {
+            this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            this.style.boxShadow = 'none';
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
