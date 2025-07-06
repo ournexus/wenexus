@@ -1,0 +1,19 @@
+<!-- WeNexus Logo - Monochrome Version -->
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black and white version for single-color applications -->
+  <g stroke="#000000" stroke-width="1.5" fill="none">
+    <line x1="32" y1="12" x2="32" y2="52" />
+    <line x1="12" y1="32" x2="52" y2="32" />
+    <line x1="20" y1="20" x2="44" y2="44" />
+    <line x1="44" y1="20" x2="20" y2="44" />
+  </g>
+
+  <g fill="#000000">
+    <circle cx="32" cy="12" r="3" />
+    <circle cx="52" cy="32" r="3" />
+    <circle cx="32" cy="52" r="3" />
+    <circle cx="12" cy="32" r="3" />
+  </g>
+
+  <circle cx="32" cy="32" r="2" fill="#000000" />
+</svg>
