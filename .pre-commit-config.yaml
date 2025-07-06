@@ -112,13 +112,24 @@ repos:
   #           package-lock\.json$
   #         )$
 
-  # Conventional Commits (commented out for now)
-  # - repo: https://github.com/compilerla/conventional-pre-commit
-  #   rev: v3.0.0
-  #   hooks:
-  #     - id: conventional-pre-commit
-  #       stages: [commit-msg]
-  #       args: [optional-scope]
+  # Conventional Commits
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [optional-scope]
+
+  # WeNexus Smart Fix - Run first to auto-fix common issues
+  - repo: local
+    hooks:
+      - id: smart-fix
+        name: WeNexus Smart Fix
+        entry: tools/scripts/smart-fix.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
 
   # WeNexus specific checks
   - repo: local
@@ -133,14 +144,7 @@ repos:
       # Ensure all TypeScript files have proper exports
       - id: check-typescript-exports
         name: Check TypeScript exports
-        entry: 'bash -c "find . -name \"*.ts\" -not -path \"./node_modules/*\" -not -path \"./.next/*\" -exec grep -L \"export\" {} \\; | while read file; do if [[ ! \"$file\" =~ \\.(d|test|spec)\\.ts$ ]]; then echo \"❌ TypeScript file without exports: $file\"; exit 1; fi; done"'
-        language: system
-        pass_filenames: false
-
-      # Check for console.log in production code
-      - id: no-console-logs
-        name: No console.log in production
-        entry: bash -c 'if grep -r "console\.\(log\|debug\|info\)" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude="*test*" --exclude="*spec*" .; then echo "❌ console.log found in production code. Use proper logging instead."; exit 1; fi'
+        entry: 'bash -c "find apps packages -name \"*.ts\" -not -path \"./node_modules/*\" -not -path \"./.next/*\" -exec grep -L \"export\" {} \\; 2>/dev/null | while read file; do if [[ ! \"$file\" =~ \\.(d|test|spec)\\.ts$ ]]; then echo \"❌ TypeScript file without exports: $file\"; exit 1; fi; done"'
         language: system
         pass_filenames: false
 

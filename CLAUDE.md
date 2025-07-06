@@ -321,5 +321,143 @@ an increasingly polarized world. The codebase reflects this through:
 - **Dependencies**: Regular security audits and updates
 - **Privacy**: GDPR/privacy-compliant data handling
 
+## Review & Commit Standards
+
+### Development Workflow with Smart Fix
+
+WeNexus uses an intelligent code quality system that automatically fixes issues and guides the commit process:
+
+#### 1. Code Development
+- Write code following project conventions
+- Use meaningful variable names and clear logic
+- Add appropriate comments for complex business logic
+- Ensure proper error handling and edge cases
+
+#### 2. Pre-Commit Quality Checks
+The project includes **WeNexus Smart Fix** - an intelligent system that:
+
+```bash
+# Automatic workflow when committing:
+git add .
+git commit -m "feat(web): add user authentication"
+
+# Smart Fix automatically:
+# 1. Runs pre-commit hooks
+# 2. Applies safe fixes (formatting, linting)
+# 3. Prompts for interactive fixes (TODO removal, missing exports)
+# 4. Reports manual fixes needed (type errors, security issues)
+# 5. Retries commit after fixes
+```
+
+#### 3. Fix Categories
+
+**🔧 Safe Fixes (Applied Automatically)**
+- Prettier code formatting
+- ESLint auto-fixable rules
+- Trailing whitespace removal
+- End-of-file newlines
+- Import organization
+
+**🤔 Interactive Fixes (Require Confirmation)**
+- TODO/FIXME comment removal
+- Missing TypeScript exports
+- Brand consistency (WeNexus naming)
+- Package.json validation
+
+**🚨 Manual Fixes (Developer Action Required)**
+- TypeScript compilation errors
+- Security vulnerabilities
+- Logic errors requiring business context
+- Missing test coverage
+
+#### 4. Smart Fix Configuration
+
+Customize behavior in `.autofix.yaml`:
+
+```yaml
+# Fix levels: safe, interactive, aggressive
+level: safe              # Default: safe auto-fixes only
+auto-commit: false       # Require manual commit review
+backup: true            # Create backups before fixing
+```
+
+#### 5. Review Standards
+
+Before committing, ensure:
+
+- [ ] **Functionality**: Code works as intended
+- [ ] **Tests**: Adequate test coverage (minimum 80%)
+- [ ] **Documentation**: Updated relevant docs
+- [ ] **Performance**: No obvious performance regressions
+- [ ] **Security**: No sensitive data or vulnerabilities
+- [ ] **Accessibility**: UI changes meet accessibility standards
+
+#### 6. Commit Message Standards
+
+Follow Conventional Commits format:
+
+```bash
+# Format
+<type>(<scope>): <description>
+
+# Examples
+feat(web): add user profile management
+fix(api): resolve authentication token expiry
+docs(readme): update setup instructions
+style(ui): improve button hover states
+refactor(auth): extract validation logic
+test(user): add integration tests for signup
+```
+
+**Valid Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `chore`
+**Valid Scopes**: `web`, `mobile`, `admin`, `api`, `ai`, `auth`, `ui`, `docs`
+
+#### 7. Manual Override (Emergency Only)
+
+```bash
+# Skip all hooks (use sparingly)
+git commit --no-verify -m "emergency: critical hotfix"
+
+# Run smart fix manually
+./tools/scripts/smart-fix.sh
+
+# Check what would be fixed
+./tools/scripts/smart-fix.sh --dry-run
+```
+
+#### 8. Post-Commit Verification
+
+After committing:
+- [ ] Verify CI/CD pipeline passes
+- [ ] Check deployment to staging environment
+- [ ] Confirm no breaking changes introduced
+- [ ] Update related documentation if needed
+
+#### 9. Code Review Guidelines
+
+When reviewing PRs:
+- **Functionality**: Does it solve the intended problem?
+- **Code Quality**: Is it readable and maintainable?
+- **Performance**: Any performance implications?
+- **Security**: Are there security considerations?
+- **Testing**: Adequate test coverage?
+- **Documentation**: Clear and up-to-date?
+
+#### 10. Troubleshooting Smart Fix
+
+```bash
+# Check smart fix logs
+cat .autofix.log
+
+# Restore from backup
+ls .autofix-backup/
+cp -r .autofix-backup/[timestamp]/* .
+
+# Disable temporarily
+mv .autofix.yaml .autofix.yaml.disabled
+```
+
+**Remember**: The Smart Fix system is designed to maintain code quality while improving developer experience. Trust the automated fixes for formatting and style, but always review interactive and manual fix suggestions carefully.
+
 Remember: WeNexus aims to connect minds and build consensus - every line of code should reflect this
 mission of bringing people together through technology.

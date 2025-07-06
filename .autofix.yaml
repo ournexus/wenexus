@@ -1,0 +1,103 @@
+# WeNexus Smart Fix Configuration
+# This file controls the behavior of the smart-fix script
+
+# Fix level: safe, interactive, aggressive
+# - safe: Only applies formatting and safe fixes automatically
+# - interactive: Prompts for confirmation on potentially destructive changes
+# - aggressive: Applies all fixes automatically (use with caution)
+level: safe
+
+# Auto-commit: true/false
+# If true, automatically commits fixes after successful repair
+# If false, user must manually review and commit changes
+auto-commit: false
+
+# Backup: true/false
+# If true, creates backup of files before applying fixes
+# Backups are stored in .autofix-backup directory
+backup: true
+
+# Logging: true/false
+# If true, logs all operations to .autofix.log
+logging: true
+
+# Safe fixes (always applied automatically)
+safe-fixes:
+  - prettier-format
+  - eslint-autofix
+  - remove-trailing-whitespace
+  - fix-end-of-file-newlines
+  - organize-imports
+
+# Interactive fixes (require confirmation)
+interactive-fixes:
+  - remove-todo-comments
+  - add-missing-exports
+  - fix-brand-consistency
+  - update-package-json
+
+# Manual fixes (only reported)
+manual-fixes:
+  - typescript-errors
+  - security-issues
+  - logic-errors
+  - missing-tests
+
+# File patterns to include/exclude
+patterns:
+  include:
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.json"
+    - "**/*.md"
+    - "**/*.yaml"
+    - "**/*.yml"
+  
+  exclude:
+    - "node_modules/**"
+    - ".next/**"
+    - "dist/**"
+    - "build/**"
+    - "coverage/**"
+    - "*.min.js"
+    - "*.min.css"
+    - "*.bundle.js"
+    - "*.bundle.css"
+
+# Pre-commit integration
+pre-commit:
+  # Run smart-fix before other hooks
+  run-before-hooks: true
+  
+  # Maximum retry attempts
+  max-retries: 3
+  
+  # Timeout for each retry (in seconds)
+  timeout: 60
+
+# Commit message templates
+commit-templates:
+  auto-fix: "fix: auto-fix code quality issues"
+  safe-fix: "style: apply safe formatting fixes"
+  interactive-fix: "fix: apply interactive fixes"
+  with-original: |
+    {{original_message}}
+    
+    🤖 Auto-fixed by WeNexus Smart Fix
+    
+    Applied fixes:
+    {{fixes_applied}}
+
+# Notification settings
+notifications:
+  # Show desktop notifications (if available)
+  desktop: false
+  
+  # Show progress in terminal
+  terminal: true
+  
+  # Send to webhook (for CI/CD integration)
+  webhook: false
+  webhook-url: ""
