@@ -1,0 +1,114 @@
+# ESLint Configuration for WeNexus
+
+root: true
+
+env:
+  browser: true
+  es2022: true
+  node: true
+
+extends:
+  - 'eslint:recommended'
+  - '@typescript-eslint/recommended'
+  - 'next/core-web-vitals'
+  - 'prettier'
+
+parser: '@typescript-eslint/parser'
+
+parserOptions:
+  ecmaVersion: latest
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
+  project:
+    - './tsconfig.json'
+    - './apps/*/tsconfig.json'
+    - './packages/*/tsconfig.json'
+
+plugins:
+  - '@typescript-eslint'
+  - 'import'
+
+rules:
+  # TypeScript specific rules
+  '@typescript-eslint/no-unused-vars': 'error'
+  '@typescript-eslint/no-explicit-any': 'warn'
+  '@typescript-eslint/explicit-function-return-type': 'off'
+  '@typescript-eslint/explicit-module-boundary-types': 'off'
+  '@typescript-eslint/no-non-null-assertion': 'warn'
+  '@typescript-eslint/prefer-const': 'error'
+  '@typescript-eslint/no-var-requires': 'error'
+
+  # Import rules
+  'import/order':
+    - 'error'
+    - groups:
+        - 'builtin'
+        - 'external'
+        - 'internal'
+        - 'parent'
+        - 'sibling'
+        - 'index'
+      alphabetize:
+        order: 'asc'
+        caseInsensitive: true
+      newlines-between: 'always'
+
+  # General rules
+  'no-console':
+    - 'error'
+    - allow: ['warn', 'error']
+  'no-debugger': 'error'
+  'no-alert': 'error'
+  'prefer-const': 'error'
+  'no-var': 'error'
+  'object-shorthand': 'error'
+  'prefer-template': 'error'
+
+  # React specific rules (inherited from next/core-web-vitals)
+  'react/jsx-key': 'error'
+  'react/jsx-no-target-blank': 'error'
+  'react/no-unescaped-entities': 'error'
+
+  # WeNexus specific rules
+  'no-restricted-imports':
+    - 'error'
+    - patterns:
+        - message: "Don't import from parent directories"
+          group: ['../**/']
+        - message: 'Use absolute imports for packages'
+          group: ['../../packages/*']
+
+overrides:
+  # Test files
+  - files:
+      - '**/*.test.{js,jsx,ts,tsx}'
+      - '**/*.spec.{js,jsx,ts,tsx}'
+      - '**/__tests__/**/*'
+    env:
+      jest: true
+    rules:
+      'no-console': 'off'
+      '@typescript-eslint/no-explicit-any': 'off'
+
+  # Configuration files
+  - files:
+      - '*.config.{js,ts}'
+      - '**/.eslintrc.{js,ts}'
+    rules:
+      '@typescript-eslint/no-var-requires': 'off'
+
+  # Scripts
+  - files:
+      - 'tools/scripts/**/*'
+    rules:
+      'no-console': 'off'
+
+ignorePatterns:
+  - 'node_modules/'
+  - '.next/'
+  - 'build/'
+  - 'dist/'
+  - 'coverage/'
+  - '*.min.js'
+  - '*.bundle.js'
