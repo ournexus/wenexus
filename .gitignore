@@ -92,3 +92,7 @@ venv.bak/
 # OS
 .DS_Store
 Thumbs.db
+
+# Development tools
+.autofix-backup/
+.autofix.log

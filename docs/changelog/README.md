@@ -14,6 +14,7 @@ This directory contains version history and release notes for WeNexus.
 We follow the [Keep a Changelog](https://keepachangelog.com/) format:
 
 ### Structure
+
 - **Added** - New features
 - **Changed** - Changes in existing functionality
 - **Deprecated** - Soon-to-be removed features
@@ -22,23 +23,28 @@ We follow the [Keep a Changelog](https://keepachangelog.com/) format:
 - **Security** - Security improvements
 
 ### Example Entry
+
 ```markdown
 ## [1.2.0] - 2024-01-15
 
 ### Added
+
 - New consensus algorithm for improved agreement detection
 - Mobile app push notifications
 - Advanced user analytics dashboard
 
 ### Changed
+
 - Updated UI design system with new color palette
 - Improved API response times by 40%
 
 ### Fixed
+
 - Fixed memory leak in real-time comment processing
 - Resolved mobile app crash on iOS 17
 
 ### Security
+
 - Enhanced password security requirements
 - Added rate limiting to prevent API abuse
 ```
@@ -46,6 +52,7 @@ We follow the [Keep a Changelog](https://keepachangelog.com/) format:
 ## Versioning
 
 WeNexus follows [Semantic Versioning](https://semver.org/):
+
 - **MAJOR**: Incompatible API changes
 - **MINOR**: New functionality (backwards compatible)
 - **PATCH**: Bug fixes (backwards compatible)
