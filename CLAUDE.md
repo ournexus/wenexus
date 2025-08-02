@@ -325,15 +325,18 @@ an increasingly polarized world. The codebase reflects this through:
 
 ### Development Workflow with Smart Fix
 
-WeNexus uses an intelligent code quality system that automatically fixes issues and guides the commit process:
+WeNexus uses an intelligent code quality system that automatically fixes issues and guides the
+commit process:
 
 #### 1. Code Development
+
 - Write code following project conventions
 - Use meaningful variable names and clear logic
 - Add appropriate comments for complex business logic
 - Ensure proper error handling and edge cases
 
 #### 2. Pre-Commit Quality Checks
+
 The project includes **WeNexus Smart Fix** - an intelligent system that:
 
 ```bash
@@ -352,6 +355,7 @@ git commit -m "feat(web): add user authentication"
 #### 3. Fix Categories
 
 **🔧 Safe Fixes (Applied Automatically)**
+
 - Prettier code formatting
 - ESLint auto-fixable rules
 - Trailing whitespace removal
@@ -359,12 +363,14 @@ git commit -m "feat(web): add user authentication"
 - Import organization
 
 **🤔 Interactive Fixes (Require Confirmation)**
+
 - TODO/FIXME comment removal
 - Missing TypeScript exports
 - Brand consistency (WeNexus naming)
 - Package.json validation
 
 **🚨 Manual Fixes (Developer Action Required)**
+
 - TypeScript compilation errors
 - Security vulnerabilities
 - Logic errors requiring business context
@@ -376,9 +382,9 @@ Customize behavior in `.autofix.yaml`:
 
 ```yaml
 # Fix levels: safe, interactive, aggressive
-level: safe              # Default: safe auto-fixes only
-auto-commit: false       # Require manual commit review
-backup: true            # Create backups before fixing
+level: safe # Default: safe auto-fixes only
+auto-commit: false # Require manual commit review
+backup: true # Create backups before fixing
 ```
 
 #### 5. Review Standards
@@ -409,8 +415,8 @@ refactor(auth): extract validation logic
 test(user): add integration tests for signup
 ```
 
-**Valid Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `chore`
-**Valid Scopes**: `web`, `mobile`, `admin`, `api`, `ai`, `auth`, `ui`, `docs`
+**Valid Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `chore` **Valid
+Scopes**: `web`, `mobile`, `admin`, `api`, `ai`, `auth`, `ui`, `docs`
 
 #### 7. Manual Override (Emergency Only)
 
@@ -428,6 +434,7 @@ git commit --no-verify -m "emergency: critical hotfix"
 #### 8. Post-Commit Verification
 
 After committing:
+
 - [ ] Verify CI/CD pipeline passes
 - [ ] Check deployment to staging environment
 - [ ] Confirm no breaking changes introduced
@@ -436,6 +443,7 @@ After committing:
 #### 9. Code Review Guidelines
 
 When reviewing PRs:
+
 - **Functionality**: Does it solve the intended problem?
 - **Code Quality**: Is it readable and maintainable?
 - **Performance**: Any performance implications?
@@ -457,7 +465,9 @@ cp -r .autofix-backup/[timestamp]/* .
 mv .autofix.yaml .autofix.yaml.disabled
 ```
 
-**Remember**: The Smart Fix system is designed to maintain code quality while improving developer experience. Trust the automated fixes for formatting and style, but always review interactive and manual fix suggestions carefully.
+**Remember**: The Smart Fix system is designed to maintain code quality while improving developer
+experience. Trust the automated fixes for formatting and style, but always review interactive and
+manual fix suggestions carefully.
 
 Remember: WeNexus aims to connect minds and build consensus - every line of code should reflect this
 mission of bringing people together through technology.

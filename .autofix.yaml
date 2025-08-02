@@ -46,47 +46,47 @@ manual-fixes:
 # File patterns to include/exclude
 patterns:
   include:
-    - "**/*.js"
-    - "**/*.jsx"
-    - "**/*.ts"
-    - "**/*.tsx"
-    - "**/*.json"
-    - "**/*.md"
-    - "**/*.yaml"
-    - "**/*.yml"
-  
+    - '**/*.js'
+    - '**/*.jsx'
+    - '**/*.ts'
+    - '**/*.tsx'
+    - '**/*.json'
+    - '**/*.md'
+    - '**/*.yaml'
+    - '**/*.yml'
+
   exclude:
-    - "node_modules/**"
-    - ".next/**"
-    - "dist/**"
-    - "build/**"
-    - "coverage/**"
-    - "*.min.js"
-    - "*.min.css"
-    - "*.bundle.js"
-    - "*.bundle.css"
+    - 'node_modules/**'
+    - '.next/**'
+    - 'dist/**'
+    - 'build/**'
+    - 'coverage/**'
+    - '*.min.js'
+    - '*.min.css'
+    - '*.bundle.js'
+    - '*.bundle.css'
 
 # Pre-commit integration
 pre-commit:
   # Run smart-fix before other hooks
   run-before-hooks: true
-  
+
   # Maximum retry attempts
   max-retries: 3
-  
+
   # Timeout for each retry (in seconds)
   timeout: 60
 
 # Commit message templates
 commit-templates:
-  auto-fix: "fix: auto-fix code quality issues"
-  safe-fix: "style: apply safe formatting fixes"
-  interactive-fix: "fix: apply interactive fixes"
+  auto-fix: 'fix: auto-fix code quality issues'
+  safe-fix: 'style: apply safe formatting fixes'
+  interactive-fix: 'fix: apply interactive fixes'
   with-original: |
     {{original_message}}
-    
+
     🤖 Auto-fixed by WeNexus Smart Fix
-    
+
     Applied fixes:
     {{fixes_applied}}
 
@@ -94,10 +94,10 @@ commit-templates:
 notifications:
   # Show desktop notifications (if available)
   desktop: false
-  
+
   # Show progress in terminal
   terminal: true
-  
+
   # Send to webhook (for CI/CD integration)
   webhook: false
-  webhook-url: ""
+  webhook-url: ''

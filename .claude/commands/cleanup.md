@@ -1,4 +1,5 @@
-Please clean up the repository by removing stale branches and performing maintenance tasks: $ARGUMENTS.
+Please clean up the repository by removing stale branches and performing maintenance tasks:
+$ARGUMENTS.
 
 # REPOSITORY MAINTENANCE PRINCIPLES
 
@@ -22,16 +23,18 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 1. Preparation & Safety Measures
 
 - **Create a backup branch before cleanup**:
+
   ```bash
   git checkout -b backup-before-cleanup-$(date +%Y%m%d)
   git checkout main
   ```
 
 - **Document current state**:
+
   ```bash
   # Save current branch list for reference
   git branch -a > branch-list-before-cleanup.txt
-  
+
   # Document current dependencies
   npm list > dependencies-before-cleanup.txt
   ```
@@ -39,38 +42,43 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 2. Branch Management
 
 - **Fetch latest updates from remote**:
+
   ```bash
   # Fetch all branches and prune references to deleted remote branches
   git fetch --all --prune
   ```
 
 - **Switch to main branch and update**:
+
   ```bash
   git checkout main
   git pull origin main
   ```
 
 - **Clean up local branches that have been merged to main**:
+
   ```bash
   # List branches to be deleted first for review
   echo "Local branches to be deleted:"
   git branch --merged main | grep -v "^\*\|main\|master\|develop"
-  
+
   # Then delete them after confirmation
   git branch --merged main | grep -v "^\*\|main\|master\|develop" | xargs -n 1 git branch -d
   ```
 
 - **Find and clean up remote branches that have been merged to main**:
+
   ```bash
   # List branches to be deleted first for review
   echo "Remote branches to be deleted:"
   git branch -r --merged main | grep -v "^\*\|main\|master\|develop" | sed 's/origin\///'
-  
+
   # Then delete them after confirmation
   git branch -r --merged main | grep -v "^\*\|main\|master\|develop" | sed 's/origin\///' | xargs -I{} git push origin --delete {}
   ```
 
 - **Prune local references to deleted remote branches**:
+
   ```bash
   git remote prune origin
   ```
@@ -85,34 +93,38 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 3. Working Directory Cleanup
 
 - **Remove untracked files and directories**:
+
   ```bash
   # Dry run first to see what would be deleted
   git clean -n -d
-  
+
   # Then delete after review (use with caution)
   # git clean -fd
   ```
 
 - **Remove ignored files too (optional)**:
+
   ```bash
   # Include files specified in .gitignore
   # git clean -fdx
   ```
 
 - **Check for large files in git history**:
+
   ```bash
   # Find the 10 largest files in git history
   git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '/^blob/ {print substr($0,6)}' | sort -k2nr | head -n 10
   ```
 
 - **Remove build artifacts and temporary files**:
+
   ```bash
   # Remove common build directories
   rm -rf dist build .cache coverage
-  
+
   # Remove log files
   find . -name "*.log" -type f -delete
-  
+
   # Remove temporary files
   find . -name "*.tmp" -type f -delete
   ```
@@ -122,6 +134,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 1. Dependency Management
 
 ### Principles:
+
 - Keep dependencies updated but stable
 - Follow semantic versioning for updates
 - Document all dependency changes
@@ -130,33 +143,38 @@ Please clean up the repository by removing stale branches and performing mainten
 ### Actions:
 
 - **Audit dependencies for security issues**:
+
   ```bash
   npm audit
   ```
 
 - **Clean pnpm cache to recover disk space**:
+
   ```bash
   npm cache clean --force
   ```
 
 - **Check for outdated dependencies**:
+
   ```bash
   npm outdated
-  
+
   # Generate a report of outdated dependencies
   npm outdated --format json > outdated-deps-$(date +%Y%m%d).json
   ```
 
 - **Update dependencies strategically**:
+
   ```bash
   # Update patch versions (safest)
   npm update
-  
+
   # Test after each significant update
   npm test
   ```
 
 - **Clean reinstall when needed**:
+
   ```bash
   rm -rf node_modules
   npm install
@@ -170,6 +188,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 2. Code Quality Maintenance
 
 ### Principles:
+
 - Maintain consistent code style
 - Eliminate dead code regularly
 - Keep test coverage high
@@ -178,30 +197,33 @@ Please clean up the repository by removing stale branches and performing mainten
 ### Actions:
 
 - **Run comprehensive code quality checks**:
+
   ```bash
   # Run linting
   npm run lint
-  
+
   # Run formatting
   npm run format
-  
+
   # Fix auto-fixable issues
   npm run lint:fix
   ```
 
 - **Run tests to ensure everything works**:
+
   ```bash
   # Run unit tests
   npm run test
-  
+
   # Run with coverage report
   npm run test:coverage
-  
+
   # Run end-to-end tests if available
   npm run test:e2e
   ```
 
 - **Find unused dependencies**:
+
   ```bash
   npx depcheck
   ```
@@ -215,6 +237,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 3. Git Repository Optimization
 
 ### Principles:
+
 - Keep repository size manageable
 - Maintain clean history
 - Optimize for performance
@@ -223,25 +246,29 @@ Please clean up the repository by removing stale branches and performing mainten
 ### Actions:
 
 - **Garbage collection to optimize repository**:
+
   ```bash
   # Standard garbage collection
   git gc
-  
+
   # More aggressive optimization (takes longer)
   git gc --aggressive
   ```
 
 - **Verify repository integrity**:
+
   ```bash
   git fsck --full
   ```
 
 - **Check repository size and composition**:
+
   ```bash
   git count-objects -v -H
   ```
 
 - **Compact and optimize repository**:
+
   ```bash
   # Repack the repository
   git repack -a -d -f
@@ -256,6 +283,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 4. Documentation Maintenance
 
 ### Principles:
+
 - Keep documentation in sync with code
 - Document maintenance procedures
 - Update changelogs and release notes
@@ -264,12 +292,14 @@ Please clean up the repository by removing stale branches and performing mainten
 ### Actions:
 
 - **Update README and documentation**:
+
   ```bash
   # Check for outdated documentation
   find docs -type f -name "*.md" -mtime +90 | sort
   ```
 
 - **Update changelog**:
+
   ```bash
   # Generate changelog from git history
   git log --pretty=format:"%h - %s (%an, %ar)" --since="last month" > RECENT_CHANGES.md
@@ -283,6 +313,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ## 5. Performance Optimization
 
 ### Principles:
+
 - Regularly measure and improve performance
 - Identify and fix bottlenecks
 - Monitor resource usage
@@ -291,6 +322,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ### Actions:
 
 - **Run performance tests if available**:
+
   ```bash
   # If you have performance tests
   npm run test:performance
@@ -305,6 +337,7 @@ Please clean up the repository by removing stale branches and performing mainten
 # AUTOMATION & CONTINUOUS MAINTENANCE
 
 ## Principles:
+
 - Automate routine maintenance
 - Schedule regular cleanup tasks
 - Monitor repository health
@@ -313,6 +346,7 @@ Please clean up the repository by removing stale branches and performing mainten
 ## Actions:
 
 - **Create a maintenance script**:
+
   ```bash
   # Create a script to automate routine maintenance
   cat > scripts/maintenance.sh << 'EOF'
@@ -327,11 +361,12 @@ Please clean up the repository by removing stale branches and performing mainten
   npm test;
   echo "Maintenance complete!";
   EOF
-  
+
   chmod +x scripts/maintenance.sh
   ```
 
 - **Set up git hooks for maintenance**:
+
   ```bash
   # Create a post-merge hook to clean up after pulls/merges
   mkdir -p .git/hooks
@@ -341,7 +376,7 @@ Please clean up the repository by removing stale branches and performing mainten
   git remote prune origin;
   npm install;
   EOF
-  
+
   chmod +x .git/hooks/post-merge
   ```
 
@@ -373,6 +408,7 @@ Please clean up the repository by removing stale branches and performing mainten
 # VERIFICATION & COMPLETION
 
 ## Principles:
+
 - Always verify after maintenance
 - Document what was done
 - Communicate changes to team
@@ -381,11 +417,13 @@ Please clean up the repository by removing stale branches and performing mainten
 ## Actions:
 
 - **Verify repository status**:
+
   ```bash
   git status
   ```
 
 - **Compare before and after state**:
+
   ```bash
   # Compare branch list before and after
   git branch -a > branch-list-after-cleanup.txt
@@ -393,26 +431,28 @@ Please clean up the repository by removing stale branches and performing mainten
   ```
 
 - **Run full test suite**:
+
   ```bash
   npm run test
   ```
 
 - **Document maintenance performed**:
+
   ```bash
   cat > MAINTENANCE_REPORT.md << EOF
   # Maintenance Report - $(date +%Y-%m-%d)
-  
+
   ## Actions Performed
   - Cleaned up merged branches
   - Updated dependencies
   - Optimized repository size
   - Ran code quality checks
-  
+
   ## Results
   - Removed $(wc -l < branch-list-before-cleanup.txt) - $(wc -l < branch-list-after-cleanup.txt) branches
   - Repository size: $(git count-objects -v -H | grep 'size-pack')
   - All tests passing: $(npm run test > /dev/null && echo "Yes" || echo "No")
-  
+
   ## Next Steps
   - Schedule next maintenance for $(date -d "+30 days" +%Y-%m-%d)
   - Address any issues found during maintenance
@@ -438,4 +478,5 @@ Please clean up the repository by removing stale branches and performing mainten
 9. **Integration**: Make maintenance part of the development workflow
 10. **Education**: Ensure all team members understand maintenance practices
 
-Remember that repository maintenance is not just about cleaning up; it's about establishing sustainable practices that keep your codebase healthy and your team productive over the long term.
+Remember that repository maintenance is not just about cleaning up; it's about establishing
+sustainable practices that keep your codebase healthy and your team productive over the long term.

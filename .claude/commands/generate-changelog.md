@@ -1,6 +1,7 @@
 Generate CHANGELOG.md from git commit history for WeNexus: $ARGUMENTS.
 
 This command supports multiple modes:
+
 - **Full changelog**: Generate changelog from all commits since last tag
 - **PR changelog**: Generate changelog for the latest merged PR only
 - **Range changelog**: Generate changelog for specific commit range
@@ -8,18 +9,21 @@ This command supports multiple modes:
 # USAGE MODES
 
 ## Mode 1: Latest PR Changelog
+
 ```bash
 claude generate-changelog --pr
 claude generate-changelog --latest-pr
 ```
 
-## Mode 2: Full Version Changelog  
+## Mode 2: Full Version Changelog
+
 ```bash
 claude generate-changelog
 claude generate-changelog --full
 ```
 
 ## Mode 3: Custom Range Changelog
+
 ```bash
 claude generate-changelog --range v1.0.0..HEAD
 claude generate-changelog --since v1.0.0
@@ -37,6 +41,7 @@ claude generate-changelog --since v1.0.0
 # PREREQUISITES
 
 - Ensure you're on the main branch with latest changes:
+
   ```bash
   git checkout main
   git pull origin main
@@ -54,6 +59,7 @@ claude generate-changelog --since v1.0.0
 Use TodoWrite tool to track progress, then determine which commits to include:
 
 ### For Latest PR Mode (--pr or --latest-pr):
+
 ```bash
 # Find the most recent merged PR
 LATEST_PR=$(gh pr list --state merged --limit 1 --json number --jq '.[0].number')
@@ -77,6 +83,7 @@ git log $COMMIT_RANGE --oneline --pretty=format:"%h %s"
 ```
 
 ### For Full Version Mode (default or --full):
+
 ```bash
 # Get latest tag
 LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -93,6 +100,7 @@ fi
 ```
 
 ### For Custom Range Mode (--range or --since):
+
 ```bash
 # Use provided range from arguments
 COMMIT_RANGE="$PROVIDED_RANGE"  # e.g., "v1.0.0..HEAD"
@@ -105,6 +113,7 @@ git log $COMMIT_RANGE --oneline --pretty=format:"%h %s"
 Use TodoWrite tool to track changelog generation progress, then analyze commits by type:
 
 ### Commit Categories:
+
 - **Features** (`feat:`) - New functionality
 - **Bug Fixes** (`fix:`) - Bug fixes
 - **Documentation** (`docs:`) - Documentation changes
@@ -117,6 +126,7 @@ Use TodoWrite tool to track changelog generation progress, then analyze commits 
 - **Chores** (`chore:`) - Other changes
 
 ### Parse and categorize commits:
+
 ```bash
 # Create temporary files for each category
 feat_commits=$(mktemp)
@@ -140,7 +150,7 @@ git log $COMMIT_RANGE --oneline --pretty=format:"%h %s" | while IFS=' ' read -r 
   if echo "$subject" | grep -E "(BREAKING CHANGE|!:|!)" >/dev/null; then
     echo "- $subject ($hash)" >> $breaking_commits
   fi
-  
+
   # Categorize by conventional commit type
   case "$subject" in
     feat:*|feat\(*\):*) echo "- ${subject#feat*: } ($hash)" >> $feat_commits ;;
@@ -166,6 +176,7 @@ echo "Found $(wc -l < $breaking_commits) breaking change commits"
 ## Step 3: Generate Changelog Entry
 
 ### Determine entry type and title:
+
 ```bash
 # Get current date
 CURRENT_DATE=$(date +"%Y-%m-%d")
@@ -191,6 +202,7 @@ echo "Date: $CURRENT_DATE"
 ```
 
 ### Build changelog entry:
+
 ```bash
 # Start building changelog entry
 if [[ "$*" == *"--pr"* ]] || [[ "$*" == *"--latest-pr"* ]]; then
@@ -263,16 +275,17 @@ echo "Generated changelog entry with $(echo -e "$CHANGELOG_ENTRY" | wc -l) lines
 
 1. **Read existing CHANGELOG.md** to understand current structure
 2. **Insert new entry** in the appropriate location:
-   - For PR entries: Add after `## [Unreleased]` section  
+   - For PR entries: Add after `## [Unreleased]` section
    - For version entries: Replace `## [Unreleased]` or add after it
 3. **Preserve existing formatting** and structure
 
 ### Alternative bash approach:
+
 ```bash
 if [ -f "CHANGELOG.md" ]; then
   # Create backup
   cp CHANGELOG.md CHANGELOG.md.backup
-  
+
   # Insert new entry after "## [Unreleased]" section
   if [[ "$*" == *"--pr"* ]] || [[ "$*" == *"--latest-pr"* ]]; then
     # For PR entries, add after Unreleased
@@ -314,11 +327,12 @@ echo "CHANGELOG.md updated successfully"
 ## Step 5: Review and Validate
 
 ### Manual review:
+
 ```bash
 # Show the changes
 git diff CHANGELOG.md
 
-# View the updated changelog  
+# View the updated changelog
 head -50 CHANGELOG.md
 
 # Validate the entry
@@ -326,6 +340,7 @@ echo -e "$CHANGELOG_ENTRY" | head -20
 ```
 
 ### Validation checklist:
+
 - [ ] Changelog follows Keep a Changelog format
 - [ ] All significant changes are included
 - [ ] Commit hashes are included for traceability
@@ -382,18 +397,21 @@ fi
 # USAGE EXAMPLES
 
 ## Generate changelog for latest merged PR:
+
 ```bash
 claude generate-changelog --pr
-claude generate-changelog --latest-pr  
+claude generate-changelog --latest-pr
 ```
 
 ## Generate full version changelog:
+
 ```bash
 claude generate-changelog
 claude generate-changelog --full
 ```
 
 ## Generate changelog for specific range:
+
 ```bash
 claude generate-changelog --range v1.0.0..HEAD
 claude generate-changelog --since v1.0.0
@@ -402,6 +420,7 @@ claude generate-changelog --since v1.0.0
 # ADVANCED FEATURES
 
 ## PR Analysis with Details
+
 ```bash
 # Get detailed PR information
 gh pr view $LATEST_PR --json title,body,author,reviewers,labels --jq '{
@@ -419,16 +438,18 @@ fi
 ```
 
 ## Include Breaking Change Details
+
 ```bash
 # Extract breaking change details from commit bodies
-git log $COMMIT_RANGE --grep="BREAKING CHANGE:" --pretty=format:"%B" | 
-  sed -n '/BREAKING CHANGE:/,/^$/p' | 
-  sed 's/BREAKING CHANGE://' | 
-  sed '/^$/d' | 
+git log $COMMIT_RANGE --grep="BREAKING CHANGE:" --pretty=format:"%B" |
+  sed -n '/BREAKING CHANGE:/,/^$/p' |
+  sed 's/BREAKING CHANGE://' |
+  sed '/^$/d' |
   sed 's/^/- /'
 ```
 
 ## Generate Release Notes for GitHub
+
 ```bash
 # Create GitHub release notes format
 cat > RELEASE_NOTES.md << EOF
@@ -445,7 +466,7 @@ EOF
 # BEST PRACTICES
 
 - **Use conventional commits** for accurate parsing
-- **Include scope in commits** for better categorization  
+- **Include scope in commits** for better categorization
 - **Mark breaking changes** with `!` or `BREAKING CHANGE:`
 - **Review generated changelog** before committing
 - **Use PR mode** for documenting individual feature deliveries
@@ -456,23 +477,28 @@ EOF
 # TROUBLESHOOTING
 
 ## No PRs found:
+
 - Check if you're in the right repository
 - Verify GitHub CLI authentication: `gh auth status`
 - Ensure PRs exist: `gh pr list --state merged`
 
 ## No commits in range:
+
 - Verify the commit range is correct
 - Check if you're on the right branch
 - Ensure git history exists
 
 ## GitHub CLI issues:
+
 - Update GitHub CLI: `gh --version` and update if needed
 - Re-authenticate: `gh auth login`
 - Check repository access: `gh repo view`
 
 ## Conventional commit parsing issues:
+
 - Review recent commits for proper format
 - Consider manual categorization for non-conventional commits
 - Update parsing regex for project-specific patterns
 
-Remember to use the TodoWrite tool to track your progress through each step of the changelog generation process.
+Remember to use the TodoWrite tool to track your progress through each step of the changelog
+generation process.

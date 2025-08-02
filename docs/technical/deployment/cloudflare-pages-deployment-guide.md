@@ -15,6 +15,7 @@
 ```
 
 **最佳实践**:
+
 - 使用 `.nvmrc` 和 `.node-version` 文件明确指定 Node.js 版本
 - 选择与依赖兼容的 LTS 版本
 - 定期更新到新的 LTS 版本以获取安全更新
@@ -29,6 +30,7 @@ optional=true
 ```
 
 **最佳实践**:
+
 - `engine-strict=false`: 允许安装不完全匹配 engines 字段的包
 - `legacy-peer-deps=true`: 解决复杂的依赖树冲突
 - `optional=true`: 正确处理平台特定的可选依赖
@@ -48,6 +50,7 @@ optional=true
 ```
 
 **最佳实践**:
+
 - 将平台特定依赖放在 `optionalDependencies` 而非 `dependencies`
 - 确保版本号与主依赖版本匹配
 - 包含所有可能的部署平台（Linux、macOS、Windows）
@@ -63,6 +66,7 @@ optional=true
 ```
 
 **最佳实践**:
+
 - 确保 `overrides` 中的版本与直接依赖版本一致
 - 解决冲突后运行 `npm install` 重新生成 lock 文件
 - 避免过度使用 overrides，优先考虑升级依赖
@@ -78,6 +82,7 @@ optional=true
 ```
 
 **最佳实践**:
+
 - 使用 `postinstall` 验证关键依赖安装
 - 添加错误处理避免非关键错误中断构建
 - 提供明确的日志信息便于调试
@@ -116,6 +121,7 @@ echo "Build completed successfully!"
 ```
 
 **最佳实践**:
+
 - 使用 `set -e` 确保任何错误都会终止脚本
 - 输出环境信息便于调试
 - 添加平台检测逻辑针对性处理依赖
@@ -132,6 +138,7 @@ echo "Build completed successfully!"
   - `NPM_FLAGS`: `--legacy-peer-deps`
 
 **最佳实践**:
+
 - 使用自定义构建脚本而非默认命令
 - 确保脚本有执行权限
 - 明确指定输出目录
@@ -142,6 +149,7 @@ echo "Build completed successfully!"
 每次部署前检查:
 
 1. **依赖同步**: 确保 `package.json` 和 `package-lock.json` 完全同步
+
    ```bash
    npm install --legacy-peer-deps
    git add package-lock.json
@@ -149,16 +157,19 @@ echo "Build completed successfully!"
    ```
 
 2. **版本兼容性**: 检查依赖的 Node.js 版本要求与部署环境匹配
+
    ```bash
    npm ls
    ```
 
 3. **构建测试**: 在本地测试构建过程
+
    ```bash
    ./build.sh
    ```
 
 4. **文件权限**: 确保构建脚本有执行权限
+
    ```bash
    chmod +x ./build.sh
    ```

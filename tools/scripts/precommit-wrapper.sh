@@ -25,22 +25,22 @@ log() {
 run_precommit_with_smart_fix() {
     local attempt=1
     local max_attempts=3
-    
+
     log "${BLUE}🚀 Running pre-commit with smart fix...${NC}"
-    
+
     while [[ $attempt -le $max_attempts ]]; do
         log "${BLUE}📍 Pre-commit attempt $attempt of $max_attempts${NC}"
-        
+
         # Run pre-commit
         if pre-commit run "$@"; then
             log "${GREEN}🎉 Pre-commit checks passed!${NC}"
             return 0
         fi
-        
+
         # If pre-commit failed and this isn't the last attempt
         if [[ $attempt -lt $max_attempts ]]; then
             log "${YELLOW}⚠️  Pre-commit failed, running smart fix...${NC}"
-            
+
             # Run smart fix
             if [[ -x "$SMART_FIX_SCRIPT" ]]; then
                 "$SMART_FIX_SCRIPT"
@@ -53,10 +53,10 @@ run_precommit_with_smart_fix() {
             log "${RED}❌ Pre-commit failed after $max_attempts attempts${NC}"
             log "${YELLOW}💡 Try running manually: $SMART_FIX_SCRIPT${NC}"
         fi
-        
+
         attempt=$((attempt + 1))
     done
-    
+
     return 1
 }
 

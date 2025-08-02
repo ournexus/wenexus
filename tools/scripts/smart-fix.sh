@@ -44,7 +44,7 @@ create_backup() {
         local timestamp=$(date +%Y%m%d_%H%M%S)
         local backup_path="$BACKUP_DIR/$timestamp"
         mkdir -p "$backup_path"
-        
+
         # Backup staged files
         git diff --cached --name-only | while read file; do
             if [[ -f "$file" ]]; then
@@ -52,7 +52,7 @@ create_backup() {
                 cp "$file" "$backup_path/$file"
             fi
         done
-        
+
         log "${GREEN}📦 Backup created at: $backup_path${NC}"
     fi
 }
@@ -60,33 +60,33 @@ create_backup() {
 # Safe fixes - can be applied automatically
 apply_safe_fixes() {
     log "${BLUE}🔧 Applying safe fixes...${NC}"
-    
+
     local fixes_applied=0
-    
+
     # Prettier formatting
     if command -v npx &> /dev/null; then
         log "  📝 Running Prettier..."
         npx prettier --write . --ignore-path .gitignore 2>/dev/null && fixes_applied=$((fixes_applied + 1))
     fi
-    
+
     # ESLint auto-fix
     if command -v npx &> /dev/null; then
         log "  🔍 Running ESLint auto-fix..."
         npx eslint . --fix --ext .js,.jsx,.ts,.tsx 2>/dev/null && fixes_applied=$((fixes_applied + 1))
     fi
-    
+
     # Remove trailing whitespace
     log "  🧹 Removing trailing whitespace..."
     find . -type f \( -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.md" \) \
         -not -path "./node_modules/*" -not -path "./.next/*" -not -path "./dist/*" \
         -exec sed -i '' 's/[[:space:]]*$//' {} \; 2>/dev/null && fixes_applied=$((fixes_applied + 1))
-    
+
     # Fix end of file newlines
     log "  📄 Fixing end-of-file newlines..."
     find . -type f \( -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.md" \) \
         -not -path "./node_modules/*" -not -path "./.next/*" -not -path "./dist/*" \
         -exec bash -c 'if [[ -n "$(tail -c1 "$1")" ]]; then echo >> "$1"; fi' _ {} \; 2>/dev/null && fixes_applied=$((fixes_applied + 1))
-    
+
     log "${GREEN}✅ Applied $fixes_applied safe fixes${NC}"
     return $fixes_applied
 }
@@ -94,18 +94,18 @@ apply_safe_fixes() {
 # Interactive fixes - require user confirmation
 apply_interactive_fixes() {
     log "${YELLOW}🤔 Interactive fixes required...${NC}"
-    
+
     local fixes_applied=0
-    
+
     # Check for TODO/FIXME comments
     local todo_files=$(grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules . 2>/dev/null | cut -d':' -f1 | sort -u)
-    
+
     if [[ -n "$todo_files" ]]; then
         log "${YELLOW}  📝 Found TODO/FIXME comments in:${NC}"
         echo "$todo_files" | while read file; do
             log "    - $file"
         done
-        
+
         if [[ "$AUTOFIX_LEVEL" == "interactive" || "$AUTOFIX_LEVEL" == "aggressive" ]]; then
             read -p "Remove TODO/FIXME comments? (y/N): " -n 1 -r
             echo
@@ -118,16 +118,16 @@ apply_interactive_fixes() {
             fi
         fi
     fi
-    
+
     # Check for missing exports
     local no_export_files=$(find apps packages -name "*.ts" -not -path "./node_modules/*" -not -path "./.next/*" -exec grep -L "export" {} \; 2>/dev/null | grep -v "\.(d|test|spec)\.ts$" || true)
-    
+
     if [[ -n "$no_export_files" ]]; then
         log "${YELLOW}  📦 Found TypeScript files without exports:${NC}"
         echo "$no_export_files" | while read file; do
             log "    - $file"
         done
-        
+
         if [[ "$AUTOFIX_LEVEL" == "interactive" || "$AUTOFIX_LEVEL" == "aggressive" ]]; then
             read -p "Add empty exports to these files? (y/N): " -n 1 -r
             echo
@@ -140,14 +140,14 @@ apply_interactive_fixes() {
             fi
         fi
     fi
-    
+
     return $fixes_applied
 }
 
 # Manual fixes - only report issues
 report_manual_fixes() {
     log "${RED}🚨 Manual fixes required:${NC}"
-    
+
     # Run type checking
     if command -v npx &> /dev/null && [[ -f "tsconfig.json" ]]; then
         log "  🔍 Running TypeScript type checking..."
@@ -156,7 +156,7 @@ report_manual_fixes() {
             log "    💡 Run 'npx tsc --noEmit' to see detailed errors"
         fi
     fi
-    
+
     # Check for security issues (if detect-secrets is available)
     if command -v detect-secrets &> /dev/null; then
         log "  🔐 Running security scan..."
@@ -171,18 +171,18 @@ report_manual_fixes() {
 run_progressive_fixes() {
     local attempt=1
     local max_attempts=3
-    
+
     log "${BLUE}🚀 Starting progressive fix process...${NC}"
-    
+
     while [[ $attempt -le $max_attempts ]]; do
         log "${BLUE}📍 Attempt $attempt of $max_attempts${NC}"
-        
+
         # Run pre-commit checks
         if pre-commit run --all-files 2>/dev/null; then
             log "${GREEN}🎉 All checks passed!${NC}"
             return 0
         fi
-        
+
         case $attempt in
             1)
                 log "${YELLOW}🔧 Attempt 1: Applying safe fixes...${NC}"
@@ -201,10 +201,10 @@ run_progressive_fixes() {
                 report_manual_fixes
                 ;;
         esac
-        
+
         attempt=$((attempt + 1))
     done
-    
+
     log "${RED}❌ Some issues still require manual intervention${NC}"
     return 1
 }
@@ -217,13 +217,13 @@ smart_commit() {
             log "${YELLOW}📝 No changes to commit${NC}"
             return 0
         fi
-        
+
         # Get the original commit message if available
         local original_message=""
         if [[ -f .git/COMMIT_EDITMSG ]]; then
             original_message=$(cat .git/COMMIT_EDITMSG)
         fi
-        
+
         # Create commit message
         local commit_message="$original_message"
         if [[ -z "$commit_message" ]]; then
@@ -233,7 +233,7 @@ smart_commit() {
 
 🤖 Auto-fixed by WeNexus Smart Fix"
         fi
-        
+
         # Commit changes
         git add .
         git commit -m "$commit_message"
@@ -246,17 +246,17 @@ smart_commit() {
 # Main execution
 main() {
     log "${GREEN}🌟 WeNexus Smart Fix Started$(date)${NC}"
-    
+
     # Load configuration
     load_config
     log "${BLUE}📋 Configuration:${NC}"
     log "  - Level: $AUTOFIX_LEVEL"
     log "  - Auto-commit: $AUTO_COMMIT"
     log "  - Backup: $BACKUP_ENABLED"
-    
+
     # Create backup if enabled
     create_backup
-    
+
     # Run progressive fixes
     if run_progressive_fixes; then
         log "${GREEN}🎉 All fixes completed successfully!${NC}"
@@ -265,7 +265,7 @@ main() {
         log "${RED}⚠️  Some issues require manual attention${NC}"
         log "💡 Check the log file: $LOG_FILE"
     fi
-    
+
     log "${GREEN}✨ Smart Fix Complete$(date)${NC}"
 }
 

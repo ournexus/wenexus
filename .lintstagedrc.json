@@ -1,16 +1,6 @@
 {
-  "*.{js,jsx,ts,tsx}": [
-    "eslint --fix",
-    "prettier --write"
-  ],
-  "*.{json,md,yml,yaml}": [
-    "prettier --write"
-  ],
-  "*.{java}": [
-    "mvn spotless:apply"
-  ],
-  "*.{py}": [
-    "black",
-    "isort"
-  ]
+  "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],
+  "*.{json,md,yml,yaml}": ["prettier --write"],
+  "*.{java}": ["mvn spotless:apply"],
+  "*.{py}": ["black", "isort"]
 }
