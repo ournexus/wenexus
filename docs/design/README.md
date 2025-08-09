@@ -5,21 +5,25 @@ This directory contains all design-related documentation and assets for WeNexus.
 ## Contents
 
 ### Design System
+
 - `design-system/` - Component library, colors, typography, spacing guidelines
 - `brand-guidelines/` - Logo usage, brand voice, visual identity
 
 ### User Interface
+
 - `wireframes/` - Low-fidelity layout sketches
 - `mockups/` - High-fidelity visual designs
 - `prototypes/` - Interactive design prototypes
 - `user-flows/` - User journey diagrams and flow charts
 
 ### Assets
+
 - `icons/` - SVG icons and icon specifications
 - `images/` - Photography, illustrations, and graphics
 - `logos/` - Brand logos in various formats
 
 ### Research
+
 - `user-research/` - User interviews, surveys, and usability testing
 - `competitive-analysis/` - Market research and competitor analysis
 - `personas/` - User personas and target audience profiles

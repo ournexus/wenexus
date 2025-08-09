@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest an idea for WeNexus
-title: "[FEATURE]: "
-labels: ["enhancement", "triage"]
+title: '[FEATURE]: '
+labels: ['enhancement', 'triage']
 body:
   - type: markdown
     attributes:

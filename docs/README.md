@@ -1,6 +1,7 @@
 # Documentation Structure
 
-Welcome to the WeNexus documentation. This directory contains all project documentation organized by category.
+Welcome to the WeNexus documentation. This directory contains all project documentation organized by
+category.
 
 ## Structure Overview
 
@@ -22,6 +23,7 @@ docs/
 ## Documentation Standards
 
 All documentation should follow these principles:
+
 - **Clear and Concise**: Write for your audience
 - **Up-to-Date**: Keep documentation current with code changes
 - **Searchable**: Use consistent terminology and structure
@@ -30,6 +32,7 @@ All documentation should follow these principles:
 ## Contributing
 
 When adding new documentation:
+
 1. Place it in the appropriate category folder
 2. Update the relevant README.md with links to new content
 3. Follow the established naming conventions

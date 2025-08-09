@@ -1,0 +1,35 @@
+# Markdownlint Configuration for WeNexus
+
+# MD013/line-length - Line length
+MD013: false # We prefer readability over strict line length
+
+# MD033/no-inline-html - Inline HTML
+MD033:
+  allowed_elements:
+    - div
+    - span
+    - br
+    - img
+    - a
+    - svg
+    - path
+    - circle
+    - g
+
+# MD041/first-line-heading - First line in file should be a top level heading
+MD041: false # Allow frontmatter and other content before heading
+
+# MD024/no-duplicate-heading - Multiple headings with the same content
+MD024:
+  siblings_only: true # Allow duplicate headings in different sections
+
+# MD046/code-block-style - Code block style
+MD046:
+  style: 'fenced' # Use fenced code blocks (```)
+
+# MD048/code-fence-style - Code fence style
+MD048:
+  style: 'backtick' # Use backticks for fences
+
+# MD040/fenced-code-language - Fenced code blocks should have a language specified
+MD040: false # Allow code blocks without language specification

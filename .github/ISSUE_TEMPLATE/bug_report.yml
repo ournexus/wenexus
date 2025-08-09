@@ -1,7 +1,7 @@
 name: Bug Report
 description: File a bug report to help us improve WeNexus
-title: "[BUG]: "
-labels: ["bug", "triage"]
+title: '[BUG]: '
+labels: ['bug', 'triage']
 body:
   - type: markdown
     attributes:

@@ -1,23 +1,29 @@
 # Product Requirements Documentation
 
-This directory contains all Product Requirements Documents (PRDs) and business specifications for WeNexus features.
+This directory contains all Product Requirements Documents (PRDs) and business specifications for
+WeNexus features.
 
 ## Contents
 
 ### Core Features
+
 - **[`core-platform/`](./core-platform/)** - Fundamental platform requirements and product design
-  - [Product Design Document](./core-platform/product-design-document.md) - Complete product specification with UI/UX design, star map visualization, AI expert system, and user experience flows
+  - [Product Design Document](./core-platform/product-design-document.md) - Complete product
+    specification with UI/UX design, star map visualization, AI expert system, and user experience
+    flows
 - `user-management/` - User registration, authentication, profiles
 - `content-system/` - Content creation, moderation, distribution
 - `consensus-engine/` - Core consensus-building functionality
 
 ### Advanced Features
+
 - `ai-integration/` - AI-powered features and recommendations
 - `analytics/` - User behavior and platform analytics
 - `mobile-app/` - Mobile application requirements
 - `admin-dashboard/` - Administrative interface requirements
 
 ### Templates
+
 - `prd-template.md` - Standard PRD template
 - `feature-brief-template.md` - Quick feature specification template
 - `user-story-template.md` - User story format guidelines

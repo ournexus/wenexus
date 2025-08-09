@@ -16,12 +16,23 @@
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{js,ts,tsx,md,json}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,tsx,md,json}\""
+    "format:check": "prettier --check \"**/*.{js,ts,tsx,md,json}\"",
+    "prepare": "husky install",
+    "precommit": "pre-commit run --all-files",
+    "setup": "./tools/scripts/setup-dev.sh",
+    "setup:precommit": "./tools/scripts/setup-precommit.sh"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",
     "@turbo/gen": "^1.10.12",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.48.0",
+    "eslint-config-next": "^14.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^8.0.3",
+    "pre-commit": "^1.2.2",
     "prettier": "^3.0.3",
     "turbo": "^1.10.12",
     "typescript": "^5.2.2"
