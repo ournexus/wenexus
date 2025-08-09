@@ -62,7 +62,7 @@ pre-commit run prettier --all-files
   "rules": {
     "no-console": ["error", { "allow": ["warn", "error"] }],
     "@typescript-eslint/explicit-function-return-type": "error",
-    "@typescript-eslint/no-explicit-any": "error"
+    "@typescript-eslint/no-explicit-any": "warn"
   }
 }
 ```

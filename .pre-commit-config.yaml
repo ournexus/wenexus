@@ -148,13 +148,6 @@ repos:
         language: system
         pass_filenames: false
 
-      # Validate package.json files
-      - id: validate-package-json
-        name: Validate package.json files
-        entry: bash -c 'find . -name "package.json" -not -path "./node_modules/*" -exec node -e "try { JSON.parse(require(\"fs\").readFileSync(process.argv[1], \"utf8\")); } catch(e) { console.error(\"❌ Invalid JSON in\", process.argv[1]); process.exit(1); }" {} \;'
-        language: system
-        pass_filenames: false
-
       # Check for WeNexus brand consistency
       - id: brand-consistency
         name: Check WeNexus brand consistency

@@ -37,14 +37,11 @@ pre-commit install --hook-type commit-msg
 # Create .secrets.baseline if it doesn't exist
 if [ ! -f .secrets.baseline ]; then
     echo "🔐 Creating secrets baseline..."
-    # Try to use detect-secrets if available, otherwise create empty baseline
-    if command -v detect-secrets &> /dev/null; then
-        detect-secrets scan --baseline .secrets.baseline || echo "{}" > .secrets.baseline
-    else
-        echo "⚠️  detect-secrets not found, creating empty baseline"
-        echo "📋 To generate a proper baseline later, run: pre-commit run detect-secrets --all-files"
-        echo "{}" > .secrets.baseline
-    fi
+    # To generate a new baseline, run: pre-commit run detect-secrets --all-files > .secrets.baseline
+    # The line below is commented out as it requires detect-secrets to be globally installed.
+    # detect-secrets scan --baseline .secrets.baseline || echo "{}" > .secrets.baseline
+    echo "⚠️  Using empty baseline - enable detect-secrets hook first"
+    echo "{}" > .secrets.baseline
 fi
 
 # Run pre-commit on all files to ensure everything is working

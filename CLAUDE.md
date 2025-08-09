@@ -77,7 +77,7 @@ wenexus/
 
 ```bash
 # Clone the repository
-git clone [repository-url]
+git clone git@github.com:your-org/wenexus.git
 cd wenexus
 
 # Run the setup script
