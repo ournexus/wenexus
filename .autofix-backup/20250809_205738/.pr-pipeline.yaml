@@ -1,0 +1,69 @@
+# PR Pipeline 配置文件
+# 用于个性化配置/pr-pipeline命令的行为
+
+# 默认审查者列表
+default_reviewers:
+  - your-github-username
+  # - team-lead-username
+  # - senior-dev-username
+
+# 自动标签映射
+auto_labels:
+  feature: enhancement
+  fix: bug
+  docs: documentation
+  refactor: refactoring
+  test: testing
+  chore: maintenance
+
+# 提交模板配置
+commit_templates:
+  feature: 'feat({scope}): {description}'
+  fix: 'fix({scope}): {description}'
+  docs: 'docs({scope}): {description}'
+  refactor: 'refactor({scope}): {description}'
+  test: 'test({scope}): {description}'
+  chore: 'chore({scope}): {description}'
+
+# 测试配置
+testing:
+  run_tests: true
+  fail_on_low_coverage: false
+  min_coverage: 80
+  skip_patterns:
+    - '*.md'
+    - '*.txt'
+    - '*.json'
+
+# 推送配置
+push:
+  force_with_lease: true # 使用 --force-with-lease 而不是 --force
+  skip_hooks: false # 是否跳过Git hooks
+
+# PR模板配置
+pr_template:
+  include_checklist: true
+  include_change_summary: true
+  include_test_notes: true
+  include_issue_linking: true
+
+# 范围映射
+scope_mapping:
+  apps/web: web
+  apps/mobile: mobile
+  apps/admin: admin
+  services/java-backend: api
+  services/python-backend: ai
+  packages/shared: shared
+  docs/: docs
+
+# 安全设置
+security:
+  check_secrets: true
+  check_large_files: true
+  max_file_size_mb: 10
+
+# 通知配置
+notifications:
+  slack_webhook: '' # 设置Slack webhook URL
+  discord_webhook: '' # 设置Discord webhook URL
