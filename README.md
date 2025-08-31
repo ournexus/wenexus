@@ -1,9 +1,10 @@
 <div align="center">
   <img src="docs/design/logos/wenexus-logo-complete.svg" alt="WeNexus Logo" width="120" height="120">
-  
-  # WeNexus: The Consensus Amplifier
-  
-  *Connecting minds, building consensus, amplifying understanding*
+
+# WeNexus: The Consensus Amplifier
+
+_Connecting minds, building consensus, amplifying understanding_
+
 </div>
 
 WeNexus is a platform designed to bridge information gaps and create meaningful connections in an
