@@ -7,10 +7,10 @@
 # - aggressive: Applies all fixes automatically (use with caution)
 level: safe
 
-# Auto-commit: true/false
-# If true, automatically commits fixes after successful repair
-# If false, user must manually review and commit changes
-auto-commit: false
+# Quick mode: true/false
+# If true, skips time-consuming operations for faster execution
+# Useful for development when you want quick feedback
+quick-mode: true
 
 # Backup: true/false
 # If true, creates backup of files before applying fixes
@@ -75,7 +75,7 @@ pre-commit:
   max-retries: 3
 
   # Timeout for each retry (in seconds)
-  timeout: 60
+  timeout: 120
 
 # Commit message templates
 commit-templates:

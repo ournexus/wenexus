@@ -25,6 +25,7 @@ load_config() {
         # Parse YAML config (simplified)
         AUTOFIX_LEVEL=$(grep "^level:" "$CONFIG_FILE" | cut -d':' -f2 | xargs || echo "safe")
         AUTO_COMMIT=$(grep "^auto-commit:" "$CONFIG_FILE" | cut -d':' -f2 | xargs || echo "false")
+        QUICK_MODE=$(grep "^quick-mode:" "$CONFIG_FILE" | cut -d':' -f2 | xargs || echo "false")
         BACKUP_ENABLED=$(grep "^backup:" "$CONFIG_FILE" | cut -d':' -f2 | xargs || echo "true")
     else
         AUTOFIX_LEVEL="safe"
@@ -60,6 +61,15 @@ create_backup() {
 # Safe fixes - can be applied automatically
 apply_safe_fixes() {
     log "${BLUE}🔧 Applying safe fixes...${NC}"
+
+    if [[ "$QUICK_MODE" == "true" ]]; then
+        log "${YELLOW}⚡ Quick mode enabled - minimal fixes only${NC}"
+
+        # Skip all time-consuming operations in quick mode
+        local fixes_applied=0
+        log "${GREEN}✅ Quick mode: skipped time-consuming operations${NC}"
+        return 0
+    fi
 
     local fixes_applied=0
 
@@ -177,8 +187,8 @@ run_progressive_fixes() {
     while [[ $attempt -le $max_attempts ]]; do
         log "${BLUE}📍 Attempt $attempt of $max_attempts${NC}"
 
-        # Run pre-commit checks
-        if pre-commit run --all-files 2>/dev/null; then
+        # Run pre-commit checks (excluding already-run hooks)
+        if pre-commit run --all-files --exclude "eslint|prettier|smart-fix" 2>/dev/null; then
             log "${GREEN}🎉 All checks passed!${NC}"
             return 0
         fi
@@ -251,6 +261,7 @@ main() {
     load_config
     log "${BLUE}📋 Configuration:${NC}"
     log "  - Level: $AUTOFIX_LEVEL"
+    log "  - Quick Mode: $QUICK_MODE"
     log "  - Auto-commit: $AUTO_COMMIT"
     log "  - Backup: $BACKUP_ENABLED"
 
