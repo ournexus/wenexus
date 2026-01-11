@@ -36,7 +36,7 @@ $ARGUMENTS.
   git branch -a > branch-list-before-cleanup.txt
 
   # Document current dependencies
-  npm list > dependencies-before-cleanup.txt
+  pnpm list > dependencies-before-cleanup.txt
   ```
 
 ## 2. Branch Management
@@ -403,12 +403,12 @@ $ARGUMENTS.
         - name: Setup Node.js
           uses: actions/setup-node@v3
         - name: Install dependencies
-          run: npm install
+          run: pnpm install
         - name: Run maintenance tasks
           run: |
             git fetch --all --prune
-            npm outdated
-            npm audit
+            pnpm outdated
+            pnpm audit
   EOF
   ```
 
@@ -440,7 +440,7 @@ $ARGUMENTS.
 - **Run full test suite**:
 
   ```bash
-  npm run test
+  pnpm run test
   ```
 
 - **Document maintenance performed**:
@@ -458,7 +458,7 @@ $ARGUMENTS.
   ## Results
   - Removed $(wc -l < branch-list-before-cleanup.txt) - $(wc -l < branch-list-after-cleanup.txt) branches
   - Repository size: $(git count-objects -v -H | grep 'size-pack')
-  - All tests passing: $(npm run test > /dev/null && echo "Yes" || echo "No")
+  - All tests passing: $(pnpm run test > /dev/null && echo "Yes" || echo "No")
 
   ## Next Steps
   - Schedule next maintenance for $(date -d "+30 days" +%Y-%m-%d)
