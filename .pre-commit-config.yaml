@@ -1,8 +1,12 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
+# WeNexus Global Pre-commit Configuration
+# This file contains only global/cross-cutting hooks.
+# Language-specific hooks are in their respective directories:
+#   - frontend/.pre-commit-config.yaml (JS/TS/React)
+#   - backend/java/.pre-commit-config.yaml (Java/Spring)
+#   - backend/python/.pre-commit-config.yaml (Python/FastAPI)
 
 repos:
-  # General code quality and formatting
+  # General code quality checks (all file types)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
@@ -22,84 +26,7 @@ repos:
       - id: detect-private-key
       - id: mixed-line-ending
 
-  # JavaScript/TypeScript/Node.js - Use local eslint
-  - repo: local
-    hooks:
-      - id: eslint
-        name: ESLint
-        entry: npx eslint --fix
-        language: system
-        files: \.(js|jsx|ts|tsx)$
-        types: [file]
-
-  # Prettier for code formatting - Use local prettier
-  - repo: local
-    hooks:
-      - id: prettier
-        name: Prettier
-        entry: npx prettier --write
-        language: system
-        files: \.(js|jsx|ts|tsx|json|css|scss|md|yml|yaml|html)$
-        exclude: |
-          (?x)^(
-            .*\.min\.(js|css)$|
-            .*\.bundle\.(js|css)$|
-            node_modules/.*|
-            dist/.*|
-            build/.*|
-            \.next/.*
-          )$
-
-  # Python formatting and linting (commented out for now)
-  # - repo: https://github.com/psf/black
-  #   rev: 23.12.1
-  #   hooks:
-  #     - id: black
-  #       files: \.py$
-  #       language_version: python3
-
-  # - repo: https://github.com/pycqa/isort
-  #   rev: 5.13.2
-  #   hooks:
-  #     - id: isort
-  #       files: \.py$
-  #       args: [--profile, black]
-
-  # - repo: https://github.com/pycqa/flake8
-  #   rev: 7.0.0
-  #   hooks:
-  #     - id: flake8
-  #       files: \.py$
-  #       args: [--max-line-length=88, --extend-ignore=E203,W503]
-
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.8.0
-  #   hooks:
-  #     - id: mypy
-  #       files: \.py$
-  #       additional_dependencies: [types-requests]
-  #       args: [--ignore-missing-imports]
-
-  # Java formatting with Google Java Format (commented out for now)
-  # - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  #   rev: v2.12.0
-  #   hooks:
-  #     - id: pretty-format-java
-  #       args: [--autofix]
-
-  # Markdown linting (commented out for now)
-  # - repo: https://github.com/igorshubovych/markdownlint-cli
-  #   rev: v0.39.0
-  #   hooks:
-  #     - id: markdownlint
-  #       args: [--fix]
-  #       exclude: |
-  #         (?x)^(
-  #           CHANGELOG\.md|
-  #           .*\.generated\.md$
-  #         )$
-
-  # Security checks (commented out for now)
+  # Security checks (temporarily disabled due to version incompatibility)
   # - repo: https://github.com/Yelp/detect-secrets
   #   rev: v1.4.0
   #   hooks:
@@ -112,17 +39,30 @@ repos:
   #           package-lock\.json$
   #         )$
 
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        args: [--fix, --config, .markdownlint.yaml]
+        exclude: |
+          (?x)^(
+            CHANGELOG\.md|
+            .*\.generated\.md$
+          )$
+
   # Conventional Commits
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.0.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
-        args: [optional-scope]
+        args: [feat, fix, docs, style, refactor, perf, test, ci, chore, build, revert]
 
-  # WeNexus Smart Fix - Run first to auto-fix common issues
+  # WeNexus global checks
   - repo: local
     hooks:
+      # WeNexus Smart Fix - Run first to auto-fix common issues
       - id: smart-fix
         name: WeNexus Smart Fix
         entry: tools/scripts/smart-fix.sh
@@ -131,27 +71,10 @@ repos:
         always_run: true
         stages: [pre-commit]
 
-  # WeNexus specific checks
-  - repo: local
-    hooks:
-      # Check for TODO comments in production code
-      - id: check-todos
-        name: Check for TODO/FIXME comments
-        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules .; then echo "❌ TODO/FIXME comments found in code. Please resolve before committing."; exit 1; fi'
-        language: system
-        pass_filenames: false
-
-      # Ensure all TypeScript files have proper exports
-      - id: check-typescript-exports
-        name: Check TypeScript exports
-        entry: 'bash -c "find apps packages -name \"*.ts\" -not -path \"./node_modules/*\" -not -path \"./.next/*\" -exec grep -L \"export\" {} \\; 2>/dev/null | while read file; do if [[ ! \"$file\" =~ \\.(d|test|spec)\\.ts$ ]]; then echo \"❌ TypeScript file without exports: $file\"; exit 1; fi; done"'
-        language: system
-        pass_filenames: false
-
-      # Check for WeNexus brand consistency
+      # Check for WeNexus brand consistency (all text files)
       - id: brand-consistency
         name: Check WeNexus brand consistency
-        entry: bash -c 'if grep -r -i "we-nexus\|wenexu[^s]" --include="*.md" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules .; then echo "❌ Inconsistent WeNexus branding found. Use \"WeNexus\" (capital W, capital N, no hyphen)"; exit 1; fi'
+        entry: bash -c 'if grep -r -i "we-nexus\|wenexu[^s]" --include="*.md" --include="*.ts" --include="*.tsx" --include="*.java" --include="*.py" --exclude-dir=node_modules --exclude-dir=.git .; then echo "❌ Inconsistent WeNexus branding found. Use \"WeNexus\" (capital W, capital N, no hyphen)"; exit 1; fi'
         language: system
         pass_filenames: false
 

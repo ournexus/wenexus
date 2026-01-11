@@ -1,0 +1,44 @@
+# Java Backend Pre-commit Configuration
+# Spring Boot / Maven specific hooks
+
+repos:
+  # Google Java Format
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.12.0
+    hooks:
+      - id: pretty-format-java
+        args: [--autofix]
+
+  # Checkstyle for code style
+  - repo: local
+    hooks:
+      - id: checkstyle
+        name: Checkstyle
+        entry: bash -c 'mvn checkstyle:check -q'
+        language: system
+        files: \.java$
+        pass_filenames: false
+
+      # Maven compile check
+      - id: maven-compile
+        name: Maven Compile Check
+        entry: bash -c 'mvn compile -q -DskipTests'
+        language: system
+        files: \.(java|xml)$
+        pass_filenames: false
+
+      # SpotBugs for bug detection
+      - id: spotbugs
+        name: SpotBugs
+        entry: bash -c 'mvn spotbugs:check -q'
+        language: system
+        files: \.java$
+        pass_filenames: false
+        stages: [pre-push]
+
+      # Check for TODO comments
+      - id: check-todos
+        name: Check for TODO/FIXME comments
+        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.java" .; then echo "❌ TODO/FIXME comments found. Please resolve before committing."; exit 1; fi'
+        language: system
+        pass_filenames: false

@@ -3,20 +3,15 @@
   "version": "1.0.0",
   "description": "The Consensus Amplifier - A platform for meaningful connections and understanding",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "services/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean",
-    "format": "prettier --write \"**/*.{js,ts,tsx,md,json}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,tsx,md,json}\"",
+    "frontend:dev": "pnpm --dir frontend dev",
+    "frontend:build": "pnpm --dir frontend build",
+    "frontend:lint": "pnpm --dir frontend lint",
+    "frontend:test": "pnpm --dir frontend test",
+    "backend:java:build": "mvn -f backend/java/pom.xml clean package",
+    "backend:java:test": "mvn -f backend/java/pom.xml test",
+    "backend:python:dev": "cd backend/python && uv run uvicorn src.main:app --reload",
+    "backend:python:test": "cd backend/python && uv run pytest",
     "prepare": "husky install",
     "precommit": "pre-commit run --all-files",
     "setup": "./tools/scripts/setup-dev.sh",
@@ -24,22 +19,12 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",
-    "@turbo/gen": "^1.10.12",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.48.0",
-    "eslint-config-next": "^14.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-import": "^2.29.0",
     "husky": "^8.0.3",
-    "pre-commit": "^1.2.2",
-    "prettier": "^3.0.3",
-    "turbo": "^1.10.12",
-    "typescript": "^5.2.2"
+    "pre-commit": "^1.2.2"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
-  "packageManager": "npm@9.8.1"
+  "packageManager": "pnpm@9.0.0"
 }

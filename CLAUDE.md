@@ -15,16 +15,33 @@ society, can finally connect, understand, and agree.
 
 ```
 wenexus/
-├── apps/                    # Frontend applications
-│   ├── web/                # Main web application (React + TypeScript)
-│   ├── mobile/             # Mobile application (React Native)
-│   └── admin/              # Admin dashboard
-├── services/               # Backend services
-│   ├── java-backend/       # Java microservices (Spring Boot)
-│   └── python-backend/     # Python services (FastAPI, AI/ML)
-├── packages/               # Shared libraries
+├── frontend/               # Frontend monorepo (npm workspaces + Turborepo)
+│   ├── apps/
+│   │   ├── web/           # Main web application (Next.js)
+│   │   ├── admin/         # Admin dashboard (Next.js)
+│   │   └── mobile/        # Mobile application (React Native)
+│   ├── packages/
+│   │   ├── ui/            # Shared UI components
+│   │   ├── shared/        # Common utilities and hooks
+│   │   ├── types/         # TypeScript type definitions
+│   │   └── utils/         # Utility functions
+│   └── .pre-commit-config.yaml  # Frontend-specific hooks
+│
+├── backend/                # Backend services
+│   ├── java/              # Java microservices (Spring Boot + Maven)
+│   │   ├── core-service/
+│   │   ├── user-service/
+│   │   ├── content-service/
+│   │   ├── consensus-service/
+│   │   └── .pre-commit-config.yaml  # Java-specific hooks
+│   └── python/            # Python services (FastAPI + AI/ML)
+│       ├── src/
+│       ├── tests/
+│       └── .pre-commit-config.yaml  # Python-specific hooks
+│
 ├── docs/                   # Documentation
-└── tools/                  # Development tools and scripts
+├── tools/                  # Development tools and scripts
+└── .pre-commit-config.yaml # Global hooks (YAML, secrets, commits)
 ```
 
 ### Technology Stack
@@ -35,7 +52,7 @@ wenexus/
 - **Mobile App**: React Native
 - **Admin Dashboard**: React with TypeScript
 - **Build Tool**: Turbo (monorepo management)
-- **Package Manager**: npm (v9.8.1+)
+- **Package Manager**: pnpm (v9.0.0+)
 - **Node.js**: >=18.0.0
 
 #### Backend Services
@@ -98,16 +115,19 @@ cd wenexus
 # Install root dependencies
 npm install
 
+# Set up frontend
+cd frontend
+pnpm install
+cd ..
+
 # Set up Java backend
-cd services/java-backend
+cd backend/java
 mvn clean install -DskipTests
 cd ../..
 
-# Set up Python backend
-cd services/python-backend
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e ".[dev]"
+# Set up Python backend (using uv)
+cd backend/python
+uv sync --dev
 cd ../..
 
 # Install pre-commit hooks
@@ -121,16 +141,19 @@ pre-commit install --hook-type commit-msg
 ### Root Level Commands
 
 ```bash
-# Development
-npm run dev              # Start all development servers
-npm run build            # Build all applications
-npm run test             # Run all tests
-npm run lint             # Lint all code
-npm run typecheck        # Type check all TypeScript
+# Frontend
+npm run frontend:dev     # Start frontend dev server
+npm run frontend:build   # Build all frontend apps
+npm run frontend:lint    # Lint frontend code
+npm run frontend:test    # Run frontend tests
+
+# Backend
+npm run backend:java:build   # Build Java services
+npm run backend:java:test    # Run Java tests
+npm run backend:python:dev   # Start Python dev server
+npm run backend:python:test  # Run Python tests
 
 # Code Quality
-npm run format           # Format code with Prettier
-npm run format:check     # Check code formatting
 npm run precommit        # Run pre-commit hooks manually
 
 # Setup
@@ -140,26 +163,34 @@ npm run setup:precommit  # Setup pre-commit hooks only
 
 ### Service-Specific Commands
 
+**Frontend**
+
+```bash
+cd frontend
+pnpm dev                # Start all apps in dev mode
+pnpm build              # Build all apps
+pnpm lint               # Lint all code
+pnpm typecheck          # Type check TypeScript
+```
+
 **Java Backend**
 
 ```bash
-cd services/java-backend
+cd backend/java
 mvn clean install       # Build all services
-mvn spring-boot:run      # Run services
+mvn spring-boot:run -pl core-service  # Run specific service
 mvn test                # Run tests
 ```
 
 **Python Backend**
 
 ```bash
-cd services/python-backend
-source venv/bin/activate # Activate virtual environment
-uvicorn src.main:app --reload  # Start FastAPI server
-pytest                  # Run tests
-black .                 # Format code
-isort .                 # Sort imports
-flake8 .                # Lint code
-mypy src/               # Type checking
+cd backend/python
+uv run uvicorn src.main:app --reload  # Start FastAPI server
+uv run pytest                         # Run tests
+uv run ruff format .                  # Format code
+uv run ruff check --fix .             # Lint code
+uv run mypy src/                      # Type checking
 ```
 
 ## Code Quality & Standards
@@ -220,9 +251,9 @@ api, ai, auth, ui, docs
 
 Create these files from examples (done automatically by setup script):
 
-- `apps/web/.env.local`
-- `services/java-backend/.env`
-- `services/python-backend/.env`
+- `frontend/apps/web/.env.local`
+- `backend/java/.env`
+- `backend/python/.env`
 
 ### Key Environment Variables
 
@@ -237,20 +268,25 @@ Create these files from examples (done automatically by setup script):
 ### Frontend Testing
 
 ```bash
+cd frontend
+
+# Run all tests
+pnpm test
+
 # Run tests for specific app
-npm run test --workspace=@wenexus/web
-npm run test --workspace=@wenexus/mobile
-npm run test --workspace=@wenexus/admin
+pnpm --filter @wenexus/web test
+pnpm --filter @wenexus/mobile test
+pnpm --filter @wenexus/admin test
 ```
 
 ### Backend Testing
 
 ```bash
 # Java tests
-cd services/java-backend && mvn test
+cd backend/java && mvn test
 
 # Python tests
-cd services/python-backend && pytest
+cd backend/python && uv run pytest
 ```
 
 ### Test Coverage Requirements
@@ -337,7 +373,14 @@ commit process:
 
 #### 2. Pre-Commit Quality Checks
 
-The project includes **WeNexus Smart Fix** - an intelligent system that:
+The project uses **layered pre-commit hooks**:
+
+| Layer | Config Location | Hooks |
+|-------|-----------------|-------|
+| **Global** | `.pre-commit-config.yaml` | YAML/JSON validation, secrets detection, conventional commits |
+| **Frontend** | `frontend/.pre-commit-config.yaml` | ESLint, Prettier, TypeScript |
+| **Java** | `backend/java/.pre-commit-config.yaml` | Google Java Format, Checkstyle |
+| **Python** | `backend/python/.pre-commit-config.yaml` | Black, isort, flake8, mypy |
 
 ```bash
 # Automatic workflow when committing:
@@ -345,49 +388,12 @@ git add .
 git commit -m "feat(web): add user authentication"
 
 # Smart Fix automatically:
-# 1. Runs pre-commit hooks
-# 2. Applies safe fixes (formatting, linting)
-# 3. Prompts for interactive fixes (TODO removal, missing exports)
-# 4. Reports manual fixes needed (type errors, security issues)
-# 5. Retries commit after fixes
+# 1. Formats staged files (Prettier/Black/isort)
+# 2. Re-stages fixed files
+# 3. Runs pre-commit hooks
 ```
 
-#### 3. Fix Categories
-
-**🔧 Safe Fixes (Applied Automatically)**
-
-- Prettier code formatting
-- ESLint auto-fixable rules
-- Trailing whitespace removal
-- End-of-file newlines
-- Import organization
-
-**🤔 Interactive Fixes (Require Confirmation)**
-
-- TODO/FIXME comment removal
-- Missing TypeScript exports
-- Brand consistency (WeNexus naming)
-- Package.json validation
-
-**🚨 Manual Fixes (Developer Action Required)**
-
-- TypeScript compilation errors
-- Security vulnerabilities
-- Logic errors requiring business context
-- Missing test coverage
-
-#### 4. Smart Fix Configuration
-
-Customize behavior in `.autofix.yaml`:
-
-```yaml
-# Fix levels: safe, interactive, aggressive
-level: safe # Default: safe auto-fixes only
-auto-commit: false # Require manual commit review
-backup: true # Create backups before fixing
-```
-
-#### 5. Review Standards
+#### 3. Review Standards
 
 Before committing, ensure:
 
@@ -398,7 +404,7 @@ Before committing, ensure:
 - [ ] **Security**: No sensitive data or vulnerabilities
 - [ ] **Accessibility**: UI changes meet accessibility standards
 
-#### 6. Commit Message Standards
+#### 4. Commit Message Standards
 
 Follow Conventional Commits format:
 
@@ -418,7 +424,7 @@ test(user): add integration tests for signup
 **Valid Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `chore` **Valid
 Scopes**: `web`, `mobile`, `admin`, `api`, `ai`, `auth`, `ui`, `docs`
 
-#### 7. Manual Override (Emergency Only)
+#### 5. Manual Override (Emergency Only)
 
 ```bash
 # Skip all hooks (use sparingly)
@@ -426,12 +432,9 @@ git commit --no-verify -m "emergency: critical hotfix"
 
 # Run smart fix manually
 ./tools/scripts/smart-fix.sh
-
-# Check what would be fixed
-./tools/scripts/smart-fix.sh --dry-run
 ```
 
-#### 8. Post-Commit Verification
+#### 6. Post-Commit Verification
 
 After committing:
 
@@ -440,7 +443,7 @@ After committing:
 - [ ] Confirm no breaking changes introduced
 - [ ] Update related documentation if needed
 
-#### 9. Code Review Guidelines
+#### 7. Code Review Guidelines
 
 When reviewing PRs:
 
@@ -451,23 +454,18 @@ When reviewing PRs:
 - **Testing**: Adequate test coverage?
 - **Documentation**: Clear and up-to-date?
 
-#### 10. Troubleshooting Smart Fix
+#### 8. Troubleshooting Pre-commit
 
 ```bash
-# Check smart fix logs
-cat .autofix.log
+# Clean and reinstall hooks
+pre-commit clean && pre-commit install
 
-# Restore from backup
-ls .autofix-backup/
-cp -r .autofix-backup/[timestamp]/* .
+# Run hooks manually on all files
+pre-commit run --all-files
 
-# Disable temporarily
-mv .autofix.yaml .autofix.yaml.disabled
+# Run specific hook
+pre-commit run eslint --all-files
 ```
-
-**Remember**: The Smart Fix system is designed to maintain code quality while improving developer
-experience. Trust the automated fixes for formatting and style, but always review interactive and
-manual fix suggestions carefully.
 
 Remember: WeNexus aims to connect minds and build consensus - every line of code should reflect this
 mission of bringing people together through technology.

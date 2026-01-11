@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Testing
+coverage/
+
+# Turbo
+.turbo/
+
+# Environment
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

@@ -49,12 +49,12 @@ pr_template:
 
 # 范围映射
 scope_mapping:
-  apps/web: web
-  apps/mobile: mobile
-  apps/admin: admin
-  services/java-backend: api
-  services/python-backend: ai
-  packages/shared: shared
+  frontend/apps/web: web
+  frontend/apps/mobile: mobile
+  frontend/apps/admin: admin
+  frontend/packages/: shared
+  backend/java: api
+  backend/python: ai
   docs/: docs
 
 # 安全设置

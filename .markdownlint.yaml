@@ -33,3 +33,6 @@ MD048:
 
 # MD040/fenced-code-language - Fenced code blocks should have a language specified
 MD040: false # Allow code blocks without language specification
+
+# MD036/no-emphasis-as-heading - Emphasis used instead of a heading
+MD036: false # Allow emphasis for section titles in documentation
