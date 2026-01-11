@@ -1,0 +1,11 @@
+/**
+ * @module MODULE_NAME
+ * @description 一句话描述模块用途
+ * @depends 依赖的其他模块（如：@wenexus/types, @wenexus/utils）
+ * @consumers 被哪些模块使用（如：apps/web, apps/admin）
+ */
+
+// Export all public APIs
+export * from './components';
+export * from './hooks';
+export * from './utils';

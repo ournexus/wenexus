@@ -284,6 +284,7 @@ pre-commit install
    ```
 
 3. **Node.js依赖问题**
+
    ```bash
    # 清理node_modules并重新安装
    rm -rf node_modules package-lock.json

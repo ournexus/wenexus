@@ -105,7 +105,7 @@ Each technology stack has its own pre-commit configuration:
 | **Global** | `.pre-commit-config.yaml` | YAML/JSON validation, secrets detection, conventional commits |
 | **Frontend** | `frontend/.pre-commit-config.yaml` | ESLint, Prettier, TypeScript |
 | **Java** | `backend/java/.pre-commit-config.yaml` | Google Java Format, Checkstyle, SpotBugs |
-| **Python** | `backend/python/.pre-commit-config.yaml` | Black, isort, flake8, mypy, Ruff |
+| **Python** | `backend/python/.pre-commit-config.yaml` | Ruff, mypy |
 
 ## Contributing
 

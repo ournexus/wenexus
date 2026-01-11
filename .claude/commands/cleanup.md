@@ -84,6 +84,7 @@ $ARGUMENTS.
   ```
 
 - **Clean up stale local branches (based on age)**:
+
   ```bash
   # List branches older than 3 months for review
   echo "Stale branches (older than 3 months):"
@@ -133,117 +134,119 @@ $ARGUMENTS.
 
 ## 1. Dependency Management
 
-### Principles:
+### Principles
 
 - Keep dependencies updated but stable
 - Follow semantic versioning for updates
 - Document all dependency changes
 - Regularly audit for security vulnerabilities
 
-### Actions:
+### Actions
 
 - **Audit dependencies for security issues**:
 
   ```bash
-  npm audit
+  pnpm audit
   ```
 
 - **Clean pnpm cache to recover disk space**:
 
   ```bash
-  npm cache clean --force
+  pnpm store prune
   ```
 
 - **Check for outdated dependencies**:
 
   ```bash
-  npm outdated
+  pnpm outdated
 
   # Generate a report of outdated dependencies
-  npm outdated --format json > outdated-deps-$(date +%Y%m%d).json
+  pnpm outdated --format json > outdated-deps-$(date +%Y%m%d).json
   ```
 
 - **Update dependencies strategically**:
 
   ```bash
   # Update patch versions (safest)
-  npm update
+  pnpm update
 
   # Test after each significant update
-  npm test
+  pnpm test
   ```
 
 - **Clean reinstall when needed**:
 
   ```bash
   rm -rf node_modules
-  npm install
+  pnpm install
   ```
 
 - **Check for duplicate dependencies**:
+
   ```bash
-  npm dedupe
+  pnpm dedupe
   ```
 
 ## 2. Code Quality Maintenance
 
-### Principles:
+### Principles
 
 - Maintain consistent code style
 - Eliminate dead code regularly
 - Keep test coverage high
 - Document code changes and decisions
 
-### Actions:
+### Actions
 
 - **Run comprehensive code quality checks**:
 
   ```bash
   # Run linting
-  npm run lint
+  pnpm run lint
 
   # Run formatting
-  npm run format
+  pnpm run format
 
   # Fix auto-fixable issues
-  npm run lint:fix
+  pnpm run lint:fix
   ```
 
 - **Run tests to ensure everything works**:
 
   ```bash
   # Run unit tests
-  npm run test
+  pnpm run test
 
   # Run with coverage report
-  npm run test:coverage
+  pnpm run test:coverage
 
   # Run end-to-end tests if available
-  npm run test:e2e
+  pnpm run test:e2e
   ```
 
 - **Find unused dependencies**:
 
   ```bash
-  npx depcheck
+  pnpm dlx depcheck
   ```
 
 - **Find unused code and dead code paths**:
+
   ```bash
   # Using ESLint plugin if configured
-  npm run lint -- --rule 'no-unused-vars: error'
+  pnpm run lint -- --rule 'no-unused-vars: error'
   ```
 
 ## 3. Git Repository Optimization
 
-### Principles:
+### Principles
 
 - Keep repository size manageable
 - Maintain clean history
 - Optimize for performance
 - Preserve data integrity
 
-### Actions:
+### Actions
 
 - **Garbage collection to optimize repository**:
 
@@ -275,6 +278,7 @@ $ARGUMENTS.
   ```
 
 - **Find large files in history**:
+
   ```bash
   # Requires git-filter-repo tool
   git filter-repo --analyze
@@ -282,14 +286,14 @@ $ARGUMENTS.
 
 ## 4. Documentation Maintenance
 
-### Principles:
+### Principles
 
 - Keep documentation in sync with code
 - Document maintenance procedures
 - Update changelogs and release notes
 - Maintain clear architecture documentation
 
-### Actions:
+### Actions
 
 - **Update README and documentation**:
 
@@ -306,44 +310,46 @@ $ARGUMENTS.
   ```
 
 - **Document maintenance performed**:
+
   ```bash
   echo "Repository maintenance performed on $(date)" >> MAINTENANCE_LOG.md
   ```
 
 ## 5. Performance Optimization
 
-### Principles:
+### Principles
 
 - Regularly measure and improve performance
 - Identify and fix bottlenecks
 - Monitor resource usage
 - Document performance changes
 
-### Actions:
+### Actions
 
 - **Run performance tests if available**:
 
   ```bash
   # If you have performance tests
-  npm run test:performance
+  pnpm run test:performance
   ```
 
 - **Check bundle sizes**:
+
   ```bash
   # If using webpack bundle analyzer or similar
-  npm run analyze-bundle
+  pnpm run analyze-bundle
   ```
 
 # AUTOMATION & CONTINUOUS MAINTENANCE
 
-## Principles:
+## Principles
 
 - Automate routine maintenance
 - Schedule regular cleanup tasks
 - Monitor repository health
 - Integrate maintenance into workflow
 
-## Actions:
+## Actions
 
 - **Create a maintenance script**:
 
@@ -358,7 +364,7 @@ $ARGUMENTS.
   echo "Cleaning merged branches...";
   git branch --merged main | grep -v "^\*\|main\|master\|develop" | xargs -n 1 git branch -d;
   echo "Running tests...";
-  npm test;
+  pnpm test;
   echo "Maintenance complete!";
   EOF
 
@@ -374,13 +380,14 @@ $ARGUMENTS.
   #!/bin/bash
   echo "Running post-merge maintenance...";
   git remote prune origin;
-  npm install;
+  pnpm install;
   EOF
 
   chmod +x .git/hooks/post-merge
   ```
 
 - **Add maintenance to CI/CD pipeline**:
+
   ```bash
   # Example GitHub Action workflow - save to .github/workflows/maintenance.yml
   cat > .github/workflows/maintenance.yml << 'EOF'
@@ -407,14 +414,14 @@ $ARGUMENTS.
 
 # VERIFICATION & COMPLETION
 
-## Principles:
+## Principles
 
 - Always verify after maintenance
 - Document what was done
 - Communicate changes to team
 - Learn and improve process
 
-## Actions:
+## Actions
 
 - **Verify repository status**:
 
@@ -460,6 +467,7 @@ $ARGUMENTS.
   ```
 
 - **Communicate with team**:
+
   ```bash
   # If using GitHub, create an issue with the maintenance report
   gh issue create --title "Maintenance Report $(date +%Y-%m-%d)" --body-file MAINTENANCE_REPORT.md --label "maintenance"

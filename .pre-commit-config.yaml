@@ -74,8 +74,16 @@ repos:
       # Check for WeNexus brand consistency (all text files)
       - id: brand-consistency
         name: Check WeNexus brand consistency
-        entry: bash -c 'if grep -r -i "we-nexus\|wenexu[^s]" --include="*.md" --include="*.ts" --include="*.tsx" --include="*.java" --include="*.py" --exclude-dir=node_modules --exclude-dir=.git .; then echo "❌ Inconsistent WeNexus branding found. Use \"WeNexus\" (capital W, capital N, no hyphen)"; exit 1; fi'
-        language: system
+        entry: tools/scripts/check-brand-consistency.sh
+        language: script
+        pass_filenames: false
+
+      # Check module documentation (index.ts, __init__.py, package.json)
+      - id: check-module-docs
+        name: Check module documentation
+        entry: tools/scripts/check-module-docs.sh
+        language: script
+        files: (index\.ts|__init__\.py|package\.json)$
         pass_filenames: false
 
 # Global configuration

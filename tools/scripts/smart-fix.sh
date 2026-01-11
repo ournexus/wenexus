@@ -42,8 +42,8 @@ apply_fixes() {
     if [[ -n "$python_files" ]]; then
         log "  🐍 Formatting Python files..."
         cd "$PROJECT_ROOT/backend/python"
-        echo "$python_files" | sed 's|^backend/python/||' | xargs -I {} black "{}" 2>/dev/null || true
-        echo "$python_files" | sed 's|^backend/python/||' | xargs -I {} isort "{}" 2>/dev/null || true
+        echo "$python_files" | sed 's|^backend/python/||' | xargs -I {} uv run ruff format "{}" 2>/dev/null || true
+        echo "$python_files" | sed 's|^backend/python/||' | xargs -I {} uv run ruff check --fix "{}" 2>/dev/null || true
         cd "$PROJECT_ROOT"
     fi
 
