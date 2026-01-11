@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   NODE_VERSION: '18'
@@ -14,27 +14,34 @@ env:
 jobs:
   test-frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
       - name: Install dependencies
-        run: npm ci
-      
+        run: pnpm install --frozen-lockfile
+
       - name: Run linting
-        run: npm run lint
-      
+        run: pnpm lint
+
       - name: Run type checking
-        run: npm run typecheck
-      
+        run: pnpm typecheck
+
       - name: Run tests
-        run: npm run test
-      
+        run: pnpm test
+
       - name: Build applications
-        run: npm run build
+        run: pnpm build
 
   test-java-backend:
     runs-on: ubuntu-latest
@@ -44,19 +51,19 @@ jobs:
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
-      
+
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      
+
       - name: Run tests
-        run: cd services/java-backend && mvn clean test
-      
+        run: cd backend/java && mvn clean test
+
       - name: Build services
-        run: cd services/java-backend && mvn clean package -DskipTests
+        run: cd backend/java && mvn clean package -DskipTests
 
   test-python-backend:
     runs-on: ubuntu-latest
@@ -65,34 +72,36 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install dependencies
         run: |
-          cd services/python-backend
-          pip install -e ".[dev]"
-      
+          cd backend/python
+          uv sync --dev
+
       - name: Run linting
         run: |
-          cd services/python-backend
-          black --check .
-          isort --check-only .
-          flake8 .
-      
+          cd backend/python
+          uv run ruff check .
+          uv run ruff format --check .
+
       - name: Run type checking
         run: |
-          cd services/python-backend
-          mypy src/
-      
+          cd backend/python
+          uv run mypy src/
+
       - name: Run tests
         run: |
-          cd services/python-backend
-          pytest
+          cd backend/python
+          uv run pytest
 
   security-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -100,33 +109,35 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
-      
+
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
   deploy-staging:
-    needs: [test-frontend, test-java-backend, test-python-backend, security-scan]
+    needs:
+      [test-frontend, test-java-backend, test-python-backend, security-scan]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     environment: staging
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Deploy to staging
         run: |
           echo "Deploying to staging environment"
           # Add deployment steps here
 
   deploy-production:
-    needs: [test-frontend, test-java-backend, test-python-backend, security-scan]
+    needs:
+      [test-frontend, test-java-backend, test-python-backend, security-scan]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Deploy to production
         run: |
           echo "Deploying to production environment"

@@ -1,0 +1,38 @@
+{
+  "name": "@wenexus/admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "clean": "rm -rf .next out"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@wenexus/ui": "workspace:*",
+    "@wenexus/types": "workspace:*",
+    "@wenexus/utils": "workspace:*",
+    "zustand": "^4.4.0",
+    "react-query": "^3.39.0",
+    "axios": "^1.6.0",
+    "react-hook-form": "^7.47.0",
+    "react-router-dom": "^6.17.0",
+    "tailwindcss": "^3.3.0",
+    "recharts": "^2.8.0",
+    "react-table": "^7.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.2.0",
+    "eslint": "^8.48.0",
+    "eslint-config-next": "^14.0.0"
+  }
+}

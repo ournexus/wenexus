@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wenexus/ui": ["packages/ui/src"],
+      "@wenexus/ui/*": ["packages/ui/src/*"],
+      "@wenexus/shared": ["packages/shared/src"],
+      "@wenexus/shared/*": ["packages/shared/src/*"],
+      "@wenexus/types": ["packages/types/src"],
+      "@wenexus/types/*": ["packages/types/src/*"],
+      "@wenexus/utils": ["packages/utils/src"],
+      "@wenexus/utils/*": ["packages/utils/src/*"]
+    }
+  },
+  "exclude": ["node_modules"],
+  "include": ["**/*.ts", "**/*.tsx"]
+}

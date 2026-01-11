@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WeNexus - 共识放大器</title>
+
+    <!-- TailwindCSS 3.0+ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Source+Serif+Pro:wght@300;400;600;700&display=swap');
+
+      :root {
+        --deep-space: #0b1426;
+        --dark-blue: #1e3a8a;
+        --bright-blue: #3b82f6;
+        --connect-blue: #60a5fa;
+        --star-gold: #fef08a;
+        --warm-gold: #f59e0b;
+        --empathy-pink: #f0abfc;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--deep-space) 0%,
+          #1a1a2e 50%,
+          var(--dark-blue) 100%
+        );
+        color: #ffffff;
+        overflow-x: hidden;
+      }
+
+      .serif {
+        font-family: 'Source Serif Pro', serif;
+      }
+
+      .constellation-layout {
+        position: relative;
+      }
+
+      .star-node {
+        position: relative;
+        backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        border-radius: 24px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .star-node:hover {
+        border-color: var(--star-gold);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow:
+          0 20px 40px rgba(254, 240, 138, 0.2),
+          0 0 0 1px rgba(254, 240, 138, 0.1);
+      }
+
+      .consensus-glow {
+        background: radial-gradient(
+          circle at center,
+          rgba(254, 240, 138, 0.15) 0%,
+          rgba(96, 165, 250, 0.1) 50%,
+          transparent 100%
+        );
+      }
+
+      .hero-text {
+        font-size: clamp(3rem, 8vw, 8rem);
+        font-weight: 700;
+        line-height: 0.9;
+        background: linear-gradient(
+          135deg,
+          var(--star-gold) 0%,
+          var(--connect-blue) 50%,
+          var(--bright-blue) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .dialogue-bubble {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          rgba(96, 165, 250, 0.1) 100%
+        );
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        position: relative;
+      }
+
+      .dialogue-bubble::before {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: inherit;
+        border-radius: 0 0 20px 0;
+        transform: rotate(-45deg);
+        left: -10px;
+        top: 20px;
+      }
+
+      .connection-line {
+        stroke: var(--connect-blue);
+        stroke-width: 2;
+        stroke-dasharray: 8, 4;
+        animation: flow 3s linear infinite;
+        opacity: 0.6;
+      }
+
+      @keyframes flow {
+        0% {
+          stroke-dashoffset: 0;
+        }
+        100% {
+          stroke-dashoffset: 12;
+        }
+      }
+
+      .breathing {
+        animation: breathe 4s ease-in-out infinite;
+      }
+
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.7;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 1;
+        }
+      }
+
+      .expert-card {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.05) 0%,
+          rgba(96, 165, 250, 0.05) 100%
+        );
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .expert-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(
+          90deg,
+          var(--star-gold) 0%,
+          var(--connect-blue) 50%,
+          var(--empathy-pink) 100%
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .expert-card:hover::before {
+        opacity: 1;
+      }
+
+      .consensus-flow {
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--connect-blue) 20%,
+          var(--star-gold) 50%,
+          var(--connect-blue) 80%,
+          transparent 100%
+        );
+        height: 2px;
+        animation: consensusFlow 4s ease-in-out infinite;
+      }
+
+      @keyframes consensusFlow {
+        0%,
+        100% {
+          width: 0%;
+        }
+        50% {
+          width: 100%;
+        }
+      }
+
+      .understanding-gradient {
+        background: linear-gradient(
+          45deg,
+          rgba(254, 240, 138, 0.1) 0%,
+          rgba(96, 165, 250, 0.1) 50%,
+          rgba(240, 171, 252, 0.1) 100%
+        );
+      }
+
+      .floating-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        animation: float 8s ease-in-out infinite;
+        z-index: -1;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-30px) rotate(180deg);
+        }
+      }
+
+      .starfield {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+      }
+
+      .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: var(--star-gold);
+        border-radius: 50%;
+        animation: twinkle 6s infinite;
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.5);
+        }
+      }
+
+      .progress-ring {
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring-circle {
+        stroke: var(--connect-blue);
+        stroke-width: 4;
+        stroke-linecap: round;
+        fill: transparent;
+        stroke-dasharray: 283;
+        stroke-dashoffset: 283;
+        transition: stroke-dashoffset 2s ease-in-out;
+      }
+
+      .empathy-pulse {
+        animation: empathyPulse 3s ease-in-out infinite;
+      }
+
+      @keyframes empathyPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(240, 171, 252, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 20px rgba(240, 171, 252, 0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Starfield Background -->
+    <div class="starfield" id="starfield"></div>
+
+    <!-- Floating Orbs -->
+    <div
+      class="floating-orb w-96 h-96 top-20 left-10"
+      style="
+        background: radial-gradient(
+          circle,
+          rgba(254, 240, 138, 0.15),
+          transparent
+        );
+        animation-delay: 0s;
+      "
+    ></div>
+    <div
+      class="floating-orb w-80 h-80 top-1/2 right-20"
+      style="
+        background: radial-gradient(
+          circle,
+          rgba(96, 165, 250, 0.1),
+          transparent
+        );
+        animation-delay: -3s;
+      "
+    ></div>
+    <div
+      class="floating-orb w-72 h-72 bottom-20 left-1/3"
+      style="
+        background: radial-gradient(
+          circle,
+          rgba(240, 171, 252, 0.1),
+          transparent
+        );
+        animation-delay: -6s;
+      "
+    ></div>
+
+    <!-- Navigation -->
+    <nav
+      class="fixed top-0 w-full z-50 backdrop-blur-md bg-black/20 border-b border-white/10"
+    >
+      <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-4">
+            <!-- WeNexus Logo -->
+            <div class="breathing">
+              <svg width="36" height="36" viewBox="0 0 64 64">
+                <g stroke="#60A5FA" stroke-width="1.5" fill="none">
+                  <line x1="32" y1="12" x2="32" y2="52" />
+                  <line x1="12" y1="32" x2="52" y2="32" />
+                  <line x1="20" y1="20" x2="44" y2="44" />
+                  <line x1="44" y1="20" x2="20" y2="44" />
+                </g>
+                <g fill="#FEF08A">
+                  <circle cx="32" cy="12" r="3" />
+                  <circle cx="52" cy="32" r="3" />
+                  <circle cx="32" cy="52" r="3" />
+                  <circle cx="12" y="32" r="3" />
+                </g>
+                <circle cx="32" cy="32" r="2" fill="#60A5FA" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-xl font-bold">WeNexus</div>
+              <div class="text-xs text-gray-400">共识放大器</div>
+            </div>
+          </div>
+          <div class="hidden md:flex space-x-8 text-sm">
+            <a href="#starmap" class="hover:text-yellow-300 transition-colors"
+              >星图探索</a
+            >
+            <a href="#experts" class="hover:text-yellow-300 transition-colors"
+              >专家对话</a
+            >
+            <a href="#consensus" class="hover:text-yellow-300 transition-colors"
+              >共识构建</a
+            >
+            <a href="#action" class="hover:text-yellow-300 transition-colors"
+              >行动指南</a
+            >
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section
+      class="min-h-screen flex items-center justify-center relative overflow-hidden pt-20"
+    >
+      <div class="container mx-auto px-6 text-center">
+        <div class="max-w-4xl mx-auto">
+          <div class="serif text-lg text-gray-300 mb-4">
+            在分歧中寻找理解，在理解中构建共识
+          </div>
+          <h1 class="hero-text mb-8">连接不同的心</h1>
+          <div
+            class="text-xl md:text-2xl mb-12 text-gray-300 max-w-3xl mx-auto leading-relaxed"
+          >
+            WeNexus 不仅是一个平台，更是一座桥梁<br />
+            <span class="text-yellow-300"
+              >连接分歧的观点，构建深度的理解，放大人性的共识</span
+            >
+          </div>
+
+          <!-- Call to Action -->
+          <div
+            class="flex flex-col md:flex-row gap-6 justify-center items-center mb-16"
+          >
+            <button
+              class="px-8 py-4 bg-gradient-to-r from-yellow-300 to-blue-400 text-black font-semibold rounded-full hover:shadow-lg hover:shadow-yellow-300/30 transition-all duration-300 transform hover:scale-105"
+            >
+              开始星图探索
+            </button>
+            <button
+              class="px-8 py-4 border border-blue-400 text-blue-400 rounded-full hover:bg-blue-400 hover:text-black transition-all duration-300"
+            >
+              了解工作原理
+            </button>
+          </div>
+
+          <!-- Journey Preview -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+            <div class="opacity-70 hover:opacity-100 transition-opacity">
+              <div
+                class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-500/20 flex items-center justify-center"
+              >
+                <i data-lucide="search" class="w-6 h-6 text-blue-400"></i>
+              </div>
+              <div class="text-sm text-gray-300">探索观点</div>
+            </div>
+            <div class="opacity-70 hover:opacity-100 transition-opacity">
+              <div
+                class="w-12 h-12 mx-auto mb-3 rounded-full bg-yellow-500/20 flex items-center justify-center"
+              >
+                <i data-lucide="lightbulb" class="w-6 h-6 text-yellow-400"></i>
+              </div>
+              <div class="text-sm text-gray-300">深度理解</div>
+            </div>
+            <div class="opacity-70 hover:opacity-100 transition-opacity">
+              <div
+                class="w-12 h-12 mx-auto mb-3 rounded-full bg-pink-500/20 flex items-center justify-center"
+              >
+                <i data-lucide="heart" class="w-6 h-6 text-pink-400"></i>
+              </div>
+              <div class="text-sm text-gray-300">产生共情</div>
+            </div>
+            <div class="opacity-70 hover:opacity-100 transition-opacity">
+              <div
+                class="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500/20 flex items-center justify-center"
+              >
+                <i data-lucide="arrow-right" class="w-6 h-6 text-green-400"></i>
+              </div>
+              <div class="text-sm text-gray-300">指导行动</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll Indicator -->
+      <div
+        class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce"
+      >
+        <i data-lucide="chevron-down" class="w-6 h-6 text-yellow-300"></i>
+      </div>
+    </section>
+
+    <!-- Core Concept: Dual Axis -->
+    <section class="py-20" id="concept">
+      <div class="container mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-6xl font-bold mb-6">
+            理智的<span class="text-yellow-300">经线</span><br />
+            共情的<span class="text-pink-300">纬线</span>
+          </h2>
+          <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+            我们相信，真正的理解需要逻辑与情感的平衡。在WeNexus，每个话题都从两个维度展开：
+            理性分析的深度，和人性体验的温度。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+          <!-- Logic Axis -->
+          <div class="star-node p-8">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mr-4"
+              >
+                <i data-lucide="brain" class="w-6 h-6 text-blue-400"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-blue-300">理智的经线</h3>
+                <p class="text-sm text-gray-400">Rational Meridian</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>数据驱动的客观分析</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>多维度的逻辑推理</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>结构化的知识呈现</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>AI专家的理性视角</span>
+              </div>
+            </div>
+
+            <!-- Sample Logic Content -->
+            <div
+              class="mt-6 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20"
+            >
+              <div class="text-sm font-semibold text-blue-300 mb-2">
+                示例：教育内卷分析
+              </div>
+              <div class="text-sm text-gray-300">
+                • 投入成本：家庭教育支出占比 32%<br />
+                • 效果评估：学习效率递减规律<br />
+                • 社会影响：阶层固化风险分析
+              </div>
+            </div>
+          </div>
+
+          <!-- Empathy Axis -->
+          <div class="star-node p-8 empathy-pulse">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 rounded-full bg-pink-500/20 flex items-center justify-center mr-4"
+              >
+                <i data-lucide="heart" class="w-6 h-6 text-pink-400"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-pink-300">共情的纬线</h3>
+                <p class="text-sm text-gray-400">Empathy Parallel</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-pink-400 rounded-full"></div>
+                <span>真实的个人故事</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-pink-400 rounded-full"></div>
+                <span>情感体验的分享</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-pink-400 rounded-full"></div>
+                <span>价值观的深度理解</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-pink-400 rounded-full"></div>
+                <span>人性化的解决视角</span>
+              </div>
+            </div>
+
+            <!-- Sample Empathy Content -->
+            <div
+              class="mt-6 p-4 bg-pink-500/10 rounded-lg border border-pink-500/20"
+            >
+              <div class="text-sm font-semibold text-pink-300 mb-2">
+                示例：家长心声
+              </div>
+              <div class="text-sm text-gray-300 italic">
+                "看着孩子每天写作业到深夜，我心疼，但又怕他落后...
+                我们这代人经历过竞争的残酷，不想孩子重蹈覆辙，
+                可现在的路好像更窄了。"
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Expert Constellation -->
+    <section class="py-20" id="experts">
+      <div class="container mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-6xl font-bold mb-6">
+            专家<span class="text-yellow-300">星座</span>
+          </h2>
+          <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+            在WeNexus的星空中，每一位AI专家都是独特的星星。
+            他们来自不同的领域，拥有不同的视角，却在对话中闪烁着智慧的光芒。
+          </p>
+        </div>
+
+        <!-- Interactive Star Map -->
+        <div class="relative max-w-6xl mx-auto h-96 mb-16">
+          <svg class="w-full h-full" viewBox="0 0 800 400">
+            <!-- Connection Lines -->
+            <g class="connection-lines">
+              <line
+                x1="150"
+                y1="100"
+                x2="400"
+                y2="200"
+                class="connection-line"
+              />
+              <line
+                x1="650"
+                y1="120"
+                x2="400"
+                y2="200"
+                class="connection-line"
+              />
+              <line
+                x1="200"
+                y1="320"
+                x2="400"
+                y2="200"
+                class="connection-line"
+              />
+              <line
+                x1="600"
+                y1="300"
+                x2="400"
+                y2="200"
+                class="connection-line"
+              />
+              <line
+                x1="150"
+                y1="100"
+                x2="650"
+                y2="120"
+                class="connection-line"
+                opacity="0.3"
+              />
+              <line
+                x1="200"
+                y1="320"
+                x2="600"
+                y2="300"
+                class="connection-line"
+                opacity="0.3"
+              />
+            </g>
+
+            <!-- Expert Nodes -->
+            <g class="expert-nodes">
+              <!-- Socrates -->
+              <circle
+                cx="150"
+                cy="100"
+                r="20"
+                fill="rgba(254, 240, 138, 0.3)"
+                stroke="#FEF08A"
+                stroke-width="2"
+                class="breathing"
+              />
+              <text
+                x="150"
+                y="75"
+                text-anchor="middle"
+                class="text-sm fill-yellow-300 font-semibold"
+              >
+                苏格拉底
+              </text>
+              <text
+                x="150"
+                y="130"
+                text-anchor="middle"
+                class="text-xs fill-gray-400"
+              >
+                哲学思辨
+              </text>
+
+              <!-- Einstein -->
+              <circle
+                cx="650"
+                cy="120"
+                r="18"
+                fill="rgba(96, 165, 250, 0.3)"
+                stroke="#60A5FA"
+                stroke-width="2"
+                class="breathing"
+                style="animation-delay: 1s"
+              />
+              <text
+                x="650"
+                y="95"
+                text-anchor="middle"
+                class="text-sm fill-blue-300 font-semibold"
+              >
+                爱因斯坦
+              </text>
+              <text
+                x="650"
+                y="150"
+                text-anchor="middle"
+                class="text-xs fill-gray-400"
+              >
+                科学理性
+              </text>
+
+              <!-- Life Expert -->
+              <circle
+                cx="200"
+                cy="320"
+                r="16"
+                fill="rgba(240, 171, 252, 0.3)"
+                stroke="#F0ABFC"
+                stroke-width="2"
+                class="breathing"
+                style="animation-delay: 2s"
+              />
+              <text
+                x="200"
+                y="295"
+                text-anchor="middle"
+                class="text-sm fill-pink-300 font-semibold"
+              >
+                菜场大妈
+              </text>
+              <text
+                x="200"
+                y="350"
+                text-anchor="middle"
+                class="text-xs fill-gray-400"
+              >
+                生活智慧
+              </text>
+
+              <!-- Economist -->
+              <circle
+                cx="600"
+                cy="300"
+                r="17"
+                fill="rgba(34, 197, 94, 0.3)"
+                stroke="#22C55E"
+                stroke-width="2"
+                class="breathing"
+                style="animation-delay: 3s"
+              />
+              <text
+                x="600"
+                y="275"
+                text-anchor="middle"
+                class="text-sm fill-green-300 font-semibold"
+              >
+                经济学家
+              </text>
+              <text
+                x="600"
+                y="330"
+                text-anchor="middle"
+                class="text-xs fill-gray-400"
+              >
+                市场分析
+              </text>
+
+              <!-- Consensus Center -->
+              <circle
+                cx="400"
+                cy="200"
+                r="12"
+                fill="rgba(255, 255, 255, 0.8)"
+                stroke="#ffffff"
+                stroke-width="3"
+                class="breathing consensus-glow"
+                style="animation-delay: 0.5s"
+              />
+              <text
+                x="400"
+                y="235"
+                text-anchor="middle"
+                class="text-sm fill-white font-bold"
+              >
+                共识中心
+              </text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Expert Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Socrates Card -->
+          <div class="expert-card p-6">
+            <div
+              class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center"
+            >
+              <i data-lucide="brain" class="w-8 h-8 text-yellow-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-center mb-2">苏格拉底</h3>
+            <p class="text-sm text-gray-400 text-center mb-4">哲学思辨专家</p>
+            <div class="dialogue-bubble p-4 text-sm">
+              <p class="italic">
+                "真正的智慧在于知道自己的无知。让我们通过提问来探索真理的本质。"
+              </p>
+            </div>
+            <div class="mt-4 text-xs text-gray-500">
+              <div class="flex justify-between">
+                <span>擅长领域：</span>
+                <span>逻辑推理、价值观探讨</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Einstein Card -->
+          <div class="expert-card p-6">
+            <div
+              class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center"
+            >
+              <i data-lucide="atom" class="w-8 h-8 text-blue-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-center mb-2">爱因斯坦</h3>
+            <p class="text-sm text-gray-400 text-center mb-4">科学理性专家</p>
+            <div class="dialogue-bubble p-4 text-sm">
+              <p class="italic">
+                "想象力比知识更重要。让我们用科学的方法来理解这个复杂的世界。"
+              </p>
+            </div>
+            <div class="mt-4 text-xs text-gray-500">
+              <div class="flex justify-between">
+                <span>擅长领域：</span>
+                <span>因果分析、系统思维</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Life Expert Card -->
+          <div class="expert-card p-6">
+            <div
+              class="w-16 h-16 mx-auto mb-4 rounded-full bg-pink-500/20 flex items-center justify-center"
+            >
+              <i data-lucide="shopping-cart" class="w-8 h-8 text-pink-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-center mb-2">菜场大妈</h3>
+            <p class="text-sm text-gray-400 text-center mb-4">生活智慧专家</p>
+            <div class="dialogue-bubble p-4 text-sm">
+              <p class="italic">
+                "理论再好，过不好日子有啥用？咱们得从柴米油盐的角度想问题。"
+              </p>
+            </div>
+            <div class="mt-4 text-xs text-gray-500">
+              <div class="flex justify-between">
+                <span>擅长领域：</span>
+                <span>实用建议、人情世故</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Economist Card -->
+          <div class="expert-card p-6">
+            <div
+              class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center"
+            >
+              <i data-lucide="trending-up" class="w-8 h-8 text-green-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-center mb-2">经济学家</h3>
+            <p class="text-sm text-gray-400 text-center mb-4">市场分析专家</p>
+            <div class="dialogue-bubble p-4 text-sm">
+              <p class="italic">
+                "一切行为背后都有激励机制。让我们分析成本效益和市场规律。"
+              </p>
+            </div>
+            <div class="mt-4 text-xs text-gray-500">
+              <div class="flex justify-between">
+                <span>擅长领域：</span>
+                <span>投入产出、激励机制</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Consensus Building Process -->
+    <section class="py-20" id="consensus">
+      <div class="container mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-6xl font-bold mb-6">
+            共识<span class="text-yellow-300">构建</span>过程
+          </h2>
+          <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+            从分歧到理解，从理解到共识，从共识到行动。
+            这是一个渐进的过程，需要耐心、智慧和同理心。
+          </p>
+        </div>
+
+        <!-- Process Flow -->
+        <div class="max-w-4xl mx-auto">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <!-- Step 1: Exploration -->
+            <div class="text-center">
+              <div
+                class="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-500/20 flex items-center justify-center relative"
+              >
+                <i data-lucide="compass" class="w-10 h-10 text-blue-400"></i>
+                <div
+                  class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold"
+                >
+                  1
+                </div>
+              </div>
+              <h3 class="text-xl font-bold mb-3">探索分歧</h3>
+              <p class="text-gray-300 text-sm mb-4">
+                在星图中发现不同的观点和立场，理解分歧的根源和各方的关切。
+              </p>
+              <!-- Mini Progress -->
+              <div class="w-full bg-gray-700 rounded-full h-2">
+                <div class="consensus-flow rounded-full h-2"></div>
+              </div>
+            </div>
+
+            <!-- Step 2: Understanding -->
+            <div class="text-center">
+              <div
+                class="w-20 h-20 mx-auto mb-6 rounded-full bg-yellow-500/20 flex items-center justify-center relative"
+              >
+                <i
+                  data-lucide="lightbulb"
+                  class="w-10 h-10 text-yellow-400"
+                ></i>
+                <div
+                  class="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold"
+                >
+                  2
+                </div>
+              </div>
+              <h3 class="text-xl font-bold mb-3">深度理解</h3>
+              <p class="text-gray-300 text-sm mb-4">
+                与AI专家对话，从多个维度分析问题，理解每个观点背后的逻辑和情感。
+              </p>
+              <!-- Mini Progress -->
+              <div class="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  class="consensus-flow rounded-full h-2"
+                  style="animation-delay: 1s"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Step 3: Action -->
+            <div class="text-center">
+              <div
+                class="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center relative"
+              >
+                <i data-lucide="target" class="w-10 h-10 text-green-400"></i>
+                <div
+                  class="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold"
+                >
+                  3
+                </div>
+              </div>
+              <h3 class="text-xl font-bold mb-3">指导行动</h3>
+              <p class="text-gray-300 text-sm mb-4">
+                获得具体的沟通策略和行动建议，在现实中进行建设性的对话。
+              </p>
+              <!-- Mini Progress -->
+              <div class="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  class="consensus-flow rounded-full h-2"
+                  style="animation-delay: 2s"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Example -->
+          <div class="star-node p-8 understanding-gradient">
+            <div class="flex items-center mb-6">
+              <i data-lucide="users" class="w-6 h-6 text-yellow-400 mr-3"></i>
+              <h3 class="text-2xl font-bold">实时案例：教育内卷讨论</h3>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <!-- Consensus Meter -->
+              <div>
+                <div class="flex justify-between items-center mb-4">
+                  <span class="text-lg font-semibold">共识收敛度</span>
+                  <span class="text-2xl font-bold text-yellow-400">87%</span>
+                </div>
+
+                <!-- Circular Progress -->
+                <div class="flex justify-center mb-6">
+                  <svg class="w-32 h-32 progress-ring">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="45"
+                      class="progress-ring-circle"
+                      style="stroke-dashoffset: 37"
+                    ></circle>
+                  </svg>
+                </div>
+
+                <!-- Key Insights -->
+                <div class="space-y-3">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span class="text-sm">都认同孩子健康成长的重要性</span>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                    <span class="text-sm">对教育资源分配有不同看法</span>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+                    <span class="text-sm">需要平衡竞争与合作的关系</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dialogue Preview -->
+              <div class="space-y-4">
+                <div class="dialogue-bubble p-4 ml-8">
+                  <div class="flex items-center mb-2">
+                    <div
+                      class="w-6 h-6 bg-yellow-500/30 rounded-full flex items-center justify-center mr-2"
+                    >
+                      <span class="text-xs">苏</span>
+                    </div>
+                    <span class="text-sm font-semibold">苏格拉底</span>
+                  </div>
+                  <p class="text-sm">
+                    "我们是否应该先问：什么是真正好的教育？"
+                  </p>
+                </div>
+
+                <div class="dialogue-bubble p-4 mr-8">
+                  <div class="flex items-center mb-2">
+                    <div
+                      class="w-6 h-6 bg-pink-500/30 rounded-full flex items-center justify-center mr-2"
+                    >
+                      <span class="text-xs">妈</span>
+                    </div>
+                    <span class="text-sm font-semibold">菜场大妈</span>
+                  </div>
+                  <p class="text-sm">
+                    "孩子能快乐学习，身体健康，这就是好教育。"
+                  </p>
+                </div>
+
+                <div class="dialogue-bubble p-4 ml-8">
+                  <div class="flex items-center mb-2">
+                    <div
+                      class="w-6 h-6 bg-blue-500/30 rounded-full flex items-center justify-center mr-2"
+                    >
+                      <span class="text-xs">爱</span>
+                    </div>
+                    <span class="text-sm font-semibold">爱因斯坦</span>
+                  </div>
+                  <p class="text-sm">
+                    "教育应该培养独立思考的能力，而不是应试技巧。"
+                  </p>
+                </div>
+
+                <!-- Emerging Consensus -->
+                <div
+                  class="mt-6 p-4 bg-green-500/10 rounded-lg border border-green-500/20"
+                >
+                  <div class="flex items-center mb-2">
+                    <i
+                      data-lucide="lightbulb"
+                      class="w-4 h-4 text-green-400 mr-2"
+                    ></i>
+                    <span class="text-sm font-semibold text-green-300"
+                      >正在形成的共识</span
+                    >
+                  </div>
+                  <p class="text-sm text-gray-300">
+                    优质教育应该平衡知识传授与能力培养，注重孩子的身心健康，
+                    避免过度竞争，培养独立思考和解决问题的能力。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-20" id="action">
+      <div class="container mx-auto px-6 text-center">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-4xl md:text-6xl font-bold mb-8">
+            开始你的<span class="text-yellow-300">共识</span>之旅
+          </h2>
+          <p class="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
+            在WeNexus，每一个对话都可能成为理解的起点，
+            每一份理解都可能成为改变的开始。
+            让我们一起，用理性和情感编织更美好的未来。
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div class="star-node p-6 text-center">
+              <i
+                data-lucide="search"
+                class="w-12 h-12 text-blue-400 mx-auto mb-4"
+              ></i>
+              <h3 class="text-xl font-bold mb-3">探索话题</h3>
+              <p class="text-gray-300 text-sm mb-4">
+                浏览热门话题，发现感兴趣的讨论
+              </p>
+              <button
+                class="px-6 py-2 border border-blue-400 text-blue-400 rounded-full text-sm hover:bg-blue-400 hover:text-black transition-all"
+              >
+                开始探索
+              </button>
+            </div>
+
+            <div class="star-node p-6 text-center">
+              <i
+                data-lucide="message-circle"
+                class="w-12 h-12 text-yellow-400 mx-auto mb-4"
+              ></i>
+              <h3 class="text-xl font-bold mb-3">专家对话</h3>
+              <p class="text-gray-300 text-sm mb-4">
+                与AI专家深度交流，获得多维分析
+              </p>
+              <button
+                class="px-6 py-2 bg-gradient-to-r from-yellow-300 to-blue-400 text-black rounded-full text-sm font-semibold hover:shadow-lg transition-all"
+              >
+                开始对话
+              </button>
+            </div>
+
+            <div class="star-node p-6 text-center">
+              <i
+                data-lucide="heart-handshake"
+                class="w-12 h-12 text-pink-400 mx-auto mb-4"
+              ></i>
+              <h3 class="text-xl font-bold mb-3">构建共识</h3>
+              <p class="text-gray-300 text-sm mb-4">
+                参与共识构建，获得行动指导
+              </p>
+              <button
+                class="px-6 py-2 border border-pink-400 text-pink-400 rounded-full text-sm hover:bg-pink-400 hover:text-black transition-all"
+              >
+                加入讨论
+              </button>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <button
+              class="px-12 py-4 bg-gradient-to-r from-yellow-300 via-blue-400 to-pink-400 text-black font-bold rounded-full text-lg hover:shadow-2xl hover:shadow-yellow-300/30 transition-all duration-300 transform hover:scale-105"
+            >
+              加入 WeNexus 社区
+            </button>
+            <p class="text-sm text-gray-400 mt-4">
+              连接不同的心，构建共同的未来
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-16 border-t border-white/10">
+      <div class="container mx-auto px-6">
+        <div class="text-center">
+          <div class="flex justify-center items-center mb-8">
+            <div class="breathing mr-4">
+              <svg width="48" height="48" viewBox="0 0 64 64">
+                <g stroke="#60A5FA" stroke-width="1.5" fill="none">
+                  <line x1="32" y1="12" x2="32" y2="52" />
+                  <line x1="12" y1="32" x2="52" y2="32" />
+                  <line x1="20" y1="20" x2="44" y2="44" />
+                  <line x1="44" y1="20" x2="20" y2="44" />
+                </g>
+                <g fill="#FEF08A">
+                  <circle cx="32" cy="12" r="3" />
+                  <circle cx="52" cy="32" r="3" />
+                  <circle cx="32" cy="52" r="3" />
+                  <circle cx="12" cy="32" r="3" />
+                </g>
+                <circle cx="32" cy="32" r="2" fill="#60A5FA" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-3xl font-bold">WeNexus</div>
+              <div class="text-sm text-gray-400">共识放大器</div>
+            </div>
+          </div>
+
+          <p class="text-lg mb-8 serif text-gray-300">
+            "理解是对话的开始，行动是连接的完成。"
+          </p>
+
+          <div class="flex justify-center space-x-8 mb-8 text-sm">
+            <a href="#" class="hover:text-yellow-300 transition-colors"
+              >关于我们</a
+            >
+            <a href="#" class="hover:text-yellow-300 transition-colors"
+              >使用指南</a
+            >
+            <a href="#" class="hover:text-yellow-300 transition-colors"
+              >社区规范</a
+            >
+            <a href="#" class="hover:text-yellow-300 transition-colors"
+              >隐私政策</a
+            >
+          </div>
+
+          <div class="text-sm text-gray-500">
+            © 2024 WeNexus. 连接分歧，构建理解，放大共识。
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // Create starfield
+      function createStarfield() {
+        const starfield = document.getElementById('starfield');
+        const numberOfStars = 150;
+
+        for (let i = 0; i < numberOfStars; i++) {
+          const star = document.createElement('div');
+          star.className = 'star';
+          star.style.left = Math.random() * 100 + '%';
+          star.style.top = Math.random() * 100 + '%';
+          star.style.animationDelay = Math.random() * 6 + 's';
+          star.style.animationDuration = 3 + Math.random() * 3 + 's';
+          starfield.appendChild(star);
+        }
+      }
+
+      // Smooth scrolling
+      function initSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+              target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }
+          });
+        });
+      }
+
+      // Parallax effects
+      function handleScroll() {
+        const scrolled = window.pageYOffset;
+        const rate = scrolled * -0.3;
+
+        // Move floating orbs
+        document.querySelectorAll('.floating-orb').forEach((orb, index) => {
+          const speed = 0.1 + index * 0.05;
+          orb.style.transform = `translateY(${scrolled * speed}px)`;
+        });
+
+        // Parallax starfield
+        const starfield = document.getElementById('starfield');
+        if (starfield) {
+          starfield.style.transform = `translateY(${rate}px)`;
+        }
+      }
+
+      // Intersection Observer for animations
+      function initAnimations() {
+        const observer = new IntersectionObserver(
+          entries => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+              }
+            });
+          },
+          { threshold: 0.1 }
+        );
+
+        // Observe star nodes
+        document.querySelectorAll('.star-node').forEach((node, index) => {
+          node.style.opacity = '0';
+          node.style.transform = 'translateY(50px)';
+          node.style.transition = `all 0.8s ease ${index * 0.2}s`;
+          observer.observe(node);
+        });
+
+        // Observe expert cards
+        document.querySelectorAll('.expert-card').forEach((card, index) => {
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(30px)';
+          card.style.transition = `all 0.6s ease ${index * 0.1}s`;
+          observer.observe(card);
+        });
+      }
+
+      // Interactive effects for expert nodes
+      function initInteractiveEffects() {
+        // SVG expert nodes hover effects
+        document.querySelectorAll('.expert-nodes circle').forEach(circle => {
+          circle.addEventListener('mouseenter', function () {
+            this.style.transform = 'scale(1.2)';
+            this.style.filter = 'drop-shadow(0 0 10px currentColor)';
+          });
+
+          circle.addEventListener('mouseleave', function () {
+            this.style.transform = 'scale(1)';
+            this.style.filter = 'none';
+          });
+        });
+
+        // Connection lines activation
+        document.querySelectorAll('.connection-line').forEach(line => {
+          const originalOpacity = line.style.opacity || 0.6;
+
+          line.addEventListener('mouseenter', function () {
+            this.style.opacity = '1';
+            this.style.strokeWidth = '3';
+          });
+
+          line.addEventListener('mouseleave', function () {
+            this.style.opacity = originalOpacity;
+            this.style.strokeWidth = '2';
+          });
+        });
+      }
+
+      // Initialize everything
+      document.addEventListener('DOMContentLoaded', function () {
+        createStarfield();
+        initSmoothScroll();
+        initAnimations();
+        initInteractiveEffects();
+
+        // Add scroll listener
+        window.addEventListener('scroll', handleScroll);
+
+        // Add resize listener for responsive adjustments
+        window.addEventListener('resize', function () {
+          // Adjust starfield if needed
+          if (window.innerWidth < 768) {
+            document.querySelectorAll('.star').forEach(star => {
+              if (Math.random() > 0.5) {
+                star.style.display = 'none';
+              }
+            });
+          }
+        });
+      });
+
+      // Add keyboard navigation support
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Tab') {
+          document.body.classList.add('keyboard-navigation');
+        }
+      });
+
+      document.addEventListener('mousedown', function () {
+        document.body.classList.remove('keyboard-navigation');
+      });
+    </script>
+  </body>
+</html>

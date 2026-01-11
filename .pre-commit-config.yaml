@@ -1,0 +1,100 @@
+# WeNexus Global Pre-commit Configuration
+# This file contains only global/cross-cutting hooks.
+# Language-specific hooks are in their respective directories:
+#   - frontend/.pre-commit-config.yaml (JS/TS/React)
+#   - backend/java/.pre-commit-config.yaml (Java/Spring)
+#   - backend/python/.pre-commit-config.yaml (Python/FastAPI)
+
+repos:
+  # General code quality checks (all file types)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: detect-private-key
+      - id: mixed-line-ending
+
+  # Security checks (temporarily disabled due to version incompatibility)
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.4.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       args: [--baseline, .secrets.baseline]
+  #       exclude: |
+  #         (?x)^(
+  #           .*\.lock$|
+  #           .*\.min\.(js|css)$|
+  #           package-lock\.json$
+  #         )$
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        args: [--fix, --config, .markdownlint.yaml]
+        exclude: |
+          (?x)^(
+            CHANGELOG\.md|
+            .*\.generated\.md$
+          )$
+
+  # Conventional Commits
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, ci, chore, build, revert]
+
+  # WeNexus global checks
+  - repo: local
+    hooks:
+      # WeNexus Smart Fix - Run first to auto-fix common issues
+      - id: smart-fix
+        name: WeNexus Smart Fix
+        entry: tools/scripts/smart-fix.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      # Check for WeNexus brand consistency (all text files)
+      - id: brand-consistency
+        name: Check WeNexus brand consistency
+        entry: tools/scripts/check-brand-consistency.sh
+        language: script
+        pass_filenames: false
+
+      # Check module documentation (index.ts, __init__.py, package.json)
+      - id: check-module-docs
+        name: Check module documentation
+        entry: tools/scripts/check-module-docs.sh
+        language: script
+        files: (index\.ts|__init__\.py|package\.json)$
+        pass_filenames: false
+
+# Global configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

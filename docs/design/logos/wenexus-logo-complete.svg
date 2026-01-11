@@ -1,0 +1,85 @@
+<!-- WeNexus Logo - Stellar Nexus (Complete Version) -->
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient for depth -->
+    <radialGradient id="starGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FEF08A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:1" />
+    </radialGradient>
+
+    <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#0B1426" stroke="#1E3A8A" stroke-width="2" opacity="0.9"/>
+
+  <!-- Connection lines - creating the nexus -->
+  <g stroke="#3B82F6" stroke-width="2" fill="none" opacity="0.8">
+    <!-- Primary cross -->
+    <line x1="64" y1="24" x2="64" y2="104" />
+    <line x1="24" y1="64" x2="104" y2="64" />
+    <!-- Diagonal connections -->
+    <line x1="35" y1="35" x2="93" y2="93" />
+    <line x1="93" y1="35" x2="35" y2="93" />
+  </g>
+
+  <!-- Secondary connection web -->
+  <g stroke="#3B82F6" stroke-width="1" fill="none" opacity="0.4">
+    <line x1="64" y1="24" x2="104" y2="64" />
+    <line x1="104" y1="64" x2="64" y2="104" />
+    <line x1="64" y1="104" x2="24" y2="64" />
+    <line x1="24" y1="64" x2="64" y2="24" />
+  </g>
+
+  <!-- Four main stars representing different perspectives -->
+  <g filter="url(#glow)">
+    <!-- North Star - Logic/Reason -->
+    <circle cx="64" cy="24" r="5" fill="url(#starGradient)" />
+    <!-- East Star - Innovation -->
+    <circle cx="104" cy="64" r="5" fill="url(#starGradient)" />
+    <!-- South Star - Empathy -->
+    <circle cx="64" cy="104" r="5" fill="url(#starGradient)" />
+    <!-- West Star - Tradition -->
+    <circle cx="24" cy="64" r="5" fill="url(#starGradient)" />
+  </g>
+
+  <!-- Central nexus point - where consensus forms -->
+  <circle cx="64" cy="64" r="4" fill="url(#centerGradient)" filter="url(#glow)" />
+
+  <!-- Star light effects -->
+  <g stroke="#FEF08A" stroke-width="1" fill="none" opacity="0.8">
+    <!-- North star rays -->
+    <path d="M64,19 L64,29 M59,24 L69,24" />
+    <path d="M61,21 L67,27 M67,21 L61,27" />
+
+    <!-- East star rays -->
+    <path d="M99,64 L109,64 M104,59 L104,69" />
+    <path d="M101,61 L107,67 M107,61 L101,67" />
+
+    <!-- South star rays -->
+    <path d="M64,99 L64,109 M59,104 L69,104" />
+    <path d="M61,101 L67,107 M67,101 L61,107" />
+
+    <!-- West star rays -->
+    <path d="M19,64 L29,64 M24,59 L24,69" />
+    <path d="M21,61 L27,67 M27,61 L21,67" />
+  </g>
+
+  <!-- Subtle orbital paths -->
+  <g stroke="#3B82F6" stroke-width="0.5" fill="none" opacity="0.3" stroke-dasharray="2,2">
+    <circle cx="64" cy="64" r="40" />
+    <circle cx="64" cy="64" r="56" />
+  </g>
+</svg>

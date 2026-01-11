@@ -1,0 +1,9 @@
+"""
+MODULE_NAME - 一句话描述模块用途
+
+依赖: 列出依赖的其他模块（如：model, repository）
+被依赖: 列出使用此模块的其他模块（如：facade, app）
+"""
+
+from .core import *
+from .utils import *
