@@ -1,471 +1,146 @@
-# WeNexus - The Consensus Amplifier
+# CLAUDE.md
 
-## Project Overview
+项目开发指南和 AI 辅助编程最佳实践。
 
-WeNexus is a comprehensive platform designed to bridge information gaps and create meaningful
-connections in an age of information overload and polarizing echo chambers. This is a monorepo
-containing all WeNexus applications and services.
+## 应用架构
 
-**Key Concept**: WeNexus is not just another network; it's a Nexus - a central point where We, as a
-society, can finally connect, understand, and agree.
+**Monorepo 结构**：全栈应用，包含 Java 后端（Spring Boot 微服务）、Python 后端（FastAPI + AI/ML）和 Next.js/React Native 前端。
 
-## Architecture
+### 核心概念
 
-### Monorepo Structure
+- **技术方案文档**：`docs/technical` - 架构决策和实现方案
+- **前端共享包**：`frontend/packages` - UI 组件、类型定义、工具函数
+- **后端服务**：`backend/java` + `backend/python` - 微服务架构
+
+### 目录结构
 
 ```
 wenexus/
-├── frontend/               # Frontend monorepo (npm workspaces + Turborepo)
+├── frontend/                     # 前端 Monorepo (pnpm + Turborepo)
 │   ├── apps/
-│   │   ├── web/           # Main web application (Next.js)
-│   │   ├── admin/         # Admin dashboard (Next.js)
-│   │   └── mobile/        # Mobile application (React Native)
-│   ├── packages/
-│   │   ├── ui/            # Shared UI components
-│   │   ├── shared/        # Common utilities and hooks
-│   │   ├── types/         # TypeScript type definitions
-│   │   └── utils/         # Utility functions
-│   └── .pre-commit-config.yaml  # Frontend-specific hooks
+│   │   ├── web/                 # 主 Web 应用 (Next.js)
+│   │   ├── admin/               # 管理后台 (Next.js)
+│   │   └── mobile/              # 移动端 (React Native)
+│   └── packages/
+│       ├── ui/                  # 共享 UI 组件
+│       ├── types/               # TypeScript 类型定义
+│       ├── utils/               # 工具函数
+│       └── shared/              # 通用 hooks 和配置
 │
-├── backend/                # Backend services
-│   ├── java/              # Java microservices (Spring Boot + Maven)
-│   │   ├── core-service/
-│   │   ├── user-service/
-│   │   ├── content-service/
-│   │   ├── consensus-service/
-│   │   └── .pre-commit-config.yaml  # Java-specific hooks
-│   └── python/            # Python services (FastAPI + AI/ML)
-│       ├── src/
-│       ├── tests/
-│       └── .pre-commit-config.yaml  # Python-specific hooks
+├── backend/                      # 后端服务
+│   ├── java/                    # Java 微服务 (Spring Boot + Maven)
+│   │   ├── core-service/        # 核心业务逻辑
+│   │   ├── user-service/        # 用户管理
+│   │   ├── content-service/     # 内容管理
+│   │   └── consensus-service/   # 共识算法
+│   └── python/                  # Python 服务 (FastAPI + AI/ML)
+│       └── src/
+│           ├── facade/          # API 网关层
+│           ├── app/             # 应用层
+│           ├── service/         # 领域服务层
+│           ├── repository/      # 数据持久层
+│           └── model/           # 数据模型
 │
-├── docs/                   # Documentation
-├── tools/                  # Development tools and scripts
-└── .pre-commit-config.yaml # Global hooks (YAML, secrets, commits)
+└── docs/                         # 文档
+    └── technical/               # 技术方案和架构决策
 ```
 
-### Technology Stack
+### 架构原则
 
-#### Frontend
+- **分层清晰**：
+  - `facade` → `app` → `service` → `repository`
+  - 依赖方向单向，不反向依赖
+- **配置与实例分离**：配置管理 what to create，实例池管理 when to create
+- **契约先行**：API 实现必须严格遵循类型定义
 
-- **Web App**: React with TypeScript, Next.js
-- **Mobile App**: React Native
-- **Admin Dashboard**: React with TypeScript
-- **Build Tool**: Turbo (monorepo management)
-- **Package Manager**: pnpm (v9.0.0+)
-- **Node.js**: >=18.0.0
+## 常用开发命令
 
-#### Backend Services
-
-**Java Backend (Spring Boot Microservices)**
-
-- **Framework**: Spring Boot 3.1.5, Spring Cloud 2022.0.4
-- **Java Version**: 17+
-- **Build Tool**: Maven
-- **Services**:
-  - `core-service`: Core business logic
-  - `user-service`: User management
-  - `content-service`: Content management
-  - `consensus-service`: Consensus building algorithms
-
-**Python Backend (AI/ML Services)**
-
-- **Framework**: FastAPI
-- **Python Version**: 3.11+
-- **Key Dependencies**:
-  - AI/ML: transformers, torch, sentence-transformers, langchain, openai
-  - Data: numpy, pandas, scikit-learn
-  - Database: SQLAlchemy, asyncpg, alembic
-  - Async: uvicorn, celery, redis
-  - Auth: python-jose, passlib
-  - Monitoring: structlog, prometheus-client
-
-## Development Environment
-
-### Prerequisites
-
-- Node.js 18+
-- Java 17+
-- Python 3.11+
-- Maven (for Java services)
-- npm 8.0.0+
-
-### Quick Setup
-
-```bash
-# Clone the repository
-git clone git@github.com:your-org/wenexus.git
-cd wenexus
-
-# Run the setup script
-./tools/scripts/setup-dev.sh
-
-# This script will:
-# 1. Install Node.js dependencies
-# 2. Set up Java backend (mvn clean install)
-# 3. Set up Python backend (virtual environment + dependencies)
-# 4. Install pre-commit hooks
-# 5. Create environment files
-# 6. Build shared packages
-```
-
-### Manual Setup
-
-```bash
-# Install root dependencies
-npm install
-
-# Set up frontend
-cd frontend
-pnpm install
-cd ..
-
-# Set up Java backend
-cd backend/java
-mvn clean install -DskipTests
-cd ../..
-
-# Set up Python backend (using uv)
-cd backend/python
-uv sync --dev
-cd ../..
-
-# Install pre-commit hooks
-npx husky install
-pre-commit install
-pre-commit install --hook-type commit-msg
-```
-
-## Development Commands
-
-### Root Level Commands
-
-```bash
-# Frontend
-npm run frontend:dev     # Start frontend dev server
-npm run frontend:build   # Build all frontend apps
-npm run frontend:lint    # Lint frontend code
-npm run frontend:test    # Run frontend tests
-
-# Backend
-npm run backend:java:build   # Build Java services
-npm run backend:java:test    # Run Java tests
-npm run backend:python:dev   # Start Python dev server
-npm run backend:python:test  # Run Python tests
-
-# Code Quality
-npm run precommit        # Run pre-commit hooks manually
-
-# Setup
-npm run setup            # Full development setup
-npm run setup:precommit  # Setup pre-commit hooks only
-```
-
-### Service-Specific Commands
-
-**Frontend**
+### 前端开发
 
 ```bash
 cd frontend
-pnpm dev                # Start all apps in dev mode
-pnpm build              # Build all apps
-pnpm lint               # Lint all code
-pnpm typecheck          # Type check TypeScript
+pnpm install                     # 安装依赖
+pnpm dev                         # 启动开发服务器
+pnpm build                       # 构建生产版本
+pnpm lint                        # 代码检查
+pnpm typecheck                   # 类型检查
 ```
 
-**Java Backend**
+### Java 后端
 
 ```bash
 cd backend/java
-mvn clean install       # Build all services
-mvn spring-boot:run -pl core-service  # Run specific service
-mvn test                # Run tests
+mvn clean install                # 构建所有服务
+mvn spring-boot:run -pl core-service  # 启动指定服务
+mvn test                         # 运行测试
 ```
 
-**Python Backend**
+### Python 后端
 
 ```bash
 cd backend/python
-uv run uvicorn src.main:app --reload  # Start FastAPI server
-uv run pytest                         # Run tests
-uv run ruff format .                  # Format code
-uv run ruff check --fix .             # Lint code
-uv run mypy src/                      # Type checking
+uv sync --dev                    # 安装依赖
+uv run uvicorn src.main:app --reload  # 启动开发服务器
+uv run pytest                    # 运行测试
+uv run ruff format .             # 格式化代码
+uv run ruff check --fix .        # 代码检查
 ```
 
-## Code Quality & Standards
-
-### Pre-commit Hooks
-
-The project uses comprehensive pre-commit hooks for code quality:
-
-- **Code Formatting**: Prettier (JS/TS), Black (Python)
-- **Linting**: ESLint (JS/TS), Flake8 (Python)
-- **Type Checking**: TypeScript, MyPy
-- **Security**: Secret detection, dependency scanning
-- **Brand Consistency**: WeNexus naming conventions
-- **Custom Checks**: No console.log in production, TypeScript exports
-
-### Code Style
-
-**TypeScript/JavaScript**
-
-- Prettier formatting (2 spaces, 80 chars, single quotes)
-- ESLint with Next.js and TypeScript rules
-- No `console.log` in production code
-- Explicit return types for exported functions
-
-**Python**
-
-- Black formatting (88 characters)
-- isort for import sorting
-- flake8 for linting
-- mypy for type checking
-- All public functions must have type annotations
-
-**Java**
-
-- Google Java Format
-- Google Java Style Guide
-- Javadoc for all public methods
-- Optional for nullable values
-
-### Commit Convention
-
-Uses Conventional Commits:
-
-```
-<type>(<scope>): <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Types**: feat, fix, docs, style, refactor, perf, test, ci, chore **Scopes**: web, mobile, admin,
-api, ai, auth, ui, docs
-
-## Environment Configuration
-
-### Environment Files
-
-Create these files from examples (done automatically by setup script):
-
-- `frontend/apps/web/.env.local`
-- `backend/java/.env`
-- `backend/python/.env`
-
-### Key Environment Variables
-
-- Database connections (PostgreSQL)
-- Redis configuration
-- API keys (OpenAI, etc.)
-- JWT secrets
-- Service URLs
-
-## Testing
-
-### Frontend Testing
+### 代码质量
 
 ```bash
-cd frontend
-
-# Run all tests
-pnpm test
-
-# Run tests for specific app
-pnpm --filter @wenexus/web test
-pnpm --filter @wenexus/mobile test
-pnpm --filter @wenexus/admin test
+pre-commit run --all-files       # 运行所有 pre-commit hooks
 ```
 
-### Backend Testing
+## 开发原则
 
-```bash
-# Java tests
-cd backend/java && mvn test
+### 核心理念
 
-# Python tests
-cd backend/python && uv run pytest
-```
+- **程序 = 算法 + 数据结构**：编程的核心是控制数据的流动
+- **高内聚、低耦合**：短期代码能跑，长期人能看懂
+- **单一数据源原则（SSOT）**：避免在多处维护相同信息
 
-### Test Coverage Requirements
+### 代码质量标准
 
-- Minimum 80% code coverage
-- Integration tests for core user flows
-- Unit tests for all new features
+- **拒绝硬编码**：使用常量、枚举或配置文件
+- **拒绝过度设计**：只解决当前问题，不预设未来需求
+- **拒绝 mock 测试**：优先集成测试和端到端测试
+- **函数长度限制**：单个函数不超过 30 行
+- **命名清晰**：函数名、变量名要自解释，减少注释需求
 
-## Deployment
+## AI 工作原则
 
-### Build Process
+### 必须完成端到端验证
 
-```bash
-npm run build           # Build all applications
-```
+代码开发后，必须自己完成完整验证，包括：
 
-### CI/CD Pipeline
+1. **启动应用**：使用实际启动命令，不能只写代码
+2. **检查启动日志**：确保无错误、无警告
+3. **验证接口功能**：
+   - 使用 curl 或实际前端测试 API
+   - 验证返回数据结构符合预期
+   - 测试正常流程和异常流程
+4. **确认集成正确**：检查日志中的相关信息
+5. **只有全部通过后才交给用户最终验证**
 
-- **GitHub Actions**: `.github/workflows/ci-cd.yml`
-- **Stages**: lint → typecheck → test → build → security scan → deploy
-- **Environments**: staging → production
-- **Security**: Trivy vulnerability scanning
+**推荐 TDD 方式**：先写测试，再实现功能，确保端到端验证。
 
-## Documentation
+**禁止行为**：
 
-### Key Documentation Locations
+- 写完代码就认为任务完成
+- 依赖用户进行基本测试
+- 假设代码能运行而不实际验证
 
-- `docs/prd/`: Product requirements
-- `docs/technical/`: Technical specifications
-- `docs/design/`: Design assets and guidelines
-- `docs/changelog/`: Release notes
+### 工作流程建议
 
-### API Documentation
+1. **理解需求**：先提问澄清，避免返工
+2. **分解任务**：使用 TodoWrite 跟踪进度
+3. **先读后写**：修改代码前必须先读取文件
+4. **分步验证**：每完成一个功能点就验证
+5. **查阅文档**：遇到不确定的 API 契约，查看 `docs/technical` 下的文档
 
-- Java services: Spring Boot Actuator + Swagger
-- Python services: FastAPI automatic documentation
+## 最重要的原则
 
-## Troubleshooting
+**有任何不清楚的，随时提问。**
 
-### Common Issues
-
-1. **Pre-commit failures**: Run `pre-commit clean && pre-commit install`
-2. **Node.js dependencies**: Delete `node_modules` and run `npm install`
-3. **Java build issues**: Ensure Java 17+ is installed and JAVA_HOME is set
-4. **Python virtual environment**: Recreate with `python3 -m venv venv`
-
-### Getting Help
-
-- Check documentation in `docs/` directory
-- Review existing code patterns
-- Consult team coding standards in `docs/technical/coding-standards/`
-
-## Project Philosophy
-
-WeNexus is built on the principle of consensus amplification - helping people find common ground in
-an increasingly polarized world. The codebase reflects this through:
-
-- **Collaborative Architecture**: Microservices that work together
-- **Inclusive Design**: Accessible and user-friendly interfaces
-- **Transparent Process**: Open development practices and documentation
-- **Quality Focus**: Comprehensive testing and code review
-
-## Security Considerations
-
-- **Secret Management**: Never commit secrets; use environment variables
-- **Input Validation**: Validate all user inputs
-- **Authentication**: JWT-based auth with proper expiration
-- **Dependencies**: Regular security audits and updates
-- **Privacy**: GDPR/privacy-compliant data handling
-
-## Review & Commit Standards
-
-### Development Workflow with Smart Fix
-
-WeNexus uses an intelligent code quality system that automatically fixes issues and guides the
-commit process:
-
-#### 1. Code Development
-
-- Write code following project conventions
-- Use meaningful variable names and clear logic
-- Add appropriate comments for complex business logic
-- Ensure proper error handling and edge cases
-
-#### 2. Pre-Commit Quality Checks
-
-The project uses **layered pre-commit hooks**:
-
-| Layer | Config Location | Hooks |
-|-------|-----------------|-------|
-| **Global** | `.pre-commit-config.yaml` | YAML/JSON validation, secrets detection, conventional commits |
-| **Frontend** | `frontend/.pre-commit-config.yaml` | ESLint, Prettier, TypeScript |
-| **Java** | `backend/java/.pre-commit-config.yaml` | Google Java Format, Checkstyle |
-| **Python** | `backend/python/.pre-commit-config.yaml` | Black, isort, flake8, mypy |
-
-```bash
-# Automatic workflow when committing:
-git add .
-git commit -m "feat(web): add user authentication"
-
-# Smart Fix automatically:
-# 1. Formats staged files (Prettier/Black/isort)
-# 2. Re-stages fixed files
-# 3. Runs pre-commit hooks
-```
-
-#### 3. Review Standards
-
-Before committing, ensure:
-
-- [ ] **Functionality**: Code works as intended
-- [ ] **Tests**: Adequate test coverage (minimum 80%)
-- [ ] **Documentation**: Updated relevant docs
-- [ ] **Performance**: No obvious performance regressions
-- [ ] **Security**: No sensitive data or vulnerabilities
-- [ ] **Accessibility**: UI changes meet accessibility standards
-
-#### 4. Commit Message Standards
-
-Follow Conventional Commits format:
-
-```bash
-# Format
-<type>(<scope>): <description>
-
-# Examples
-feat(web): add user profile management
-fix(api): resolve authentication token expiry
-docs(readme): update setup instructions
-style(ui): improve button hover states
-refactor(auth): extract validation logic
-test(user): add integration tests for signup
-```
-
-**Valid Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `chore` **Valid
-Scopes**: `web`, `mobile`, `admin`, `api`, `ai`, `auth`, `ui`, `docs`
-
-#### 5. Manual Override (Emergency Only)
-
-```bash
-# Skip all hooks (use sparingly)
-git commit --no-verify -m "emergency: critical hotfix"
-
-# Run smart fix manually
-./tools/scripts/smart-fix.sh
-```
-
-#### 6. Post-Commit Verification
-
-After committing:
-
-- [ ] Verify CI/CD pipeline passes
-- [ ] Check deployment to staging environment
-- [ ] Confirm no breaking changes introduced
-- [ ] Update related documentation if needed
-
-#### 7. Code Review Guidelines
-
-When reviewing PRs:
-
-- **Functionality**: Does it solve the intended problem?
-- **Code Quality**: Is it readable and maintainable?
-- **Performance**: Any performance implications?
-- **Security**: Are there security considerations?
-- **Testing**: Adequate test coverage?
-- **Documentation**: Clear and up-to-date?
-
-#### 8. Troubleshooting Pre-commit
-
-```bash
-# Clean and reinstall hooks
-pre-commit clean && pre-commit install
-
-# Run hooks manually on all files
-pre-commit run --all-files
-
-# Run specific hook
-pre-commit run eslint --all-files
-```
-
-Remember: WeNexus aims to connect minds and build consensus - every line of code should reflect this
-mission of bringing people together through technology.
+不确定时宁愿多问一句，也不要基于假设实现错误的方案。
