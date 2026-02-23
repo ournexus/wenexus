@@ -139,9 +139,48 @@ pre-commit run --all-files       # 运行所有 pre-commit hooks
 4. **分步验证**：每完成一个功能点就验证
 5. **查阅文档**：遇到不确定的 API 契约，查看 `docs/technical` 下的文档
 
-### 代码变更时的文档要求
+### 文档规则（强制）
 
-**核心原则**：把文档放在代码变更时必须触碰的地方，而不是独立维护。
+#### 文档权限
+
+| 目录 | 权限 | 说明 |
+|------|------|------|
+| `docs/theory/` | 只读 | AI 不得创建或修改 |
+| `docs/prd/` | 只读 | AI 不得创建或修改 |
+| `docs/design/` | 只读 | AI 不得创建或修改 |
+| `docs/technical/` | 受控写入 | 仅在对应代码变更时更新，见下方规则 |
+| `docs/changelog/` | 受控写入 | 仅在用户明确要求时更新 |
+
+#### 技术文档与 commit 的对应关系
+
+**一次 commit 对应一份技术文档**。每个有意义的代码变更都必须在 `docs/technical/` 下有对应的文档记录，格式：
+
+```
+docs/technical/YYMMDD-简短描述.md
+```
+
+**注意**：
+
+- 纯格式化、typo 修复等trivial commit 不需要对应文档
+- 一个功能如果拆成多个 commit，共用一份文档，在文档中追加更新即可
+- 文档在第一个相关 commit 时创建，后续 commit 追加内容而非新建文件
+
+#### 禁止行为
+
+- 禁止在 `docs/` 下新建文件，除非是上述 commit 对应的技术文档或用户明确要求
+- 禁止创建总结性文档（如 xxx-summary.md、xxx-overview.md、xxx-guide.md）
+- 禁止在 commit 中附带"顺便更新了文档"的无关改动
+- 禁止创建与已有文档内容重复的新文件
+
+#### 允许行为
+
+- 修改代码时，同步更新同文件内的注释/docstring
+- 创建 commit 对应的技术文档（按上述格式）
+- 用户明确要求时，更新指定的文档文件
+
+#### 代码内文档要求
+
+**核心原则**：文档离代码越近越好，docstring 优于独立 md 文件。
 
 修改以下文件时，**必须**同步更新对应注释：
 
@@ -151,6 +190,7 @@ pre-commit run --all-files       # 运行所有 pre-commit hooks
 | `**/index.ts` | 更新模块顶部 JSDoc 注释 |
 | `**/__init__.py` | 更新模块顶部 docstring |
 | 新建目录 | 创建 `README.md` 说明用途 |
+| 目录内文件变更 | 同步更新该目录的 `README.md` |
 
 **模块注释模板**：
 
@@ -176,9 +216,11 @@ pre-commit run --all-files       # 运行所有 pre-commit hooks
 
 **检查清单**（每次提交前）：
 
+- [ ] commit 对应的技术文档已创建或更新
 - [ ] 新模块有顶部注释说明用途和依赖关系
 - [ ] 变更的模块注释仍然准确
 - [ ] `package.json` 的 `description` 与实际功能一致
+- [ ] 没有创建任何非必要的文档文件
 
 ## 最重要的原则
 
