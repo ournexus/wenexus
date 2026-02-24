@@ -1,6 +1,6 @@
 # Knowledge Graph Extraction Integration - Product Specification
 
-https://github.com/stair-lab/kg-gen
+<https://github.com/stair-lab/kg-gen>
 
 ## Executive Summary
 
