@@ -46,4 +46,5 @@ prettier.config.*
 coverage
 .DS_Store
 
+# Third-party generated UI components (shadcn/ui, magicui, etc.)
 src/shared/components

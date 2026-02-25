@@ -11,7 +11,7 @@ import {
   getSettingTabs,
 } from '@/shared/services/settings';
 import { Crumb } from '@/shared/types/blocks/common';
-import { Form as FormType } from '@/shared/types/blocks/form';
+import { Form as FormType, FormSubmit } from '@/shared/types/blocks/form';
 
 export default async function SettingsPage({
   params,
@@ -42,7 +42,7 @@ export default async function SettingsPage({
 
   const tabs = await getSettingTabs(tab ?? 'auth');
 
-  const handleSubmit = async (data: FormData, passby: any) => {
+  const handleSubmit: FormSubmit['handler'] = async (data, passby) => {
     'use server';
 
     const user = await getUserInfo();
@@ -63,7 +63,7 @@ export default async function SettingsPage({
     };
   };
 
-  let forms: FormType[] = [];
+  const forms: FormType[] = [];
 
   settingGroups.forEach((group) => {
     if (group.tab !== tab) {
@@ -95,7 +95,7 @@ export default async function SettingsPage({
         button: {
           title: t('edit.buttons.submit'),
         },
-        handler: handleSubmit as any,
+        handler: handleSubmit,
       },
     });
   });

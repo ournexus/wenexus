@@ -16,7 +16,7 @@ const withNextIntl = createNextIntlPlugin({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: process.env.VERCEL ? undefined : 'standalone',
-  reactStrictMode: false,
+  reactStrictMode: true,
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
   // OpenNext Cloudflare will copy full packages listed here into the workerd bundle
   // when they expose a "workerd" export condition. `@libsql/client` does, and without

@@ -11,20 +11,26 @@
 
 import { and, eq } from 'drizzle-orm';
 
-import { db } from '@/core/db';
 import { envConfigs } from '@/config';
+import { db } from '@/core/db';
 import { getUuid } from '@/shared/lib/hash';
 
-async function loadSchemaTables(): Promise<any> {
+interface SchemaTables {
+  user: any;
+  role: any;
+  userRole: any;
+}
+
+async function loadSchemaTables(): Promise<SchemaTables> {
   if (envConfigs.database_provider === 'mysql') {
-    return (await import('@/config/db/schema.mysql')) as any;
+    return await import('@/config/db/schema.mysql');
   }
 
   if (['sqlite', 'turso'].includes(envConfigs.database_provider)) {
-    return (await import('@/config/db/schema.sqlite')) as any;
+    return await import('@/config/db/schema.sqlite');
   }
 
-  return (await import('@/config/db/schema')) as any;
+  return await import('@/config/db/schema');
 }
 
 async function assignRole() {
@@ -55,9 +61,7 @@ async function assignRole() {
   }
 
   try {
-    const { user, role, userRole } = (await loadSchemaTables()) as any;
-    const sqlEq: any = eq;
-    const sqlAnd: any = and;
+    const { user, role, userRole } = await loadSchemaTables();
 
     // Find user
     let targetUser;
@@ -69,7 +73,7 @@ async function assignRole() {
       const [foundUser] = await db()
         .select()
         .from(user)
-        .where(sqlEq(user.email, email));
+        .where(eq(user.email, email));
 
       targetUser = foundUser;
     } else if (userIdArg) {
@@ -79,7 +83,7 @@ async function assignRole() {
       const [foundUser] = await db()
         .select()
         .from(user)
-        .where(sqlEq(user.id, userId));
+        .where(eq(user.id, userId));
 
       targetUser = foundUser;
     }
@@ -98,7 +102,7 @@ async function assignRole() {
     const [foundRole] = await db()
       .select()
       .from(role)
-      .where(sqlEq(role.name, roleName));
+      .where(eq(role.name, roleName));
 
     if (!foundRole) {
       console.error(`❌ Role not found: ${roleName}`);
@@ -120,9 +124,9 @@ async function assignRole() {
       .select()
       .from(userRole)
       .where(
-        sqlAnd(
-          sqlEq(userRole.userId, targetUser.id),
-          sqlEq(userRole.roleId, foundRole.id)
+        and(
+          eq(userRole.userId, targetUser.id),
+          eq(userRole.roleId, foundRole.id)
         )
       );
     const hasRole = !!existingUserRole;

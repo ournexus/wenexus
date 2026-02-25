@@ -89,9 +89,10 @@ export async function POST(request: Request) {
     // generate content
     const result = await aiProvider.generate({ params });
     if (!result?.taskId) {
-      throw new Error(
+      console.error(
         `ai generate failed, mediaType: ${mediaType}, provider: ${provider}, model: ${model}`
       );
+      return respErr('AI generation failed, please try again later.');
     }
 
     // create ai task
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
 
     return respData(newAITask);
   } catch (e: any) {
-    console.log('generate failed', e);
+    console.error('generate failed', e);
     return respErr(e.message);
   }
 }
