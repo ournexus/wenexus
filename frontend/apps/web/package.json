@@ -1,6 +1,7 @@
 {
   "name": "@wenexus/web",
   "version": "1.0.0",
+  "description": "WeNexus main web application - AI multi-perspective content platform",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -19,6 +20,7 @@
     "auth:generate": "tsx scripts/with-env.ts npx @better-auth/cli generate --config=src/core/auth/index.ts",
     "rbac:init": "tsx scripts/with-env.ts npx tsx scripts/init-rbac.ts",
     "rbac:assign": "tsx scripts/with-env.ts npx tsx scripts/assign-role.ts",
+    "db:seed": "tsx scripts/with-env.ts npx tsx scripts/seed-domain.ts",
     "postinstall": "fumadocs-mdx",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
