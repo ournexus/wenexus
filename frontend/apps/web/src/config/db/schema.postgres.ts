@@ -555,3 +555,229 @@ export const chatMessage = table(
     index('idx_chat_message_user_id').on(table.userId, table.status),
   ]
 );
+
+// ============================================================================
+// WeNexus Domain Tables
+// ============================================================================
+
+// Discovery Domain: Topic
+export const topic = table(
+  'topic',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    type: text('type').notNull(), // debate | brainstorm | analysis | exploration
+    status: text('status').notNull(), // draft | active | discussing | completed | archived
+    visibility: text('visibility').notNull().default('public'), // public | private
+    deliverableType: text('deliverable_type'), // report | article | script | checklist | social
+    coverImage: text('cover_image'),
+    tags: text('tags'), // JSON array
+    consensusLevel: integer('consensus_level').default(0), // 0-100
+    participantCount: integer('participant_count').default(0),
+    metadata: text('metadata'), // JSON
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    deletedAt: timestamp('deleted_at'),
+  },
+  (table) => [
+    index('idx_topic_user_status').on(table.userId, table.status),
+    index('idx_topic_status_visibility').on(table.status, table.visibility),
+    index('idx_topic_created_at').on(table.createdAt),
+  ]
+);
+
+// Roundtable Domain: Expert
+export const expert = table(
+  'expert',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    role: text('role').notNull(), // economist | technologist | ethicist | fact_checker | custom
+    avatar: text('avatar'),
+    stance: text('stance'), // supportive | critical | neutral | analytical
+    description: text('description'),
+    systemPrompt: text('system_prompt'),
+    isBuiltin: boolean('is_builtin').default(false).notNull(),
+    createdByUserId: text('created_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    status: text('status').notNull().default('active'),
+    metadata: text('metadata'), // JSON: speaking style, expertise areas
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_expert_role_status').on(table.role, table.status),
+    index('idx_expert_builtin').on(table.isBuiltin),
+  ]
+);
+
+// Roundtable Domain: Discussion Session
+export const discussionSession = table(
+  'discussion_session',
+  {
+    id: text('id').primaryKey(),
+    topicId: text('topic_id')
+      .notNull()
+      .references(() => topic.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: text('status').notNull(), // initializing | fact_checking | discussing | concluding | completed
+    mode: text('mode').notNull().default('autopilot'), // autopilot | host | participant
+    consensusLevel: integer('consensus_level').default(0),
+    expertIds: text('expert_ids'), // JSON array of expert IDs
+    isPrivate: boolean('is_private').default(false).notNull(),
+    metadata: text('metadata'), // JSON
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    completedAt: timestamp('completed_at'),
+  },
+  (table) => [
+    index('idx_discussion_session_topic').on(table.topicId, table.status),
+    index('idx_discussion_session_user').on(table.userId, table.status),
+  ]
+);
+
+// Roundtable Domain: Discussion Message
+export const discussionMessage = table(
+  'discussion_message',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => discussionSession.id, { onDelete: 'cascade' }),
+    expertId: text('expert_id').references(() => expert.id, {
+      onDelete: 'set null',
+    }),
+    userId: text('user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    role: text('role').notNull(), // expert | host | participant | system | fact_checker
+    content: text('content').notNull(),
+    threadRef: text('thread_ref'), // ID of message being replied to
+    citations: text('citations'), // JSON array of citation objects
+    status: text('status').notNull().default('active'),
+    metadata: text('metadata'), // JSON: model used, token count
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_discussion_message_session').on(
+      table.sessionId,
+      table.createdAt
+    ),
+    index('idx_discussion_message_thread').on(table.threadRef),
+  ]
+);
+
+// Discovery/Deliverable Domain: Observation Card
+export const observationCard = table(
+  'observation_card',
+  {
+    id: text('id').primaryKey(),
+    topicId: text('topic_id')
+      .notNull()
+      .references(() => topic.id, { onDelete: 'cascade' }),
+    expertId: text('expert_id').references(() => expert.id, {
+      onDelete: 'set null',
+    }),
+    sessionId: text('session_id').references(() => discussionSession.id, {
+      onDelete: 'set null',
+    }),
+    title: text('title').notNull(),
+    content: text('content').notNull(),
+    stance: text('stance'), // supportive | critical | neutral
+    likes: integer('likes').default(0).notNull(),
+    status: text('status').notNull().default('active'),
+    coverImage: text('cover_image'),
+    metadata: text('metadata'), // JSON: source citations, key quotes
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_observation_card_topic').on(table.topicId, table.status),
+    index('idx_observation_card_created_at').on(table.createdAt),
+  ]
+);
+
+// Identity Domain: User Preference
+export const userPreference = table(
+  'user_preference',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    preferredExperts: text('preferred_experts'), // JSON array of expert IDs
+    preferredOutputFormats: text('preferred_output_formats'), // JSON array
+    discussionDepth: text('discussion_depth').default('balanced'), // quick | balanced | deep
+    backgroundInfo: text('background_info'), // JSON
+    onboardingCompleted: boolean('onboarding_completed')
+      .default(false)
+      .notNull(),
+    metadata: text('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index('idx_user_preference_user').on(table.userId)]
+);
+
+// Deliverable Domain: Deliverable
+export const deliverable = table(
+  'deliverable',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => discussionSession.id, { onDelete: 'cascade' }),
+    topicId: text('topic_id')
+      .notNull()
+      .references(() => topic.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(), // report | article | script | checklist | social | observation_card
+    title: text('title'),
+    content: text('content'), // Generated content (JSON or markdown)
+    format: text('format').default('markdown'), // markdown | html | json | jsx
+    status: text('status').notNull(), // generating | ready | exported | failed
+    metadata: text('metadata'), // JSON: generation params, model used
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_deliverable_session').on(table.sessionId, table.type),
+    index('idx_deliverable_user_type').on(
+      table.userId,
+      table.type,
+      table.status
+    ),
+    index('idx_deliverable_topic').on(table.topicId),
+  ]
+);
