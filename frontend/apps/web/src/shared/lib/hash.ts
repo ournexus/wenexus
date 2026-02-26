@@ -4,10 +4,10 @@
  * @consumers core/auth, shared/models, shared/services, scripts, extensions/ai, domains
  */
 
-import { FlakeId } from 'simple-flakeid';
+import { SnowflakeIdv1 } from 'simple-flakeid';
 import { v4 as uuidv4 } from 'uuid';
 
-const flakeId = new FlakeId();
+const flakeId = new SnowflakeIdv1({ workerId: 1 });
 
 /**
  * Generate a UUID v4 string.
@@ -20,7 +20,7 @@ export function getUuid(): string {
  * Generate a Snowflake-style numeric ID string.
  */
 export function getSnowId(): string {
-  return flakeId.gen().toString();
+  return flakeId.NextId().toString();
 }
 
 /**
