@@ -1,14 +1,14 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 
-import type {
-  DiscussionSession,
-  NewDiscussionSession,
-  UpdateDiscussionSession,
-} from '../types';
-
-import { discussionSession } from '@/config/db/schema';
 import { db } from '@/core/db';
+import { discussionSession } from '@/config/db/schema';
 
+import {
+  SessionStatus,
+  type DiscussionSession,
+  type NewDiscussionSession,
+  type UpdateDiscussionSession,
+} from '../types';
 
 export async function createSessionRecord(
   data: NewDiscussionSession
@@ -37,7 +37,7 @@ export async function getSessionsByTopic({
   limit = 10,
 }: {
   topicId: string;
-  status?: string;
+  status?: SessionStatus;
   page?: number;
   limit?: number;
 }): Promise<DiscussionSession[]> {
@@ -62,7 +62,7 @@ export async function getSessionsByUser({
   limit = 30,
 }: {
   userId: string;
-  status?: string;
+  status?: SessionStatus;
   page?: number;
   limit?: number;
 }): Promise<DiscussionSession[]> {

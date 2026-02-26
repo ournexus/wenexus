@@ -2,6 +2,8 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
+  pgEnum,
   pgSchema,
   pgTable,
   text,
@@ -560,6 +562,87 @@ export const chatMessage = table(
 // WeNexus Domain Tables
 // ============================================================================
 
+// Domain Enums
+export const topicTypeEnum = pgEnum('topic_type', [
+  'debate',
+  'brainstorm',
+  'analysis',
+  'exploration',
+]);
+export const topicStatusEnum = pgEnum('topic_status', [
+  'draft',
+  'active',
+  'discussing',
+  'completed',
+  'archived',
+]);
+export const topicVisibilityEnum = pgEnum('topic_visibility', [
+  'public',
+  'private',
+]);
+export const deliverableTypeEnum = pgEnum('deliverable_type', [
+  'report',
+  'article',
+  'script',
+  'checklist',
+  'social',
+  'observation_card',
+]);
+export const deliverableStatusEnum = pgEnum('deliverable_status', [
+  'generating',
+  'ready',
+  'exported',
+  'failed',
+]);
+export const deliverableFormatEnum = pgEnum('deliverable_format', [
+  'markdown',
+  'html',
+  'json',
+  'jsx',
+]);
+export const expertRoleEnum = pgEnum('expert_role', [
+  'economist',
+  'technologist',
+  'ethicist',
+  'fact_checker',
+  'custom',
+]);
+export const expertStanceEnum = pgEnum('expert_stance', [
+  'supportive',
+  'critical',
+  'neutral',
+  'analytical',
+]);
+export const sessionStatusEnum = pgEnum('session_status', [
+  'initializing',
+  'fact_checking',
+  'discussing',
+  'concluding',
+  'completed',
+]);
+export const sessionModeEnum = pgEnum('session_mode', [
+  'autopilot',
+  'host',
+  'participant',
+]);
+export const messageRoleEnum = pgEnum('message_role', [
+  'expert',
+  'host',
+  'participant',
+  'system',
+  'fact_checker',
+]);
+export const discussionDepthEnum = pgEnum('discussion_depth', [
+  'quick',
+  'balanced',
+  'deep',
+]);
+export const observationCardStanceEnum = pgEnum('observation_card_stance', [
+  'supportive',
+  'critical',
+  'neutral',
+]);
+
 // Discovery Domain: Topic
 export const topic = table(
   'topic',
@@ -570,15 +653,15 @@ export const topic = table(
       .references(() => user.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     description: text('description'),
-    type: text('type').notNull(), // debate | brainstorm | analysis | exploration
-    status: text('status').notNull(), // draft | active | discussing | completed | archived
-    visibility: text('visibility').notNull().default('public'), // public | private
-    deliverableType: text('deliverable_type'), // report | article | script | checklist | social
+    type: topicTypeEnum('type').notNull(),
+    status: topicStatusEnum('status').notNull(),
+    visibility: topicVisibilityEnum('visibility').notNull().default('public'),
+    deliverableType: deliverableTypeEnum('deliverable_type'),
     coverImage: text('cover_image'),
-    tags: text('tags'), // JSON array
+    tags: jsonb('tags'), // JSON array
     consensusLevel: integer('consensus_level').default(0), // 0-100
     participantCount: integer('participant_count').default(0),
-    metadata: text('metadata'), // JSON
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -599,9 +682,9 @@ export const expert = table(
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
-    role: text('role').notNull(), // economist | technologist | ethicist | fact_checker | custom
+    role: expertRoleEnum('role').notNull(),
     avatar: text('avatar'),
-    stance: text('stance'), // supportive | critical | neutral | analytical
+    stance: expertStanceEnum('stance'),
     description: text('description'),
     systemPrompt: text('system_prompt'),
     isBuiltin: boolean('is_builtin').default(false).notNull(),
@@ -609,7 +692,7 @@ export const expert = table(
       onDelete: 'set null',
     }),
     status: text('status').notNull().default('active'),
-    metadata: text('metadata'), // JSON: speaking style, expertise areas
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -633,12 +716,12 @@ export const discussionSession = table(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    status: text('status').notNull(), // initializing | fact_checking | discussing | concluding | completed
-    mode: text('mode').notNull().default('autopilot'), // autopilot | host | participant
+    status: sessionStatusEnum('status').notNull(),
+    mode: sessionModeEnum('mode').notNull().default('autopilot'),
     consensusLevel: integer('consensus_level').default(0),
-    expertIds: text('expert_ids'), // JSON array of expert IDs
+    expertIds: jsonb('expert_ids'), // JSON array of expert IDs
     isPrivate: boolean('is_private').default(false).notNull(),
-    metadata: text('metadata'), // JSON
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -666,12 +749,12 @@ export const discussionMessage = table(
     userId: text('user_id').references(() => user.id, {
       onDelete: 'set null',
     }),
-    role: text('role').notNull(), // expert | host | participant | system | fact_checker
+    role: messageRoleEnum('role').notNull(),
     content: text('content').notNull(),
     threadRef: text('thread_ref'), // ID of message being replied to
-    citations: text('citations'), // JSON array of citation objects
+    citations: jsonb('citations'), // JSON array of citation objects
     status: text('status').notNull().default('active'),
-    metadata: text('metadata'), // JSON: model used, token count
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -703,11 +786,11 @@ export const observationCard = table(
     }),
     title: text('title').notNull(),
     content: text('content').notNull(),
-    stance: text('stance'), // supportive | critical | neutral
+    stance: observationCardStanceEnum('stance'),
     likes: integer('likes').default(0).notNull(),
     status: text('status').notNull().default('active'),
     coverImage: text('cover_image'),
-    metadata: text('metadata'), // JSON: source citations, key quotes
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -728,14 +811,15 @@ export const userPreference = table(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    preferredExperts: text('preferred_experts'), // JSON array of expert IDs
-    preferredOutputFormats: text('preferred_output_formats'), // JSON array
-    discussionDepth: text('discussion_depth').default('balanced'), // quick | balanced | deep
-    backgroundInfo: text('background_info'), // JSON
+    preferredExperts: jsonb('preferred_experts'), // JSON array of expert IDs
+    preferredOutputFormats: jsonb('preferred_output_formats'), // JSON array
+    discussionDepth:
+      discussionDepthEnum('discussion_depth').default('balanced'),
+    backgroundInfo: jsonb('background_info'),
     onboardingCompleted: boolean('onboarding_completed')
       .default(false)
       .notNull(),
-    metadata: text('metadata'),
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -759,12 +843,12 @@ export const deliverable = table(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    type: text('type').notNull(), // report | article | script | checklist | social | observation_card
+    type: deliverableTypeEnum('type').notNull(),
     title: text('title'),
     content: text('content'), // Generated content (JSON or markdown)
-    format: text('format').default('markdown'), // markdown | html | json | jsx
-    status: text('status').notNull(), // generating | ready | exported | failed
-    metadata: text('metadata'), // JSON: generation params, model used
+    format: deliverableFormatEnum('format').default('markdown'),
+    status: deliverableStatusEnum('status').notNull(),
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

@@ -28,7 +28,7 @@ export async function createSession(
   return createSessionRecord({
     id,
     ...input,
-    expertIds: JSON.stringify(expertIds),
+    expertIds: expertIds,
   });
 }
 
@@ -70,7 +70,10 @@ export async function getSessionMessages(
 
 export async function addMessage(
   sessionId: string,
-  message: Omit<NewDiscussionMessage, 'id' | 'createdAt' | 'updatedAt'>
+  message: Omit<
+    NewDiscussionMessage,
+    'id' | 'sessionId' | 'createdAt' | 'updatedAt'
+  >
 ): Promise<DiscussionMessage> {
   const id = getUuid();
   return createMessageRecord({

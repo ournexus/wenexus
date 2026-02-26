@@ -20,7 +20,7 @@ interface TopicCardProps {
     status: string;
     consensusLevel: number | null;
     participantCount: number | null;
-    tags: string | null;
+    tags: unknown;
     createdAt: Date;
   };
   expertCount?: number;
@@ -34,7 +34,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export function TopicCard({ topic, expertCount = 4 }: TopicCardProps) {
-  const tags: string[] = topic.tags ? JSON.parse(topic.tags) : [];
+  const tags: string[] = Array.isArray(topic.tags) ? topic.tags : [];
 
   return (
     <Link href={`/topic/${topic.id}`}>

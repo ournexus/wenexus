@@ -2,14 +2,14 @@ import { getExperts } from '@/domains/roundtable/models/expert';
 
 import { getObservationCardsByTopic } from '../models/observation-card';
 import { getTopics } from '../models/topic';
-import type { FeedCard } from '../types';
+import { TopicVisibility, type FeedCard } from '../types';
 
 export async function getFeedCards(params: {
   page?: number;
   limit?: number;
 }): Promise<FeedCard[]> {
   const topics = await getTopics({
-    visibility: 'public',
+    visibility: TopicVisibility.PUBLIC,
     page: params.page || 1,
     limit: params.limit || 20,
   });

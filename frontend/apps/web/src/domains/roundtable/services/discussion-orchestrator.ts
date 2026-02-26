@@ -31,7 +31,7 @@ export async function startDiscussion(
     : topicTitle;
 
   let factContent: string;
-  let citations: string | null = null;
+  let citations: unknown = null;
 
   try {
     const grounding = await groundedResearch(researchQuery);
@@ -41,14 +41,12 @@ export async function startDiscussion(
     factContent = `## 事实核查报告\n\n${grounding.summary}\n\n### 关键事实\n${factLines}`;
 
     if (grounding.citations.length > 0) {
-      citations = JSON.stringify(
-        grounding.citations.map((c) => ({
-          title: c.title,
-          url: c.url,
-          snippet: c.snippet,
-          credibility: c.credibility,
-        }))
-      );
+      citations = grounding.citations.map((c) => ({
+        title: c.title,
+        url: c.url,
+        snippet: c.snippet,
+        credibility: c.credibility,
+      }));
       const citationLines = grounding.citations
         .map((c) => `- [${c.title}](${c.url}) — ${c.snippet}`)
         .join('\n');
@@ -113,10 +111,10 @@ export async function generateExpertResponse(
     content: response.content,
     threadRef: replyTo || null,
     status: 'active',
-    metadata: JSON.stringify({
+    metadata: {
       model: response.model,
       usage: response.usage,
-    }),
+    },
   });
 
   await domainEventBus.emit({

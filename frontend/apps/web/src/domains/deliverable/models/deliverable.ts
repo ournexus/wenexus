@@ -1,18 +1,20 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 
-import type { Deliverable, NewDeliverable, UpdateDeliverable } from '../types';
-
-import { deliverable } from '@/config/db/schema';
 import { db } from '@/core/db';
+import { deliverable } from '@/config/db/schema';
 
+import {
+  DeliverableStatus,
+  DeliverableType,
+  type Deliverable,
+  type NewDeliverable,
+  type UpdateDeliverable,
+} from '../types';
 
 export async function createDeliverableRecord(
   data: NewDeliverable
 ): Promise<Deliverable> {
-  const [result] = await db()
-    .insert(deliverable)
-    .values(data)
-    .returning();
+  const [result] = await db().insert(deliverable).values(data).returning();
   return result;
 }
 
@@ -33,7 +35,7 @@ export async function getDeliverablesBySession({
   limit = 30,
 }: {
   sessionId: string;
-  type?: string;
+  type?: DeliverableType;
   page?: number;
   limit?: number;
 }): Promise<Deliverable[]> {
@@ -59,8 +61,8 @@ export async function getDeliverablesByUser({
   limit = 30,
 }: {
   userId: string;
-  type?: string;
-  status?: string;
+  type?: DeliverableType;
+  status?: DeliverableStatus;
   page?: number;
   limit?: number;
 }): Promise<Deliverable[]> {

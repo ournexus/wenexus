@@ -21,9 +21,15 @@ class DomainEventBus {
     const handlers = this.handlers.get(event.type);
     if (!handlers) return;
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       Array.from(handlers).map((handler) => handler(event))
     );
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.error('Domain event handler failed:', result.reason);
+      }
+    }
   }
 
   clear(): void {

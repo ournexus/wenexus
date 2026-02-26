@@ -1,6 +1,6 @@
 import type {
-  discussionSession,
   discussionMessage,
+  discussionSession,
   expert,
 } from '@/config/db/schema';
 
@@ -8,7 +8,7 @@ import type {
 export type DiscussionSession = typeof discussionSession.$inferSelect;
 export type NewDiscussionSession = typeof discussionSession.$inferInsert;
 export type UpdateDiscussionSession = Partial<
-  Omit<NewDiscussionSession, 'id' | 'createdAt'>
+  Omit<NewDiscussionSession, 'id' | 'createdAt' | 'topicId' | 'userId'>
 >;
 
 export type DiscussionMessage = typeof discussionMessage.$inferSelect;
@@ -16,7 +16,9 @@ export type NewDiscussionMessage = typeof discussionMessage.$inferInsert;
 
 export type Expert = typeof expert.$inferSelect;
 export type NewExpert = typeof expert.$inferInsert;
-export type UpdateExpert = Partial<Omit<NewExpert, 'id' | 'createdAt'>>;
+export type UpdateExpert = Partial<
+  Omit<NewExpert, 'id' | 'createdAt' | 'createdByUserId'>
+>;
 
 // Domain enums
 export enum SessionStatus {

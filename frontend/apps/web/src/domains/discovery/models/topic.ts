@@ -1,10 +1,15 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 
-import type { NewTopic, Topic, TopicStatus, UpdateTopic } from '../types';
-
-import { topic } from '@/config/db/schema';
 import { db } from '@/core/db';
+import { topic } from '@/config/db/schema';
 
+import {
+  TopicVisibility,
+  type NewTopic,
+  type Topic,
+  type TopicStatus,
+  type UpdateTopic,
+} from '../types';
 
 export async function createTopicRecord(newTopic: NewTopic): Promise<Topic> {
   const [result] = await db().insert(topic).values(newTopic).returning();
@@ -25,7 +30,7 @@ export async function getTopics({
 }: {
   userId?: string;
   status?: TopicStatus;
-  visibility?: string;
+  visibility?: TopicVisibility;
   page?: number;
   limit?: number;
 } = {}): Promise<Topic[]> {

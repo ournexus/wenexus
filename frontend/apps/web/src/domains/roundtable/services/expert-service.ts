@@ -31,8 +31,8 @@ export async function getExpertsForSession(
   const session = await findSessionById(sessionId);
   if (!session) return [];
 
-  const expertIds: string[] = session.expertIds
-    ? JSON.parse(session.expertIds)
+  const expertIds: string[] = Array.isArray(session.expertIds)
+    ? session.expertIds
     : [];
 
   if (expertIds.length === 0) {

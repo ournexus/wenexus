@@ -4,7 +4,7 @@ import type { deliverable } from '@/config/db/schema';
 export type Deliverable = typeof deliverable.$inferSelect;
 export type NewDeliverable = typeof deliverable.$inferInsert;
 export type UpdateDeliverable = Partial<
-  Omit<NewDeliverable, 'id' | 'createdAt'>
+  Omit<NewDeliverable, 'id' | 'createdAt' | 'sessionId' | 'topicId' | 'userId'>
 >;
 
 // Domain enums

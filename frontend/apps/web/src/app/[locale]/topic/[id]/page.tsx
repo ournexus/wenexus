@@ -33,7 +33,7 @@ export default async function TopicDetailPage({
     );
   }
 
-  const tags: string[] = topic.tags ? JSON.parse(topic.tags) : [];
+  const tags: string[] = Array.isArray(topic.tags) ? topic.tags : [];
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">

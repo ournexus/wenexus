@@ -8,7 +8,12 @@ import {
   getTopics,
   updateTopicRecord,
 } from '../models/topic';
-import type { Topic, TopicCreateInput, TopicStatus } from '../types';
+import {
+  TopicVisibility,
+  type Topic,
+  type TopicCreateInput,
+  type TopicStatus,
+} from '../types';
 
 export async function createTopic(
   userId: string,
@@ -24,7 +29,7 @@ export async function createTopic(
     status: 'active',
     visibility: input.visibility,
     deliverableType: input.deliverableType || null,
-    tags: input.tags ? JSON.stringify(input.tags) : null,
+    tags: input.tags || null,
     consensusLevel: 0,
     participantCount: 0,
   });
@@ -53,7 +58,7 @@ export async function listTopics(params: {
 }): Promise<Topic[]> {
   return getTopics({
     status: params.status,
-    visibility: 'public',
+    visibility: TopicVisibility.PUBLIC,
     page: params.page,
     limit: params.limit,
   });

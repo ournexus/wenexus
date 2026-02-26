@@ -1,14 +1,23 @@
-import type { topic, observationCard } from '@/config/db/schema';
+import type {
+  deliverableTypeEnum,
+  observationCard,
+  topic,
+} from '@/config/db/schema';
 
 // Schema-derived types
 export type Topic = typeof topic.$inferSelect;
 export type NewTopic = typeof topic.$inferInsert;
-export type UpdateTopic = Partial<Omit<NewTopic, 'id' | 'createdAt'>>;
+export type UpdateTopic = Partial<
+  Omit<NewTopic, 'id' | 'createdAt' | 'userId'>
+>;
 
 export type ObservationCard = typeof observationCard.$inferSelect;
 export type NewObservationCard = typeof observationCard.$inferInsert;
 export type UpdateObservationCard = Partial<
-  Omit<NewObservationCard, 'id' | 'createdAt'>
+  Omit<
+    NewObservationCard,
+    'id' | 'createdAt' | 'topicId' | 'expertId' | 'sessionId'
+  >
 >;
 
 // Domain enums
@@ -50,6 +59,6 @@ export interface TopicCreateInput {
   description?: string;
   type: TopicType;
   visibility: TopicVisibility;
-  deliverableType?: string;
+  deliverableType?: (typeof deliverableTypeEnum.enumValues)[number];
   tags?: string[];
 }

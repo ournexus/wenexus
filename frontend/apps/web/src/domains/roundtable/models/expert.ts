@@ -1,23 +1,22 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 
-import type { Expert, NewExpert, UpdateExpert } from '../types';
-
-import { expert } from '@/config/db/schema';
 import { db } from '@/core/db';
+import { expert } from '@/config/db/schema';
 
+import {
+  ExpertRole,
+  type Expert,
+  type NewExpert,
+  type UpdateExpert,
+} from '../types';
 
 export async function createExpertRecord(data: NewExpert): Promise<Expert> {
   const [result] = await db().insert(expert).values(data).returning();
   return result;
 }
 
-export async function findExpertById(
-  id: string
-): Promise<Expert | undefined> {
-  const [result] = await db()
-    .select()
-    .from(expert)
-    .where(eq(expert.id, id));
+export async function findExpertById(id: string): Promise<Expert | undefined> {
+  const [result] = await db().select().from(expert).where(eq(expert.id, id));
   return result;
 }
 
@@ -28,7 +27,7 @@ export async function getExperts({
   page = 1,
   limit = 50,
 }: {
-  role?: string;
+  role?: ExpertRole;
   isBuiltin?: boolean;
   status?: string;
   page?: number;
@@ -53,7 +52,7 @@ export async function getExpertsCount({
   role,
   isBuiltin,
 }: {
-  role?: string;
+  role?: ExpertRole;
   isBuiltin?: boolean;
 } = {}): Promise<number> {
   const [result] = await db()
