@@ -1,31 +1,18 @@
-import { createElement } from 'react';
-import { docs } from '@/.source';
-import type { I18nConfig } from 'fumadocs-core/i18n';
-import { createFromSource } from 'fumadocs-core/search/server';
-import { loader } from 'fumadocs-core/source';
-import { icons } from 'lucide-react';
+// fumadocs-mdx v11 + fumadocs-core v15 have a version mismatch:
+// toFumadocsSource() returns `files` as a function, but loader() expects an array.
+// This causes `files.map is not a function` at build time.
+// Lazy-import the search handler to avoid the error during static page data collection.
+export const dynamic = 'force-dynamic';
 
-import { source as originalSource } from '@/core/docs/source';
+export async function GET(request: Request) {
+  const { createFromSource } = await import('fumadocs-core/search/server');
+  const { docsSource, i18n } = await import('@/core/docs/source');
 
-// Create a modified i18n config that maps 'zh' to 'en' for Orama
-const searchI18n: I18nConfig = {
-  defaultLanguage: 'en',
-  languages: ['en'], // Only use 'en' for search to avoid Orama language errors
-};
+  const handler = createFromSource(docsSource, {
+    localeMap: Object.fromEntries(
+      (i18n.languages ?? []).map((lang) => [lang, 'english' as const])
+    ),
+  });
 
-// Create a separate source instance for search with only English language
-const searchSource = loader({
-  baseUrl: '/docs',
-  source: docs.toFumadocsSource(),
-  i18n: searchI18n,
-  icon(icon) {
-    if (!icon) {
-      return;
-    }
-    if (icon in icons) return createElement(icons[icon as keyof typeof icons]);
-  },
-});
-
-export const { GET } = createFromSource(searchSource, {
-  language: 'english',
-});
+  return handler.GET(request);
+}

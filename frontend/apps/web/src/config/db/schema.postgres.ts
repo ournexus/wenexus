@@ -2,6 +2,8 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
+  pgEnum,
   pgSchema,
   pgTable,
   text,
@@ -553,5 +555,313 @@ export const chatMessage = table(
   (table) => [
     index('idx_chat_message_chat_id').on(table.chatId, table.status),
     index('idx_chat_message_user_id').on(table.userId, table.status),
+  ]
+);
+
+// ============================================================================
+// WeNexus Domain Tables
+// ============================================================================
+
+// Domain Enums
+export const topicTypeEnum = pgEnum('topic_type', [
+  'debate',
+  'brainstorm',
+  'analysis',
+  'exploration',
+]);
+export const topicStatusEnum = pgEnum('topic_status', [
+  'draft',
+  'active',
+  'discussing',
+  'completed',
+  'archived',
+]);
+export const topicVisibilityEnum = pgEnum('topic_visibility', [
+  'public',
+  'private',
+]);
+export const deliverableTypeEnum = pgEnum('deliverable_type', [
+  'report',
+  'article',
+  'script',
+  'checklist',
+  'social',
+  'observation_card',
+]);
+export const deliverableStatusEnum = pgEnum('deliverable_status', [
+  'generating',
+  'ready',
+  'exported',
+  'failed',
+]);
+export const deliverableFormatEnum = pgEnum('deliverable_format', [
+  'markdown',
+  'html',
+  'json',
+  'jsx',
+]);
+export const expertRoleEnum = pgEnum('expert_role', [
+  'economist',
+  'technologist',
+  'ethicist',
+  'fact_checker',
+  'custom',
+]);
+export const expertStanceEnum = pgEnum('expert_stance', [
+  'supportive',
+  'critical',
+  'neutral',
+  'analytical',
+]);
+export const sessionStatusEnum = pgEnum('session_status', [
+  'initializing',
+  'fact_checking',
+  'discussing',
+  'concluding',
+  'completed',
+]);
+export const sessionModeEnum = pgEnum('session_mode', [
+  'autopilot',
+  'host',
+  'participant',
+]);
+export const messageRoleEnum = pgEnum('message_role', [
+  'expert',
+  'host',
+  'participant',
+  'system',
+  'fact_checker',
+]);
+export const discussionDepthEnum = pgEnum('discussion_depth', [
+  'quick',
+  'balanced',
+  'deep',
+]);
+export const observationCardStanceEnum = pgEnum('observation_card_stance', [
+  'supportive',
+  'critical',
+  'neutral',
+]);
+
+// Discovery Domain: Topic
+export const topic = table(
+  'topic',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    type: topicTypeEnum('type').notNull(),
+    status: topicStatusEnum('status').notNull(),
+    visibility: topicVisibilityEnum('visibility').notNull().default('public'),
+    deliverableType: deliverableTypeEnum('deliverable_type'),
+    coverImage: text('cover_image'),
+    tags: jsonb('tags'), // JSON array
+    consensusLevel: integer('consensus_level').default(0), // 0-100
+    participantCount: integer('participant_count').default(0),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    deletedAt: timestamp('deleted_at'),
+  },
+  (table) => [
+    index('idx_topic_user_status').on(table.userId, table.status),
+    index('idx_topic_status_visibility').on(table.status, table.visibility),
+    index('idx_topic_created_at').on(table.createdAt),
+  ]
+);
+
+// Roundtable Domain: Expert
+export const expert = table(
+  'expert',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    role: expertRoleEnum('role').notNull(),
+    avatar: text('avatar'),
+    stance: expertStanceEnum('stance'),
+    description: text('description'),
+    systemPrompt: text('system_prompt'),
+    isBuiltin: boolean('is_builtin').default(false).notNull(),
+    createdByUserId: text('created_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    status: text('status').notNull().default('active'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_expert_role_status').on(table.role, table.status),
+    index('idx_expert_builtin').on(table.isBuiltin),
+  ]
+);
+
+// Roundtable Domain: Discussion Session
+export const discussionSession = table(
+  'discussion_session',
+  {
+    id: text('id').primaryKey(),
+    topicId: text('topic_id')
+      .notNull()
+      .references(() => topic.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: sessionStatusEnum('status').notNull(),
+    mode: sessionModeEnum('mode').notNull().default('autopilot'),
+    consensusLevel: integer('consensus_level').default(0),
+    expertIds: jsonb('expert_ids'), // JSON array of expert IDs
+    isPrivate: boolean('is_private').default(false).notNull(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    completedAt: timestamp('completed_at'),
+  },
+  (table) => [
+    index('idx_discussion_session_topic').on(table.topicId, table.status),
+    index('idx_discussion_session_user').on(table.userId, table.status),
+  ]
+);
+
+// Roundtable Domain: Discussion Message
+export const discussionMessage = table(
+  'discussion_message',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => discussionSession.id, { onDelete: 'cascade' }),
+    expertId: text('expert_id').references(() => expert.id, {
+      onDelete: 'set null',
+    }),
+    userId: text('user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    role: messageRoleEnum('role').notNull(),
+    content: text('content').notNull(),
+    threadRef: text('thread_ref'), // ID of message being replied to
+    citations: jsonb('citations'), // JSON array of citation objects
+    status: text('status').notNull().default('active'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_discussion_message_session').on(
+      table.sessionId,
+      table.createdAt
+    ),
+    index('idx_discussion_message_thread').on(table.threadRef),
+  ]
+);
+
+// Discovery/Deliverable Domain: Observation Card
+export const observationCard = table(
+  'observation_card',
+  {
+    id: text('id').primaryKey(),
+    topicId: text('topic_id')
+      .notNull()
+      .references(() => topic.id, { onDelete: 'cascade' }),
+    expertId: text('expert_id').references(() => expert.id, {
+      onDelete: 'set null',
+    }),
+    sessionId: text('session_id').references(() => discussionSession.id, {
+      onDelete: 'set null',
+    }),
+    title: text('title').notNull(),
+    content: text('content').notNull(),
+    stance: observationCardStanceEnum('stance'),
+    likes: integer('likes').default(0).notNull(),
+    status: text('status').notNull().default('active'),
+    coverImage: text('cover_image'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_observation_card_topic').on(table.topicId, table.status),
+    index('idx_observation_card_created_at').on(table.createdAt),
+  ]
+);
+
+// Identity Domain: User Preference
+export const userPreference = table(
+  'user_preference',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    preferredExperts: jsonb('preferred_experts'), // JSON array of expert IDs
+    preferredOutputFormats: jsonb('preferred_output_formats'), // JSON array
+    discussionDepth:
+      discussionDepthEnum('discussion_depth').default('balanced'),
+    backgroundInfo: jsonb('background_info'),
+    onboardingCompleted: boolean('onboarding_completed')
+      .default(false)
+      .notNull(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index('idx_user_preference_user').on(table.userId)]
+);
+
+// Deliverable Domain: Deliverable
+export const deliverable = table(
+  'deliverable',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => discussionSession.id, { onDelete: 'cascade' }),
+    topicId: text('topic_id')
+      .notNull()
+      .references(() => topic.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: deliverableTypeEnum('type').notNull(),
+    title: text('title'),
+    content: text('content'), // Generated content (JSON or markdown)
+    format: deliverableFormatEnum('format').default('markdown'),
+    status: deliverableStatusEnum('status').notNull(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('idx_deliverable_session').on(table.sessionId, table.type),
+    index('idx_deliverable_user_type').on(
+      table.userId,
+      table.type,
+      table.status
+    ),
+    index('idx_deliverable_topic').on(table.topicId),
   ]
 );

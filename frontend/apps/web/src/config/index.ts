@@ -1,3 +1,8 @@
+/**
+ * @module config
+ * @description Application configuration loaded from environment variables
+ * @consumers core/*, shared/*, domains/*, app/*
+ */
 import packageJson from '../../package.json';
 
 // Note: Environment variables are loaded via dotenv-cli in package.json scripts.
@@ -35,6 +40,7 @@ export const envConfigs: ConfigMap = {
   db_max_connections: process.env.DB_MAX_CONNECTIONS || '1',
   auth_url: process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || '',
   auth_secret: process.env.AUTH_SECRET ?? '', // openssl rand -base64 32
+  python_backend_url: process.env.PYTHON_BACKEND_URL ?? 'http://localhost:8000',
   version: packageJson.version,
   locale_detect_enabled:
     process.env.NEXT_PUBLIC_LOCALE_DETECT_ENABLED ?? 'false',

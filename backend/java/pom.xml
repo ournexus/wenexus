@@ -20,12 +20,14 @@
         <spring.cloud.version>2022.0.4</spring.cloud.version>
     </properties>
 
+    <!-- Java 后端暂不启用，模块待实现后取消注释
     <modules>
         <module>core-service</module>
         <module>user-service</module>
         <module>content-service</module>
         <module>consensus-service</module>
     </modules>
+    -->
 
     <dependencyManagement>
         <dependencies>

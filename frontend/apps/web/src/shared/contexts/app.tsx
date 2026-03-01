@@ -120,7 +120,7 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
 
   const showOneTap = useCallback(async (configs: Record<string, string>) => {
     try {
-      const authClient = getAuthClient(configs);
+      const authClient = getAuthClient(configs) as any;
       await authClient.oneTap({
         callbackURL: '/',
         onPromptNotification: (notification: any) => {

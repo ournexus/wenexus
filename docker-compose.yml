@@ -1,0 +1,37 @@
+# Local development services
+# Usage:
+#   docker compose up -d        Start all services
+#   docker compose down          Stop all services
+#   docker compose logs -f       Follow logs
+#   docker compose ps            Show running services
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: wenexus-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: wenexus_dev
+      POSTGRES_USER: wenexus
+      POSTGRES_PASSWORD: wenexus_dev_pwd
+    volumes:
+      - ./docker-data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wenexus -d wenexus_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: wenexus-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker-data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

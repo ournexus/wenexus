@@ -30,6 +30,7 @@ yarn-error.log*
 
 # Local env files
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -67,7 +68,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+backend/python/lib/
 lib64/
 parts/
 sdist/
@@ -100,3 +101,16 @@ Thumbs.db
 # Development tools
 .autofix-backup/
 .autofix.log
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Scripts logs
+scripts/logs/
+
+# Docker local data
+docker-data/

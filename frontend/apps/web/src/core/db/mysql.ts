@@ -13,7 +13,7 @@ export function getMysqlDb() {
 
   let isHyperdrive = false;
 
-  if (isCloudflareWorker) {
+  if (isCloudflareWorker()) {
     const { env }: { env: any } = { env: {} };
     // Detect if set Hyperdrive
     isHyperdrive = 'HYPERDRIVE' in env;
@@ -30,7 +30,7 @@ export function getMysqlDb() {
   }
 
   // In Cloudflare Workers, create new connection each time
-  if (isCloudflareWorker) {
+  if (isCloudflareWorker()) {
     console.log('in Cloudflare Workers environment');
     // Workers environment uses minimal configuration
     const client = mysql.createConnection({

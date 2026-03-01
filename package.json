@@ -8,6 +8,8 @@
     "frontend:build": "pnpm --dir frontend build",
     "frontend:lint": "pnpm --dir frontend lint",
     "frontend:test": "pnpm --dir frontend test",
+    "frontend:test:e2e": "pnpm --dir frontend/apps/web test:e2e",
+    "frontend:test:e2e:smoke": "pnpm --dir frontend/apps/web test:e2e:smoke",
     "backend:java:build": "mvn -f backend/java/pom.xml clean package",
     "backend:java:test": "mvn -f backend/java/pom.xml test",
     "backend:python:dev": "cd backend/python && uv run uvicorn src.main:app --reload",

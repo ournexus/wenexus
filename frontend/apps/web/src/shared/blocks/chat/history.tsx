@@ -60,12 +60,12 @@ export function ChatHistory() {
   const { user, isCheckSign } = useAppContext();
 
   const page = useMemo(() => {
-    const value = Number(searchParams.get('page') || '1');
+    const value = Number(searchParams?.get('page') || '1');
     return Number.isFinite(value) && value > 0 ? value : 1;
   }, [searchParams]);
 
   const limit = useMemo(() => {
-    const value = Number(searchParams.get('limit') || '10');
+    const value = Number(searchParams?.get('limit') || '10');
     return Number.isFinite(value) && value > 0 ? value : 10;
   }, [searchParams]);
 
@@ -89,7 +89,7 @@ export function ChatHistory() {
       if (safePage === page) {
         return;
       }
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
       if (safePage === 1) {
         params.delete('page');
       } else {
@@ -106,7 +106,7 @@ export function ChatHistory() {
   const handleLimitChange = useCallback(
     (nextLimit: number) => {
       const safeLimit = Math.max(nextLimit, 1);
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
       params.set('limit', String(safeLimit));
       params.delete('page');
       const queryString = params.toString();
