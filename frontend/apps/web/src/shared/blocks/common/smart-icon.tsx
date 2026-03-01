@@ -21,10 +21,13 @@ export function SmartIcon({
         if (IconComponent) {
           return { default: IconComponent as ComponentType<any> };
         }
+        console.warn(
+          `[SmartIcon] "${name}" not found, falling back to HelpCircle`
+        );
         return { default: module.HelpCircle as ComponentType<any> };
-      } catch {
-        const fallback = await import('lucide-react');
-        return { default: fallback.HelpCircle as ComponentType<any> };
+      } catch (error) {
+        console.error(`[SmartIcon] Failed to load lucide-react:`, error);
+        return { default: () => null };
       }
     });
   }
