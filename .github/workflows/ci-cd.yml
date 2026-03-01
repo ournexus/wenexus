@@ -106,14 +106,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.0
+        with:
+          version: v0.69.1
+          cache: true
+
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+          skip-setup-trivy: true
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
