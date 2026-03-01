@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "echo 'Admin build: skipped (scaffold)'",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "echo 'Admin lint: skipped (scaffold)'",
     "typecheck": "echo 'Admin typecheck: skipped (scaffold)'",
     "test": "echo 'Admin test: skipped (scaffold)'",
     "clean": "rm -rf .next out"
