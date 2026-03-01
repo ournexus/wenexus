@@ -95,10 +95,15 @@ export async function getAuthOptions(configs: Record<string, string>) {
               }
 
               // Prefer NEXT_LOCALE cookie (next-intl). Fallback to accept-language.
-              const localeFromCookie = getCookieFromCtx(ctx, 'NEXT_LOCALE');
+              const getCookie = getCookieFromCtx(ctx);
+              const localeFromCookie = getCookie('NEXT_LOCALE');
 
+              const acceptLang = getHeaderValue(
+                ctx.headers ?? {},
+                'accept-language'
+              );
               const localeFromHeader = guessLocaleFromAcceptLanguage(
-                getHeaderValue(ctx, 'accept-language')
+                acceptLang ?? ''
               );
 
               const locale =
@@ -112,7 +117,7 @@ export async function getAuthOptions(configs: Record<string, string>) {
               // Only set on first creation; never overwrite later.
               if (user?.utmSource) return user;
 
-              const raw = getCookieFromCtx(ctx, 'utm_source');
+              const raw = getCookie('utm_source');
               if (!raw || typeof raw !== 'string') return user;
 
               // Keep it small & safe.

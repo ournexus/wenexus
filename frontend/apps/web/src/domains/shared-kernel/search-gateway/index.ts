@@ -57,7 +57,7 @@ export async function groundedResearch(
     system: GROUNDING_SYSTEM_PROMPT,
     prompt: `Research the following topic and provide grounded facts with citations:\n\n${topic}`,
     temperature: 0.1,
-    maxTokens: 2000,
+    maxOutputTokens: 2000,
   });
 
   try {

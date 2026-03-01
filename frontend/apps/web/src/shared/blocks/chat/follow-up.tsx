@@ -131,7 +131,7 @@ export function FollowUp({
   useEffect(() => {
     if (
       chat?.id &&
-      chat.id === params.id &&
+      chat.id === params?.id &&
       chat.content &&
       chat.createdAt &&
       messages.length === 0
@@ -139,7 +139,7 @@ export function FollowUp({
       // auto send message in new chat
       submitMessage(chat.content, chat.metadata ?? {});
     }
-  }, [params.id, chat, submitMessage, messages.length]);
+  }, [params?.id, chat, submitMessage, messages.length]);
 
   if (!chat) {
     return null;

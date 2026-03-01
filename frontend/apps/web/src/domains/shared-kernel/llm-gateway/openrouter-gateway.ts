@@ -52,7 +52,7 @@ class OpenRouterGateway implements LLMGateway {
       model: openrouter.chat(modelId),
       prompt: options.prompt,
       system: options.systemPrompt,
-      maxTokens: options.maxTokens,
+      maxOutputTokens: options.maxTokens,
       temperature: options.temperature,
     });
 
@@ -61,10 +61,11 @@ class OpenRouterGateway implements LLMGateway {
       model: modelId,
       usage: result.usage
         ? {
-            promptTokens: result.usage.promptTokens,
-            completionTokens: result.usage.completionTokens,
+            promptTokens: result.usage.inputTokens ?? 0,
+            completionTokens: result.usage.outputTokens ?? 0,
             totalTokens:
-              result.usage.promptTokens + result.usage.completionTokens,
+              (result.usage.inputTokens ?? 0) +
+              (result.usage.outputTokens ?? 0),
           }
         : undefined,
     };

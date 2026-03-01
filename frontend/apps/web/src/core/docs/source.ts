@@ -18,10 +18,22 @@ const iconHelper = (icon: string | undefined) => {
   if (icon in icons) return createElement(icons[icon as keyof typeof icons]);
 };
 
+// fumadocs-mdx v11 returns { files: () => [...] } (function),
+// but fumadocs-core v15 loader() expects { files: [...] } (array).
+// Eagerly resolve files to bridge the version mismatch.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveSource<T extends { files: any }>(raw: T): T {
+  const f = raw.files;
+  if (typeof f === 'function') {
+    return { ...raw, files: f() };
+  }
+  return raw;
+}
+
 // Docs source
 export const docsSource = loader({
   baseUrl: '/docs',
-  source: docs.toFumadocsSource(),
+  source: resolveSource(docs.toFumadocsSource()),
   i18n,
   icon: iconHelper,
 });
@@ -29,7 +41,7 @@ export const docsSource = loader({
 // Pages source (using root path)
 export const pagesSource = loader({
   baseUrl: '/',
-  source: pages.toFumadocsSource(),
+  source: resolveSource(pages.toFumadocsSource()),
   i18n,
   icon: iconHelper,
 });
@@ -37,7 +49,7 @@ export const pagesSource = loader({
 // Posts source
 export const postsSource = loader({
   baseUrl: '/blog',
-  source: posts.toFumadocsSource(),
+  source: resolveSource(posts.toFumadocsSource()),
   i18n,
   icon: iconHelper,
 });
@@ -45,7 +57,7 @@ export const postsSource = loader({
 // Logs source
 export const logsSource = loader({
   baseUrl: '/logs',
-  source: logs.toFumadocsSource(),
+  source: resolveSource(logs.toFumadocsSource()),
   i18n,
   icon: iconHelper,
 });

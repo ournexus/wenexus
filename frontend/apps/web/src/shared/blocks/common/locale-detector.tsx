@@ -54,7 +54,7 @@ export function LocaleDetector() {
 
   const setDismissed = () => {
     const expiresAt = getTimestamp() + DISMISSED_EXPIRY_DAYS * 24 * 60 * 60;
-    cacheSet(DISMISSED_KEY, 'true', expiresAt);
+    cacheSet(DISMISSED_KEY, 'true');
   };
 
   const switchToLocale = useCallback(

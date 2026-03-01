@@ -158,7 +158,7 @@ export function Pagination({
   const router = useRouter();
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.set('page', page.toString());
     router.push(`${pathname}?${params.toString()}`);
   };
