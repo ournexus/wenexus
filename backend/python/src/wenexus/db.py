@@ -5,6 +5,8 @@ Depends: sqlalchemy, asyncpg, config
 Consumers: api modules, service layer
 """
 
+from collections.abc import AsyncGenerator
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -21,7 +23,7 @@ async_session = async_sessionmaker(
 )
 
 
-async def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Yield an async database session."""
     async with async_session() as session:
         yield session

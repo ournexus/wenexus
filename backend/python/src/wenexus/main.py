@@ -5,6 +5,7 @@ Depends: fastapi, structlog, config, db, api.roundtable, api.deliverable
 Consumers: uvicorn (runtime)
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
@@ -20,7 +21,7 @@ logger = structlog.get_logger()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Handle application startup and shutdown."""
     await logger.ainfo(
         "starting wenexus-python",
@@ -32,9 +33,7 @@ async def lifespan(app: FastAPI):
     if db_ok:
         await logger.ainfo("database connection verified")
     else:
-        await logger.awarn(
-            "database connection failed - service starting without DB"
-        )
+        await logger.awarn("database connection failed - service starting without DB")
 
     yield
 
@@ -58,7 +57,7 @@ app.add_middleware(
 
 
 @app.get("/health")
-async def health():
+async def health() -> dict[str, str]:
     """Health check endpoint."""
     return {
         "status": "ok",

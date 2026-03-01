@@ -6,6 +6,7 @@
     2. Redis 已启动: brew services start redis
     3. wenexus_dev 数据库已创建
 """
+
 import asyncio
 import sys
 from collections.abc import AsyncGenerator, Generator

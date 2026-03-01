@@ -11,12 +11,12 @@ router = APIRouter(prefix="/deliverable", tags=["deliverable"])
 
 
 @router.get("/")
-async def list_deliverables():
+async def list_deliverables() -> dict[str, object]:
     """List generated deliverables."""
     return {"deliverables": [], "total": 0}
 
 
 @router.post("/")
-async def create_deliverable():
+async def create_deliverable() -> dict[str, str]:
     """Create a new deliverable."""
     return {"message": "Not implemented yet"}

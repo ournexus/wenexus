@@ -3,7 +3,6 @@
 
 验证环境变量和配置项正确加载。
 """
-import pytest
 
 
 def test_config_loads_without_error() -> None:
