@@ -102,5 +102,15 @@ Thumbs.db
 .autofix-backup/
 .autofix.log
 
+# Test artifacts
+playwright-report/
+test-results/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Scripts logs
+scripts/logs/
+
 # Docker local data
 docker-data/
