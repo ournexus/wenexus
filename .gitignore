@@ -35,6 +35,10 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# OpenNext
+.open-next/
+bundled/
+
 # Vercel
 .vercel
 

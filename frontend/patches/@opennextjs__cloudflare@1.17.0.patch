@@ -1,0 +1,21 @@
+diff --git a/dist/cli/build/bundle-server.js b/dist/cli/build/bundle-server.js
+index e57f6b85a9445e2088b855c36233251ab2a51f16..4d571dae9c904521ef8f4df1ab69d953bdc67c03 100644
+--- a/dist/cli/build/bundle-server.js
++++ b/dist/cli/build/bundle-server.js
+@@ -119,6 +119,16 @@ export async function bundleServer(buildOpts, projectOpts) {
+             // `@next/env` is used by Next to load environment variables from files.
+             // OpenNext inlines the values at build time so this is not needed.
+             "@next/env": path.join(buildOpts.outputDir, "cloudflare-templates/shims/env.js"),
++            // Shiki full language/theme bundles are huge (~10 MiB) — not needed at runtime
++            "@shikijs/langs": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            "@shikijs/themes": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            "@shikijs/engine-oniguruma": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            // Build-time tools pulled in by fumadocs — not needed at runtime
++            "prettier": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            "prettier/standalone": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            "prettier/plugins/html": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            "yaml": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
++            "acorn": path.join(buildOpts.outputDir, "cloudflare-templates/shims/empty.js"),
+         },
+         define: {
+             // config file used by Next.js, see: https://github.com/vercel/next.js/blob/68a7128/packages/next/src/build/utils.ts#L2137-L2139

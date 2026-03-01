@@ -25,6 +25,7 @@
 - [x] Python 后端骨架代码（FastAPI + 健康检查 + API 路由 stub + DB 连接）
 - [x] 数据库 Schema 同步到 PostgreSQL（25 张表）
 - [x] 前后端基础链路调通（Frontend → DB, Python → DB, Frontend ↔ Python health）
+- [x] CI Pipeline 全部通过（frontend lint/typecheck/test, java build/test, python lint/typecheck/test, trivy security-scan + SARIF upload）/
 
 ### 未完成
 
@@ -34,6 +35,28 @@
 - [ ] Identity 域全部
 - [ ] 种子数据
 - [ ] OpenRouter API Key 配置
+
+---
+
+## CI/CD Pipeline 状态
+
+**全部 4 个 Job 稳定通过**（PR #20 + #21）
+
+| Job | 内容 | 状态 |
+|-----|------|------|
+| test-frontend | pnpm lint + typecheck + test (Node 20, Turborepo) | ✅ |
+| test-java-backend | mvn clean test + package | ✅ |
+| test-python-backend | ruff lint + mypy + pytest unit (uv) | ✅ |
+| security-scan | Trivy fs scan → SARIF → GitHub Security tab | ✅ |
+
+### 已修复的 CI 问题
+
+- Python `db.py` 懒加载 SQLAlchemy engine（CI 无 DATABASE_URL 不报错）
+- Admin app 空 scaffold 跳过 build/lint/typecheck
+- Node 升级到 20（fumadocs-mdx 需要 File API）
+- Turbo `test.dependsOn` 改为 `["^build"]`（仅构建依赖包，不构建 web app）
+- CI build step 暂跳过（需要 DATABASE_URL 等环境变量）
+- Trivy 改用 apt 仓库直装（避免 composite action 内部 `actions/checkout` 污染 git 状态）
 
 ---
 

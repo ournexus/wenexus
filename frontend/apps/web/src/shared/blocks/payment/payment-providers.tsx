@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { RiGithubFill, RiGoogleFill } from 'react-icons/ri';
 import { toast } from 'sonner';
 
 import { signIn } from '@/core/auth/client';

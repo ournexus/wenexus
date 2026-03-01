@@ -22,6 +22,25 @@ const nextConfig = {
   // when they expose a "workerd" export condition. `@libsql/client` does, and without
   // this the OpenNext bundler can fail to resolve it.
   serverExternalPackages: ['@libsql/client', '@libsql/isomorphic-ws'],
+  webpack: (config, { isServer }) => {
+    if (isServer && process.env.CF_BUILD === 'true') {
+      const stub = new URL('./src/shared/stubs/empty-module.js', import.meta.url).pathname;
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Shiki full language/theme bundles are huge (~10 MiB) — stub them out
+        '@shikijs/langs': stub,
+        '@shikijs/themes': stub,
+        '@shikijs/engine-oniguruma': stub,
+        // Build-time tools that fumadocs pulls in — not needed at runtime
+        'prettier': stub,
+        'prettier/standalone': stub,
+        'prettier/plugins/html': stub,
+        'yaml': stub,
+        'acorn': stub,
+      };
+    }
+    return config;
+  },
   images: {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

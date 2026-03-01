@@ -8,6 +8,11 @@ overrides:
   '@types/react': 19.2.2
   '@types/react-dom': 19.2.1
 
+patchedDependencies:
+  '@opennextjs/cloudflare@1.17.0':
+    hash: ojkinfyvwxxb7wwrmgm2wjbilm
+    path: patches/@opennextjs__cloudflare@1.17.0.patch
+
 importers:
 
   .:
@@ -166,7 +171,7 @@ importers:
         version: 15.5.12(next@15.5.7(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)
       '@opennextjs/cloudflare':
         specifier: ^1.10.1
-        version: 1.17.0(next@15.5.7(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(wrangler@4.68.0)
+        version: 1.17.0(patch_hash=ojkinfyvwxxb7wwrmgm2wjbilm)(next@15.5.7(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(wrangler@4.68.0)
       '@openrouter/ai-sdk-provider':
         specifier: ^1.2.0
         version: 1.5.4(ai@5.0.137(zod@4.3.6))(zod@4.3.6)
@@ -15221,7 +15226,7 @@ snapshots:
       - aws-crt
       - supports-color
 
-  '@opennextjs/cloudflare@1.17.0(next@15.5.7(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(wrangler@4.68.0)':
+  '@opennextjs/cloudflare@1.17.0(patch_hash=ojkinfyvwxxb7wwrmgm2wjbilm)(next@15.5.7(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(wrangler@4.68.0)':
     dependencies:
       '@ast-grep/napi': 0.40.5
       '@dotenvx/dotenvx': 1.31.0
