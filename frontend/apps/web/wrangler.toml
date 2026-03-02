@@ -6,7 +6,7 @@
 
 name = "wenexus-web"
 main = ".open-next/worker.js"
-compatibility_date = "2025-01-01"
+compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]

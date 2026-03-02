@@ -18,7 +18,7 @@ export function getMetadata(options?: MetadataOptions) {
   } = {}): Promise<Metadata> => {
     const resolvedParams = params ? await params : { locale: 'en' };
     const locale = resolvedParams?.locale ?? 'en';
-    const metadataKey = options?.metadataKey ?? 'metadata';
+    const metadataKey = options?.metadataKey ?? 'common.metadata';
 
     let title = 'WeNexus';
     let description = 'AI-powered multi-perspective content platform';
