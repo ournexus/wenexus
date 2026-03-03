@@ -135,10 +135,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to staging
-        run: |
-          echo "Deploying to staging environment"
-          # Add deployment steps here
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Deploy frontend to Cloudflare Workers (staging)
+        run: pnpm cf:deploy --env staging
+        working-directory: frontend/apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AUTH_SECRET: ${{ secrets.STAGING_AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          PYTHON_BACKEND_URL: ${{ secrets.STAGING_PYTHON_BACKEND_URL }}
 
   deploy-production:
     needs:
@@ -149,7 +168,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to production
-        run: |
-          echo "Deploying to production environment"
-          # Add deployment steps here
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Deploy frontend to Cloudflare Workers (production)
+        run: pnpm cf:deploy --env production
+        working-directory: frontend/apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AUTH_SECRET: ${{ secrets.PROD_AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PYTHON_BACKEND_URL: ${{ secrets.PROD_PYTHON_BACKEND_URL }}
