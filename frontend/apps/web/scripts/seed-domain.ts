@@ -267,50 +267,48 @@ async function seedDomain() {
     }
     console.log(`\n✅ Experts seeded: ${builtinExperts.length}\n`);
 
-    // 2. Seed sample topics (need a system user — use a fixed ID for seeds)
+    // 2. Seed sample topics
     console.log('📝 Seeding sample topics...');
-    const SYSTEM_USER_ID = 'system-seed-user';
 
-    // Check if system user exists in user table; if not, skip topic seeding
-    // Topics require a valid user_id foreign key
-    const [systemUser] = await db()
-      .select()
-      .from(schema.user)
-      .where(eq(schema.user.id, SYSTEM_USER_ID))
-      .catch(() => [undefined]);
+    // Find or create a seed user for topic ownership
+    let [seedUser] = await db().select().from(schema.user).limit(1);
 
-    if (!systemUser) {
-      console.log(
-        '   ⚠️  No system user found. Checking for any existing user...'
-      );
-      const [anyUser] = await db().select().from(schema.user).limit(1);
+    if (!seedUser) {
+      const seedUserId = getUuid();
+      console.log('   Creating seed user...');
+      [seedUser] = await db()
+        .insert(schema.user)
+        .values({
+          id: seedUserId,
+          name: 'WeNexus Seed',
+          email: 'seed@wenexus.dev',
+          emailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+      console.log(`   ✓ Created seed user: ${seedUser.email}`);
+    } else {
+      console.log(`   ✓ Using existing user: ${seedUser.email || seedUser.id}`);
+    }
 
-      if (anyUser) {
-        console.log(`   ✓ Using existing user: ${anyUser.email || anyUser.id}`);
-        for (const topicData of sampleTopics) {
-          const [existing] = await db()
-            .select()
-            .from(topic)
-            .where(eq(topic.title, topicData.title));
+    for (const topicData of sampleTopics) {
+      const [existing] = await db()
+        .select()
+        .from(topic)
+        .where(eq(topic.title, topicData.title));
 
-          if (existing) {
-            console.log(`   ✓ Topic already exists: ${topicData.title}`);
-          } else {
-            const id = getUuid();
-            await db()
-              .insert(topic)
-              .values({ id, userId: anyUser.id, ...topicData });
-            console.log(`   ✓ Created topic: ${topicData.title}`);
-          }
-        }
-        console.log(`\n✅ Topics seeded: ${sampleTopics.length}\n`);
+      if (existing) {
+        console.log(`   ✓ Topic already exists: ${topicData.title}`);
       } else {
-        console.log('   ⚠️  No users in database. Skipping topic seeding.');
-        console.log(
-          '   💡 Sign up a user first, then re-run this script to seed topics.\n'
-        );
+        const id = getUuid();
+        await db()
+          .insert(topic)
+          .values({ id, userId: seedUser.id, ...topicData });
+        console.log(`   ✓ Created topic: ${topicData.title}`);
       }
     }
+    console.log(`\n✅ Topics seeded: ${sampleTopics.length}\n`);
 
     console.log('✅ Domain seeding completed successfully!');
     console.log('\n📊 Summary:');
