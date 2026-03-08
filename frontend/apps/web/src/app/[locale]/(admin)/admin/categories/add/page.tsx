@@ -6,6 +6,7 @@ import { FormCard } from '@/shared/blocks/form';
 import { getUuid } from '@/shared/lib/hash';
 import {
   addTaxonomy,
+  getTaxonomies,
   NewTaxonomy,
   TaxonomyStatus,
   TaxonomyType,
@@ -30,6 +31,12 @@ export default async function CategoryAddPage({
   });
 
   const t = await getTranslations('admin.categories');
+
+  // Fetch existing categories for parent selection
+  const categories = await getTaxonomies({
+    type: TaxonomyType.CATEGORY,
+    status: TaxonomyStatus.PUBLISHED,
+  });
 
   const crumbs: Crumb[] = [
     { title: t('add.crumbs.admin'), url: '/admin' },
@@ -57,6 +64,18 @@ export default async function CategoryAddPage({
         type: 'textarea',
         title: t('fields.description'),
       },
+      {
+        name: 'parentId',
+        type: 'select',
+        title: 'Parent Category',
+        options: [
+          { value: '', label: 'No Parent (Root Category)' },
+          ...categories.map((cat) => ({
+            value: cat.id,
+            label: cat.title,
+          })),
+        ],
+      },
     ],
     passby: {
       type: 'category',
@@ -77,6 +96,7 @@ export default async function CategoryAddPage({
         const slug = data.get('slug') as string;
         const title = data.get('title') as string;
         const description = data.get('description') as string;
+        const parentId = data.get('parentId') as string;
 
         if (!slug?.trim() || !title?.trim()) {
           throw new Error('slug and title are required');
@@ -85,7 +105,7 @@ export default async function CategoryAddPage({
         const newCategory: NewTaxonomy = {
           id: getUuid(),
           userId: user.id,
-          parentId: '', // todo: select parent category
+          parentId: parentId || '', // Use selected parent category or empty string for root
           slug: slug.trim().toLowerCase(),
           type: TaxonomyType.CATEGORY,
           title: title.trim(),

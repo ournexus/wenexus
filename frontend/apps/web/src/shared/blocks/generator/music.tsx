@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Link } from '@/core/i18n/navigation';
+import { getCreditCost } from '@/config/credits';
 import { AISong, AITaskStatus } from '@/extensions/ai/types';
 import { LazyImage } from '@/shared/blocks/common/lazy-image';
 import { Badge } from '@/shared/components/ui/badge';
@@ -105,8 +106,8 @@ export function MusicGenerator({ className, srOnlyTitle }: SongGeneratorProps) {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // todo: get cost credits from settings
-  const costCredits = 10;
+  // get credit cost from configuration
+  const costCredits = getCreditCost('music', 'text-to-music');
 
   // Client-side mounting state to prevent hydration mismatch
   const [isMounted, setIsMounted] = useState(false);

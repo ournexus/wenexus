@@ -117,9 +117,9 @@ export default async function PostAddPage({
         const slug = data.get('slug') as string;
         const title = data.get('title') as string;
         const description = data.get('description') as string;
+        const image = data.get('image') as string;
         const content = data.get('content') as string;
         const categories = data.get('categories') as string;
-        const image = data.get('image') as string;
         const authorName = data.get('authorName') as string;
         const authorImage = data.get('authorImage') as string;
 
@@ -130,7 +130,7 @@ export default async function PostAddPage({
         const newPost: NewPost = {
           id: getUuid(),
           userId: user.id,
-          parentId: '', // todo: select parent category
+          parentId: '', // Posts don't have parent categories, they belong to categories via the categories field
           slug: slug.trim().toLowerCase(),
           type: PostType.ARTICLE,
           title: title.trim(),
