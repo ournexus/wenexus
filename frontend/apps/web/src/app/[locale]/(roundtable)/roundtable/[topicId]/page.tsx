@@ -1,17 +1,35 @@
+import { notFound } from 'next/navigation';
+import { getTopicById } from '@/domains/discovery/services/topic-service';
+import { findOrCreateSession } from '@/domains/roundtable/services/chat-service';
+
+import { RoundtableClient } from './roundtable-client';
+
 export default async function RoundtablePage({
   params,
 }: {
   params: Promise<{ topicId: string; locale: string }>;
 }) {
   const { topicId } = await params;
+  const topic = await getTopicById(topicId);
+
+  if (!topic) {
+    notFound();
+  }
+
+  // Create or find session server-side (no auth needed for dev)
+  const session = await findOrCreateSession(topicId, topic.userId);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold">Roundtable Discussion</h1>
-      <p className="mt-2 text-muted-foreground">Topic ID: {topicId}</p>
-      <p className="mt-4 text-sm text-muted-foreground">
-        This page will host the AI expert roundtable discussion interface.
-      </p>
-    </div>
+    <RoundtableClient
+      topic={{
+        id: topic.id,
+        title: topic.title,
+        description: topic.description,
+        type: topic.type,
+        consensusLevel: topic.consensusLevel ?? 0,
+      }}
+      sessionId={session.id}
+      initialStatus={session.status}
+    />
   );
 }
