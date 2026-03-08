@@ -1,9 +1,9 @@
 # WeNexus 领域架构与全栈工程师岗位配置方案
 
-> 版本: v1.1
+> 版本: v1.2
 > 视角: 集团架构师
-> 更新时间: 2025-02-11
-> 输入依据: user-story-v4.md v4.0 / aigc-architecture-vision.md v1.0 / 现有代码库
+> 更新时间: 2026-03-08
+> 输入依据: user-story-v4.md v4.0 / aigc-architecture-vision.md v1.0 / 现有代码库（Monorepo 架构）
 
 ---
 
@@ -64,7 +64,7 @@ Identity ──── 用户偏好 ─────────▶ (全域消费)
 | **双重交付** | Deliverable 域同时负责对用户交付（报告/清单/脚本等）和对系统交付（观点卡片/摘要回流 Discovery 信息流） |
 | **讨论驱动** | Deliverable 域必须依赖 Roundtable 的讨论数据，两条交付管线复用同一个内容源 |
 | **身份贯穿** | Identity 域为所有域提供用户上下文，但不阻塞核心流程 |
-| **共享内核最小化** | LLM Gateway 和 Design System 是唯二的共享依赖 |
+| **共享内核分层管控** | 核心层（LLM Gateway + Design System）稳定不变；扩展层（Persistence Port、Observability、Policy & Safety 等）按需引入，详见 2.5 节和 ADR-006 |
 
 ---
 
@@ -75,6 +75,14 @@ Identity ──── 用户偏好 ─────────▶ (全域消费)
 **使命**：让用户在 3 秒内被吸引，完成从"路过"到"点击"的转化。
 
 **核心聚合根**：`Topic`、`FeedCard`、`ObservationCard`
+
+**全栈实现分布**：
+
+| 层 | 实现 |
+|----|------|
+| 前端 | `frontend/apps/web/src/domains/discovery/` — FeedView, FeedCard, TopicCard, ObservationCardView |
+| Java 后端 | `backend/java/content-service/` — 话题 CRUD、内容持久化、推荐排序 |
+| Python 后端 | `backend/python/src/service/` — AI 驱动的封面图生成、话题关键词提取 |
 
 ```
 Discovery 域
@@ -112,6 +120,14 @@ Discovery 域
 **使命**：编排 AI 专家的多轮对话，让用户感受到"真正的辩论"。
 
 **核心聚合根**：`ChatSession`、`Expert`、`AutopilotState`
+
+**全栈实现分布**：
+
+| 层 | 实现 |
+|----|------|
+| 前端 | `frontend/apps/web/src/domains/roundtable/` — ChatInterface, DiscussionThread, ConstellationView 等 |
+| Java 后端 | `backend/java/consensus-service/` — 共识算法、讨论状态持久化、会话管理 |
+| Python 后端 | `backend/python/src/service/` — LLM 多 Agent 编排、专家发言生成、挂机决策引擎 |
 
 ```
 Roundtable 域
@@ -169,6 +185,14 @@ Roundtable 域
 **使命**：将讨论成果转化为面向**用户**和面向**平台信息流**的内容产出——既对用户交付可复用的专业内容，也对 Discovery 信息流供给观点卡片、话题摘要等展示素材。
 
 **核心聚合根**：`DeliverablePackage`
+
+**全栈实现分布**：
+
+| 层 | 实现 |
+|----|------|
+| 前端 | `frontend/apps/web/src/domains/deliverable/` — DynamicJSXRenderer, SlideViewer, 各交付物 UI |
+| Java 后端 | `backend/java/content-service/` — 交付物持久化、导出任务管理 |
+| Python 后端 | `backend/python/src/service/` — AI 内容蒸馏、报告/卡片/脚本生成、AIGC 渲染逻辑 |
 
 ```
 Deliverable 域
@@ -228,6 +252,14 @@ Deliverable 域
 **使命**：理解用户、记住用户、服务用户。
 
 **核心聚合根**：`UserProfile`
+
+**全栈实现分布**：
+
+| 层 | 实现 |
+|----|------|
+| 前端 | `frontend/apps/web/src/domains/identity/` — BackgroundCollector, Onboarding, GuidedTour |
+| Java 后端 | `backend/java/user-service/` — 用户注册/认证、档案持久化、隐私管控 |
+| Python 后端 | `backend/python/src/service/` — AI 对话式背景收集、偏好分析 |
 
 ```
 Identity 域
@@ -290,6 +322,93 @@ Shared Kernel
 └── Shared Types（共享类型）
     ├── 职责：跨域共享的核心类型定义
     └── 文件：types.ts
+```
+
+---
+
+### 2.6 核心数据模型
+
+各域聚合根的关键属性定义。详细字段在实现时由技术文档补充。
+
+```typescript
+// Discovery 域
+interface Topic {
+  id: string;
+  title: string;
+  description: string;
+  creatorId: string;
+  isPrivate: boolean;
+  status: 'draft' | 'active' | 'archived';
+  expectedDeliverableType?: string;
+  consensusLevel?: number;        // 由 Roundtable 域回写
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface FeedCard {
+  id: string;
+  topicId: string;
+  cardType: 'observation' | 'summary' | 'quote';
+  title: string;
+  content: string;
+  expertId?: string;
+  coverImageUrl?: string;
+  engagement: { likes: number; views: number };
+  sourceType: 'distilled' | 'user_generated';  // 区分蒸馏内容 vs 用户触发
+  createdAt: Date;
+}
+
+// Roundtable 域
+interface ChatSession {
+  id: string;
+  topicId: string;
+  status: 'initializing' | 'fact_checking' | 'discussing' | 'concluded';
+  mode: 'autopilot' | 'host_control' | 'participant';
+  experts: Expert[];
+  messageCount: number;
+  consensusState: ConsensusState;
+  createdAt: Date;
+}
+
+interface Expert {
+  id: string;
+  name: string;
+  persona: string;              // 人设描述
+  stance?: 'support' | 'oppose' | 'neutral';
+  isCustom: boolean;            // 用户自定义 vs 系统预设
+  avatarEmoji: string;
+}
+
+interface ConsensusState {
+  factualAgreement: number;     // 事实共识度 0-100
+  stanceUnderstanding: number;  // 立场理解度 0-100
+  rootCauseClarity: number;     // 分歧根源清晰度 0-100
+}
+
+// Deliverable 域
+interface DeliverablePackage {
+  id: string;
+  topicId: string;
+  sessionId: string;
+  type: 'report' | 'observation_card' | 'checklist' | 'script' | 'social_content';
+  status: 'generating' | 'ready' | 'exported';
+  content: string;              // AI 生成的内容（JSX/Markdown/JSON）
+  readiness: number;            // 生成就绪度 0-100
+  createdAt: Date;
+}
+
+// Identity 域
+interface UserProfile {
+  id: string;
+  backgroundSummary?: string;   // AI 对话收集的背景摘要
+  preferences: {
+    favoriteExperts: string[];
+    preferredDeliverableType?: string;
+    discussionDepth: 'shallow' | 'moderate' | 'deep';
+  };
+  topicHistory: string[];       // 参与过的话题 ID
+  createdAt: Date;
+}
 ```
 
 ---
@@ -501,6 +620,19 @@ type DomainEvent =
 | Roundtable | Identity | `getUserPreference(userId)` | 获取用户偏好，用于个性化讨论 |
 | All | Shared | `llm.generate(prompt, mode)` | 统一 LLM 调用入口 |
 
+### 5.3 领域事件实现策略
+
+领域事件在不同技术层有不同的实现机制：
+
+| 层 | 机制 | 说明 |
+|----|------|------|
+| 前端（同进程） | EventEmitter / React Context | 同步派发，适用于 UI 状态联动（如 ConsensusUpdated → 更新卡片热度） |
+| Java 微服务间 | Spring Application Events + 消息队列（预留） | 基线阶段用 Spring Events（单进程内同步）；后续拆分为独立服务时切换为 RabbitMQ/Kafka |
+| Python AI 服务 | REST API 回调 / 消息队列消费 | Python 服务作为事件消费者，接收 Java 服务的异步通知（如 DiscussionReady → 触发内容蒸馏） |
+| 前后端跨层 | SSE / WebSocket | 后端事件推送到前端（如讨论进展实时更新） |
+
+**基线阶段简化方案**：前端 EventEmitter + 后端 Spring Events + REST API 调用，不引入消息队列。待服务拆分后按需升级。
+
 ---
 
 ## 六、技术栈与代码组织建议
@@ -509,67 +641,56 @@ type DomainEvent =
 
 | 层 | 技术 | 说明 |
 |----|------|------|
-| 前端框架 | React + TypeScript | SPA，Vite 构建 |
+| 前端框架 | Next.js + React + TypeScript | Monorepo（pnpm + Turborepo），含 Web/Admin/Mobile 三端 |
+| 移动端 | React Native | 共享 packages（UI 组件、类型、工具函数） |
 | 样式 | Tailwind CSS | 原子化 CSS |
-| AI 服务 | Gemini API（主）+ 多模型抽象 | LLM Gateway 已有雏形 |
-| 状态管理 | React Context | 轻量级，基线阶段够用 |
-| 构建工具 | Vite | 快速 HMR |
+| Java 后端 | Spring Boot + Maven | 微服务架构：core-service / user-service / content-service / consensus-service |
+| Python 后端 | FastAPI | AI/ML 服务：facade → app → service → repository 分层 |
+| AI 服务 | 多模型抽象（Gemini / OpenAI 等） | LLM Gateway 统一接口 |
+| 构建工具 | Turborepo（前端）/ Maven（Java）/ uv（Python） | 各层独立构建 |
 
-### 6.2 建议的目录重构（按领域划分）
+### 6.2 代码组织（按领域划分的 Monorepo）
 
 ```
-src/
-├── domains/
-│   ├── discovery/
-│   │   ├── components/     # FeedView, FeedCard, TopicCard, ObservationCardView
-│   │   ├── services/       # feedService, topicService
-│   │   ├── types.ts        # Discovery 域专属类型
-│   │   └── index.ts        # 公开 API
-│   │
-│   ├── roundtable/
-│   │   ├── components/     # RoundTable, ChatInterface, DiscussionThread,
-│   │   │                   # AutopilotStatusBar, HostControlPanel,
-│   │   │                   # ExpertManagementPanel, ParticipantInput,
-│   │   │                   # ConstellationView, SpeakingArea, ConsensusMeter
-│   │   ├── services/       # chatService, autopilotService, consensusService,
-│   │   │                   # threadService, hostActionService, agentFactory
-│   │   ├── types.ts
-│   │   └── index.ts
-│   │
-│   ├── deliverable/
-│   │   ├── components/     # ConsensusReport, ArticleView, ScriptView,
-│   │   │                   # ActionPlan, StrategyDeck, XiaohongshuView,
-│   │   │                   # GaokaoComposition, PresentationView,
-│   │   │                   # DynamicJSXRenderer, SlideViewer,
-│   │   │                   # DeliverableToolbar, DeliverableReadinessIndicator
-│   │   ├── services/       # deliverableService, cardGeneratorService,
-│   │   │                   # slideGeneratorService, readinessService
-│   │   ├── types.ts
-│   │   └── index.ts
-│   │
-│   └── identity/
-│       ├── components/     # BackgroundCollector, Onboarding, GuidedTour
-│       ├── services/       # userProfileService
-│       ├── types.ts
-│       └── index.ts
+wenexus/
+├── frontend/                          # 前端 Monorepo (pnpm + Turborepo)
+│   ├── apps/
+│   │   ├── web/                      # 主 Web 应用 (Next.js)
+│   │   │   └── src/
+│   │   │       ├── domains/          # 按业务域组织的页面和组件
+│   │   │       │   ├── discovery/    # FeedView, FeedCard, TopicCard
+│   │   │       │   ├── roundtable/   # ChatInterface, DiscussionThread, AutopilotStatusBar
+│   │   │       │   ├── deliverable/  # ConsensusReport, DynamicJSXRenderer, SlideViewer
+│   │   │       │   └── identity/     # BackgroundCollector, Onboarding, GuidedTour
+│   │   │       └── shared/           # 全局 UI 状态、路由
+│   │   ├── admin/                    # 管理后台 (Next.js)
+│   │   └── mobile/                   # 移动端 (React Native)
+│   └── packages/
+│       ├── ui/                       # 共享 UI 组件（Design System 实现）
+│       ├── types/                    # 跨端共享的 TypeScript 类型定义
+│       ├── utils/                    # 工具函数
+│       └── shared/                   # 通用 hooks 和配置
 │
-├── shared/
-│   ├── llm/                # LLM Gateway（providers/, index.ts, types.ts）
-│   ├── design-system/      # designSystem.ts, 全局样式
-│   ├── ui/                 # Layout, Toast 等通用 UI
-│   ├── contexts/           # UIContext
-│   └── types.ts            # 跨域共享类型（最小集）
+├── backend/
+│   ├── java/                         # Java 微服务 (Spring Boot + Maven)
+│   │   ├── core-service/            # 共享内核：LLM Gateway、事件总线、通用能力
+│   │   ├── user-service/            # Identity 域：用户管理、偏好、隐私
+│   │   ├── content-service/         # Discovery + Deliverable 域：话题、内容、蒸馏
+│   │   └── consensus-service/       # Roundtable 域：共识算法、讨论状态
+│   └── python/                       # Python AI 服务 (FastAPI)
+│       └── src/
+│           ├── facade/              # API 网关层（聚合后端调用）
+│           ├── app/                 # 应用层（编排业务逻辑）
+│           ├── service/             # 领域服务层（AI/ML 核心能力）
+│           ├── repository/          # 数据持久层
+│           └── model/               # 数据模型
 │
-├── views/                  # 页面级组件（组装各域组件）
-│   ├── Home.tsx
-│   ├── TopicDetail.tsx
-│   └── DeliverableResult.tsx
-│
-├── App.tsx
-└── index.tsx
+└── docs/                             # 文档
+    ├── prd/                         # 产品需求和架构（只读）
+    └── technical/                   # 技术方案和架构决策
 ```
 
-> **注意**：此重构为渐进式建议，不需要一次性完成。优先在新功能开发时按此结构组织。
+> **领域到服务的映射**：前端按 `domains/` 划分 UI 组件；Java 后端按微服务划分核心业务；Python 后端统一处理 AI/ML 密集型任务。三层通过 API 契约松耦合。
 
 ---
 
@@ -579,25 +700,30 @@ src/
 
 ### 7.1 里程碑规划
 
+> **时间估计说明**：以下时间基于 3 人全栈团队、全职投入、AI 辅助开发的假设。实际周期受联调复杂度、LLM 调优和产品打磨影响较大，建议按 1.5-2 倍系数预留缓冲。
+
 ```
-M1: 基线体验闭环（2 周）
-════════════════════════
+M1: 基线体验闭环（4-6 周）
+════════════════════════════
   Discovery: 首页信息流 + 话题创建（US-01, US-03, US-04）
   Roundtable: 求真者开场 + 挂机模式 + 线程对话（US-07, US-08, US-11）
   Deliverable: 观点卡片生成（US-26）
   Identity: 背景收集（US-05）
+  基础设施: 前后端联调、LLM Gateway 基础能力、CI/CD
 
-M2: 交互深度（2 周）
+  复杂度因素：多 Agent 对话编排 + 流式 LLM 响应 + 前后端三层联调
+
+M2: 交互深度（3-4 周）
 ════════════════════════
   Roundtable: 接管/恢复 + 主持人操控 + 全局反馈（US-13~US-16）
   Deliverable: 共识报告 + 决策清单（US-25, US-27）
   Discovery: 观点详情页（US-02）
 
-M3: 对外演示就绪（1 周）
-════════════════════════
+M3: 对外演示就绪（2-3 周）
+════════════════════════════
   Deliverable: 公众号文章 + 社交内容（US-28, US-29）
   Identity: 新手引导（US-30）
-  全域: 路演演示脚本打磨 + 预设话题数据
+  全域: 路演演示脚本打磨 + 预设话题数据 + 端到端体验优化
 ```
 
 ### 7.2 各域 P0/P1/P2 拆分
@@ -618,7 +744,7 @@ M3: 对外演示就绪（1 周）
 |------|------|------|------|
 | ADR-001 | 按业务域而非技术层划分代码 | 降低跨域耦合，支持独立迭代 | 已采纳 |
 | ADR-002 | LLM Gateway 作为共享内核 | AI 是全产品核心能力，需统一管控 | 已采纳 |
-| ADR-003 | 基线阶段可无后端运行，但预留可插拔后端能力 | 先保持交付速度，同时确保 3-5 年演进时能平滑引入 BFF/后端服务 | 已采纳 |
+| ADR-003 | 全栈架构：前端 Monorepo + Java 微服务 + Python AI 服务 | 前端用 Next.js SSR 提升 SEO 和首屏性能；Java 处理核心业务（用户、内容、共识）；Python 处理 AI/ML 密集型任务 | 已采纳 |
 | ADR-004 | 渐进式重构目录结构 | 避免大规模重构阻塞功能开发 | 建议 |
 | ADR-005 | Roundtable 域人力占比 50% | 讨论引擎是产品核心差异化，复杂度最高 | 建议 |
 | ADR-006 | 增强 Shared Kernel：Search/Grounding、持久化端口、可观测性、策略与安全 | 把跨域共性做成“内核能力”，防止域间直接耦合与重复建设 | 建议 |

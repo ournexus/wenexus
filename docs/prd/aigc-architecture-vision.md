@@ -1,7 +1,7 @@
 # WeNexus AIGC 架构愿景：面向 AGI 时代的内容生成系统
 
-> 版本: v1.0
-> 更新时间: 2025-01-27
+> 版本: v1.1
+> 更新时间: 2026-03-08
 > 性质: 技术愿景文档，面向未来 3-5 年
 
 ---
@@ -79,13 +79,7 @@ AI 是"填表员"                         AI 是"品牌设计师"
 │  └──────────────────────────────────┬──────────────────────────────────────┘   │
 │                                     │                                          │
 │                                     ▼                                          │
-│  ┌─────────────────────────────────好的。关于现在的 AIGC 内容生成，我觉得和我预期的差距还很大。
-
-目前的现状是：
-1. 现在的系统更像是把它当成了 PPT 来制作
-2. 但我们实际需要的是做成小红书图文那种形式
-
-针对这一点，之前我们也已经梳理好了整体架构和具体的实现思路。────────────────────────────────────────┐   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                      代码生成层 (Generation Layer)                       │   │
 │  │                                                                         │   │
 │  │   AI 直接生成完整的前端代码：                                             │   │
@@ -376,24 +370,32 @@ AI 不是无约束创作，而是在品牌设计语言的指导下创作。
 
 ### 4.3 流式生成体验
 
+> **实现难点**：增量 JSX 解析（在 AI 流式输出中实时解析不完整的 JSX）是一个工程难题。
+> 需要自研或引入支持增量解析的 JSX 编译器，候选方案包括基于 SWC/Babel 的自定义 parser
+> 或按 Slide 分隔符（如 `{/* Slide N */}`）进行文本级切割后整段编译。
+
 ```jsx
-// 用户看到的是逐步生成的精美卡片
+// 概念设计：用户看到的是逐步生成的精美卡片
+// 注意：slideParser 和 compileSlideJSX 需要自研实现
 function StreamingSlides({ aiStream }) {
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(null);
 
   useEffect(() => {
-    // 实时解析 AI 输出的 JSX
-    const parser = new IncrementalJSXParser(aiStream);
+    // 按 Slide 分隔符切割流式输出，每完成一个 Slide 整段编译
+    // 方案 A：基于文本分隔符切割（简单，推荐基线阶段使用）
+    // 方案 B：基于 AST 的增量解析（复杂，后续优化方向）
+    const buffer = new SlideStreamBuffer(aiStream, {
+      separator: /\{\/\*\s*Slide\s+\d+/,
+    });
 
-    parser.onSlideComplete((slideCode) => {
-      // 编译并渲染完整的 Slide
-      const CompiledSlide = compileJSX(slideCode);
+    buffer.onSlideComplete((slideCode) => {
+      // 使用 SWC 或 Babel 编译完整的 Slide JSX
+      const CompiledSlide = compileSlideJSX(slideCode);
       setSlides(prev => [...prev, CompiledSlide]);
     });
 
-    parser.onSlideProgress((partialCode) => {
-      // 显示正在生成的预览
+    buffer.onProgress((partialCode) => {
       setCurrentSlide(partialCode);
     });
   }, [aiStream]);
@@ -709,11 +711,11 @@ AI 能力：
 
 | 维度 | Canva/美图 | v0.dev | WeNexus |
 |------|-----------|--------|---------|
-| 定位 | 模板工具 | 代码生成 | 内容+视觉一体化 |
-| AI 角色 | 辅助填充 | 代码生成 | 完整创作 |
-| 输入 | 用户选模板 | 用户描述需求 | 内容自动转视觉 |
-| 输出 | 静态图片 | 代码 | 可交互的内容体验 |
-| 护城河 | 模板库 | 代码能力 | 内容理解+视觉创作 |
+| 定位 | 设计平台（模板 + AI 生成） | 代码生成 | 内容+视觉一体化 |
+| AI 角色 | AI 辅助设计（Magic Studio 支持文生图、AI 排版） | 代码生成 | 内容理解 → 视觉创作 |
+| 输入 | 用户选模板或描述需求 | 用户描述需求 | 讨论内容自动转视觉 |
+| 输出 | 静态图片/视频 | 代码 | 可交互的内容体验 |
+| 差异点 | 通用设计工具，不理解内容语义 | 通用代码工具，不理解内容语义 | 深度绑定讨论语义（专家观点、情感张力、共识度） |
 
 ---
 
