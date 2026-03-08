@@ -6,9 +6,7 @@ import { Header, Main, MainHeader } from '@/shared/blocks/dashboard';
 import { FormCard } from '@/shared/blocks/form';
 import {
   findTaxonomy,
-  getTaxonomies,
   TaxonomyStatus,
-  TaxonomyType,
   updateTaxonomy,
   UpdateTaxonomy,
 } from '@/shared/models/taxonomy';
@@ -38,15 +36,6 @@ export default async function CategoryEditPage({
     return <Empty message="Category not found" />;
   }
 
-  // Fetch existing categories for parent selection
-  const categories = await getTaxonomies({
-    type: TaxonomyType.CATEGORY,
-    status: TaxonomyStatus.PUBLISHED,
-  });
-
-  // Filter out the current category to prevent self-parenting
-  const availableParentCategories = categories.filter((cat) => cat.id !== id);
-
   const crumbs: Crumb[] = [
     { title: t('edit.crumbs.admin'), url: '/admin' },
     { title: t('edit.crumbs.categories'), url: '/admin/categories' },
@@ -72,18 +61,6 @@ export default async function CategoryEditPage({
         name: 'description',
         type: 'textarea',
         title: t('fields.description'),
-      },
-      {
-        name: 'parentId',
-        type: 'select',
-        title: 'Parent Category',
-        options: [
-          { value: '', label: 'No Parent (Root Category)' },
-          ...availableParentCategories.map((cat) => ({
-            value: cat.id,
-            label: cat.title,
-          })),
-        ],
       },
     ],
     passby: {
@@ -111,14 +88,13 @@ export default async function CategoryEditPage({
         const slug = data.get('slug') as string;
         const title = data.get('title') as string;
         const description = data.get('description') as string;
-        const parentId = data.get('parentId') as string;
 
         if (!slug?.trim() || !title?.trim()) {
           throw new Error('slug and title are required');
         }
 
         const updateCategory: UpdateTaxonomy = {
-          parentId: parentId || '', // Use selected parent category or empty string for root
+          parentId: '', // todo: select parent category
           slug: slug.trim().toLowerCase(),
           title: title.trim(),
           description: description.trim(),

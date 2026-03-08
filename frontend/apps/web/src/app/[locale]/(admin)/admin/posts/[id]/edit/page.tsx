@@ -146,7 +146,7 @@ export default async function PostEditPage({
         }
 
         const newPost: UpdatePost = {
-          parentId: '', // Posts don't have parent categories, they belong to categories via the categories field
+          parentId: '', // todo: select parent category
           slug: slug.trim().toLowerCase(),
           type: PostType.ARTICLE,
           title: title.trim(),

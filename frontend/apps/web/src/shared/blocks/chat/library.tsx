@@ -93,7 +93,7 @@ export function ChatLibrary({}) {
               <SidebarMenuButton
                 asChild
                 className={
-                  params.id === chat.id
+                  params?.id === chat.id
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                     : ''
                 }

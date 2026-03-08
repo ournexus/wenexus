@@ -1,0 +1,35 @@
+# Cloudflare Workers deployment configuration
+# Deploy: pnpm cf:deploy
+# Preview: pnpm cf:preview
+#
+# [vars] 与 .env.development 存在共享变量，修改时请同步更新
+
+name = "wenexus-web"
+main = ".open-next/worker.js"
+compatibility_date = "2026-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# Secrets (set via wrangler secret put <NAME> or Cloudflare Dashboard):
+#   AUTH_SECRET
+#   DATABASE_URL
+#   PYTHON_BACKEND_URL
+
+[vars]
+NEXT_PUBLIC_APP_NAME = "WeNexus"
+NEXT_PUBLIC_THEME = "default"
+NEXT_PUBLIC_APPEARANCE = "system"
+DATABASE_PROVIDER = "postgresql"
+DB_SINGLETON_ENABLED = "true"
+DB_MAX_CONNECTIONS = "1"
+
+[env.staging]
+name = "wenexus-web-staging"
+vars = { NEXT_PUBLIC_APP_URL = "https://wenexus-web-staging.workers.dev" }
+
+[env.production]
+name = "wenexus-web-production"
+vars = { NEXT_PUBLIC_APP_URL = "https://wenexus.com" }

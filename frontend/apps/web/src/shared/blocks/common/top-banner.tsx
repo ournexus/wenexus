@@ -89,7 +89,7 @@ export function TopBanner({
   const setDismissed = () => {
     if (!rememberDismiss) return;
     const expiresAt = getTimestamp() + dismissedExpiryDays * 24 * 60 * 60;
-    cacheSet(dismissKey, 'true', expiresAt);
+    cacheSet(dismissKey, 'true');
   };
 
   useEffect(() => {

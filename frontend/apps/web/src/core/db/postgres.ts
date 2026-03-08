@@ -19,7 +19,7 @@ export function getPostgresDb() {
       ? { connection: { options: `-c search_path=${schemaName}` } }
       : {};
 
-  if (isCloudflareWorker) {
+  if (isCloudflareWorker()) {
     const { env }: { env: any } = getCloudflareContext();
     // Detect if set Hyperdrive
     isHyperdrive = 'HYPERDRIVE' in env;
@@ -36,7 +36,7 @@ export function getPostgresDb() {
   }
 
   // In Cloudflare Workers, create new connection each time
-  if (isCloudflareWorker) {
+  if (isCloudflareWorker()) {
     console.log('in Cloudflare Workers environment');
     // Workers environment uses minimal configuration
     const client = postgres(databaseUrl, {

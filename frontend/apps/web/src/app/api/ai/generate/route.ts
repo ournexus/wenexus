@@ -1,5 +1,4 @@
 import { envConfigs } from '@/config';
-import { getCreditCost } from '@/config/credits';
 import { AIMediaType } from '@/extensions/ai';
 import { getUuid } from '@/shared/lib/hash';
 import { respData, respErr } from '@/shared/lib/resp';
@@ -40,17 +39,35 @@ export async function POST(request: Request) {
       throw new Error('no auth, please sign in');
     }
 
-    // get credit cost from configuration
-    const costCredits = getCreditCost(mediaType, scene);
+    // todo: get cost credits from settings
+    let costCredits = 2;
 
-    // validate scene for media types that require it
-    if (mediaType === AIMediaType.IMAGE && !scene) {
-      throw new Error('scene is required for image generation');
-    } else if (mediaType === AIMediaType.VIDEO && !scene) {
-      throw new Error('scene is required for video generation');
+    if (mediaType === AIMediaType.IMAGE) {
+      // generate image
+      if (scene === 'image-to-image') {
+        costCredits = 4;
+      } else if (scene === 'text-to-image') {
+        costCredits = 2;
+      } else {
+        throw new Error('invalid scene');
+      }
+    } else if (mediaType === AIMediaType.VIDEO) {
+      // generate video
+      if (scene === 'text-to-video') {
+        costCredits = 6;
+      } else if (scene === 'image-to-video') {
+        costCredits = 8;
+      } else if (scene === 'video-to-video') {
+        costCredits = 10;
+      } else {
+        throw new Error('invalid scene');
+      }
     } else if (mediaType === AIMediaType.MUSIC) {
-      // set default scene for music generation
+      // generate music
+      costCredits = 10;
       scene = 'text-to-music';
+    } else {
+      throw new Error('invalid mediaType');
     }
 
     // check credits

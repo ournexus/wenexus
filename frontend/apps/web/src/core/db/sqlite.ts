@@ -21,7 +21,7 @@ export function getSqliteDb() {
   }
 
   // In Cloudflare Workers, create new connection each time (avoid cross-request state)
-  if (isCloudflareWorker) {
+  if (isCloudflareWorker()) {
     const client = createClient({
       url: databaseUrl,
       ...options,

@@ -39,7 +39,9 @@ export function UtmCapture() {
     if (!sanitized) return;
 
     // Store encoded to keep cookie safe.
-    setCookie(COOKIE_NAME, encodeURIComponent(sanitized), COOKIE_DAYS);
+    setCookie(COOKIE_NAME, encodeURIComponent(sanitized), {
+      days: COOKIE_DAYS,
+    });
   }, []);
 
   return null;

@@ -78,8 +78,10 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    fetchChat(params.id as string);
-  }, [params.id]);
+    if (params?.id) {
+      fetchChat(params.id as string);
+    }
+  }, [params?.id]);
 
   return initialChat && initialMessages ? (
     <ChatBox initialChat={initialChat} initialMessages={initialMessages} />

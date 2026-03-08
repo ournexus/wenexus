@@ -1,6 +1,7 @@
 {
   "name": "@wenexus/web",
   "version": "1.0.0",
+  "description": "WeNexus main web application - AI multi-perspective content platform",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -19,11 +20,15 @@
     "auth:generate": "tsx scripts/with-env.ts npx @better-auth/cli generate --config=src/core/auth/index.ts",
     "rbac:init": "tsx scripts/with-env.ts npx tsx scripts/init-rbac.ts",
     "rbac:assign": "tsx scripts/with-env.ts npx tsx scripts/assign-role.ts",
+    "db:seed": "tsx scripts/with-env.ts npx tsx scripts/seed-domain.ts",
     "postinstall": "fumadocs-mdx",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf:upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "cf:typegen": "wrangler types --env-interface CloudflareEnv src/shared/types/cloudflare.d.ts"
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv src/shared/types/cloudflare.d.ts",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:smoke": "playwright test --config=e2e/playwright.config.ts --grep 'Smoke'",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.89",
@@ -132,6 +137,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20",

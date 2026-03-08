@@ -1,0 +1,146 @@
+# Python Backend 集成测试 — 语义化用例
+# 覆盖：圆桌讨论 API、交付物 API
+#
+# 这些用例描述"测什么"，不包含具体实现代码。
+# 在 API 路由实现后，根据用例编写对应 pytest 测试。
+
+domain: roundtable
+feature: 圆桌讨论 API
+
+cases:
+  - id: rt-api-001
+    name: 创建讨论会话
+    priority: P0
+    endpoint: POST /api/v1/roundtable/sessions
+    preconditions:
+      - PostgreSQL 已启动
+      - 话题数据存在
+    request:
+      body: { "topic_id": "{existing_topic_id}" }
+    expected:
+      - 返回 201
+      - 响应包含 id, topicId, status
+      - status 初始值为 initializing
+
+  - id: rt-api-002
+    name: 获取讨论会话详情
+    priority: P0
+    endpoint: GET /api/v1/roundtable/sessions/{id}
+    preconditions:
+      - 有已创建的 session
+    expected:
+      - 返回 200
+      - 响应包含完整 session 对象
+
+  - id: rt-api-003
+    name: 启动讨论（触发求真者发言）
+    priority: P0
+    endpoint: POST /api/v1/roundtable/sessions/{id}/start
+    preconditions:
+      - session 状态为 initializing
+    expected:
+      - 返回 200
+      - session status 变为 fact_checking 或 discussing
+      - 产生一条 fact_checker 角色消息
+
+  - id: rt-api-004
+    name: 生成下一轮专家发言
+    priority: P0
+    endpoint: POST /api/v1/roundtable/sessions/{id}/next-turn
+    preconditions:
+      - 讨论进行中
+    expected:
+      - 返回 200
+      - 响应包含新消息（role, content, expertId）
+
+  - id: rt-api-005
+    name: 切换讨论模式
+    priority: P1
+    endpoint: PUT /api/v1/roundtable/sessions/{id}/mode
+    preconditions:
+      - 讨论进行中
+    request:
+      body: { "mode": "host" }
+    expected:
+      - 返回 200
+      - 响应中 mode 为 host
+
+  - id: rt-api-006
+    name: 获取讨论消息列表
+    priority: P0
+    endpoint: GET /api/v1/roundtable/messages?session_id={id}
+    preconditions:
+      - session 中有消息
+    expected:
+      - 返回 200
+      - 响应为消息数组
+      - 消息按时间排序
+
+  - id: rt-api-007
+    name: 获取共识度
+    priority: P1
+    endpoint: GET /api/v1/roundtable/sessions/{id}/consensus
+    preconditions:
+      - 讨论有多轮消息
+    expected:
+      - 返回 200
+      - 响应包含 level (0-100), agreements, disagreements
+
+---
+
+domain: deliverable
+feature: 交付物 API
+
+cases:
+  - id: dl-api-001
+    name: 就绪度检查
+    priority: P0
+    endpoint: GET /api/v1/deliverable/readiness?session_id={id}
+    preconditions:
+      - 有讨论 session
+    expected:
+      - 返回 200
+      - 响应包含 isReady, readinessScore (0-100), missingElements
+
+  - id: dl-api-002
+    name: 生成 report 交付物
+    priority: P0
+    endpoint: POST /api/v1/deliverable/generate
+    preconditions:
+      - 讨论已充分进行
+    request:
+      body: { "session_id": "{id}", "topic_id": "{id}", "type": "report" }
+    expected:
+      - 返回 200 或 201
+      - 响应包含 id, type, content, status
+      - type 为 report
+      - content 非空（> 100 字）
+
+  - id: dl-api-003
+    name: 生成 checklist 交付物
+    priority: P1
+    endpoint: POST /api/v1/deliverable/generate
+    request:
+      body: { "session_id": "{id}", "topic_id": "{id}", "type": "checklist" }
+    expected:
+      - 返回 200 或 201
+      - content 包含列表项格式
+
+  - id: dl-api-004
+    name: 获取已生成的交付物
+    priority: P0
+    endpoint: GET /api/v1/deliverable/{id}
+    preconditions:
+      - 有已生成的 deliverable
+    expected:
+      - 返回 200
+      - 响应包含完整 deliverable 对象
+
+  - id: dl-api-005
+    name: 无效 session 应返回错误
+    priority: P1
+    endpoint: POST /api/v1/deliverable/generate
+    request:
+      body: { "session_id": "nonexistent", "topic_id": "nonexistent", "type": "report" }
+    expected:
+      - 返回 400 或 404

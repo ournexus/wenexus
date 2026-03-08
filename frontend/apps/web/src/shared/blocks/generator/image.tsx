@@ -13,7 +13,6 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Link } from '@/core/i18n/navigation';
-import { getCreditCost } from '@/config/credits';
 import { AIMediaType, AITaskStatus } from '@/extensions/ai/types';
 import {
   ImageUploader,
@@ -215,9 +214,7 @@ export function ImageGenerator({
   const [activeTab, setActiveTab] =
     useState<ImageGeneratorTab>('text-to-image');
 
-  const [costCredits, setCostCredits] = useState<number>(() =>
-    getCreditCost(AIMediaType.IMAGE, 'text-to-image')
-  );
+  const [costCredits, setCostCredits] = useState<number>(2);
   const [provider, setProvider] = useState(PROVIDER_OPTIONS[0]?.value ?? '');
   const [model, setModel] = useState(MODEL_OPTIONS[0]?.value ?? '');
   const [prompt, setPrompt] = useState('');
@@ -253,9 +250,6 @@ export function ImageGenerator({
   const handleTabChange = (value: string) => {
     const tab = value as ImageGeneratorTab;
     setActiveTab(tab);
-
-    // Update credit cost based on the new tab
-    setCostCredits(getCreditCost(AIMediaType.IMAGE, tab));
 
     const availableModels = MODEL_OPTIONS.filter(
       (option) => option.scenes.includes(tab) && option.provider === provider

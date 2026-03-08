@@ -22,11 +22,11 @@
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^9.0.0",
     "prettier": "^3.6.2",
-    "turbo": "^1.10.12",
+    "turbo": "^2.8.10",
     "typescript": "^5"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
   "packageManager": "pnpm@9.0.0",
@@ -34,6 +34,9 @@
     "overrides": {
       "@types/react": "19.2.2",
       "@types/react-dom": "19.2.1"
+    },
+    "patchedDependencies": {
+      "@opennextjs/cloudflare@1.17.0": "patches/@opennextjs__cloudflare@1.17.0.patch"
     }
   }
 }

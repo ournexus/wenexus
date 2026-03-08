@@ -7,7 +7,7 @@ import { enforceMinIntervalRateLimit } from '@/shared/lib/rate-limit';
 function maybeRateLimitGetSession(request: Request): Response | null {
   const url = new URL(request.url);
   // better-auth session endpoint is served under this catch-all route.
-  if (isCloudflareWorker || !url.pathname.endsWith('/api/auth/get-session')) {
+  if (isCloudflareWorker() || !url.pathname.endsWith('/api/auth/get-session')) {
     return null;
   }
 
@@ -16,10 +16,27 @@ function maybeRateLimitGetSession(request: Request): Response | null {
     // default: 800ms (enough to stop request storms but still responsive)
     800;
 
-  return enforceMinIntervalRateLimit(request, {
-    intervalMs,
-    keyPrefix: 'auth-get-session',
-  });
+  // Derive a rate-limit key from the request (IP or fallback to endpoint)
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown';
+  const key = `auth-get-session:${ip}`;
+  const result = enforceMinIntervalRateLimit(key, intervalMs);
+
+  if (!result.success) {
+    return new Response(JSON.stringify({ error: 'Too many requests' }), {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(result.retryAfter
+          ? { 'Retry-After': String(Math.ceil(result.retryAfter / 1000)) }
+          : {}),
+      },
+    });
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
