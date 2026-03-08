@@ -27,6 +27,8 @@ const eslintConfig = [
       "e2e/",
       "playwright-report/",
       "test-results/",
+      ".open-next/",
+      "bundled/",
     ],
   },
   ...compat.extends(

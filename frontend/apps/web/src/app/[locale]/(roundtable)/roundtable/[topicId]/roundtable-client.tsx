@@ -164,7 +164,8 @@ export function RoundtableClient({
     setError(null);
     try {
       const res = await fetch(
-        `/api/domains/roundtable/sessions/${sessionId}/consensus`
+        `/api/domains/roundtable/sessions/${sessionId}/consensus`,
+        { method: 'POST' }
       );
       const json = await res.json();
       if (json.code === 0) {
@@ -340,24 +341,34 @@ function MessageBubble({ message }: { message: Message }) {
                 参考来源
               </h5>
               <ul className="space-y-1">
-                {(message.citations as any[]).map((c: any, i: number) => (
-                  <li key={i} className="text-xs">
-                    <a
-                      href={c.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline dark:text-blue-400"
-                    >
-                      {c.title}
-                    </a>
-                    {c.snippet && (
-                      <span className="text-muted-foreground">
-                        {' '}
-                        — {c.snippet}
-                      </span>
-                    )}
-                  </li>
-                ))}
+                {(message.citations as any[]).map((c: any, i: number) => {
+                  const isSafeUrl =
+                    typeof c.url === 'string' && /^https?:\/\//i.test(c.url);
+                  return (
+                    <li key={i} className="text-xs">
+                      {isSafeUrl ? (
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {c.title}
+                        </a>
+                      ) : (
+                        <span className="text-blue-600 dark:text-blue-400">
+                          {c.title}
+                        </span>
+                      )}
+                      {c.snippet && (
+                        <span className="text-muted-foreground">
+                          {' '}
+                          — {c.snippet}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

@@ -2,7 +2,7 @@ import { calculateConsensus } from '@/domains/roundtable/services/consensus-serv
 
 import { respData, respErr } from '@/shared/lib/resp';
 
-export async function GET(
+export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
