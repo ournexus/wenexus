@@ -112,7 +112,34 @@ frontend/apps/web/src/
 
 **不选 JWT 的原因**：better-auth 默认使用 session-based 认证（不是 JWT），强行引入 JWT 需要在 Next.js 侧额外配置 token 签发，增加复杂度。
 
-### 2.2 认证流程
+### 2.2 Cookie 跨域传递：反向代理方案
+
+浏览器的 Cookie 受同源策略约束。Next.js 和 FastAPI 运行在不同端口上，Cookie 默认不会跨端口发送。通过反向代理将两个服务统一到同一域名下解决此问题：
+
+**部署环境**（Nginx/Caddy）：
+
+```
+wenexus.com/           → Next.js (port 3000)
+wenexus.com/api/py/    → FastAPI (port 8000)
+```
+
+**开发环境**（Next.js rewrites 代理）：
+
+```javascript
+// next.config.js
+async rewrites() {
+  return [
+    {
+      source: '/api/py/:path*',
+      destination: 'http://localhost:8000/api/py/:path*',
+    },
+  ];
+}
+```
+
+开发时前端请求 `localhost:3000/api/py/*`，由 Next.js 代理转发到 FastAPI。Cookie 的 Domain 和 Path 天然匹配，无需 CORS 配置。
+
+### 2.3 认证流程
 
 ```
 Browser                    Next.js (better-auth)           Python FastAPI
@@ -121,17 +148,20 @@ Browser                    Next.js (better-auth)           Python FastAPI
   │◀─── Set-Cookie: ────────────│                              │
   │     better-auth.session_token│                              │
   │                              │                              │
-  │──── API request ─────────────────────────────────────────▶│
-  │     Cookie: better-auth.session_token                      │
-  │                              │                    ┌────────┤
-  │                              │                    │ SELECT  │
+  │──── /api/py/* ─────────────▶│──── proxy ──────────────────▶│
+  │     Cookie 自动携带          │                    ┌────────┤
+  │     (同域，无跨域问题)       │                    │ SELECT  │
   │                              │                    │ session │
   │                              │                    │ + user  │
   │                              │                    └────────┤
-  │◀──── response ───────────────────────────────────────────│
+  │◀──── response ──────────────│◀────────────────────────────│
 ```
 
-### 2.3 实现设计
+### 2.4 实现设计
+
+**文件位置**：`backend/python/src/wenexus/common/auth.py`
+
+**前置依赖**：`get_db` 数据库会话工厂需先实现（位于 `backend/python/src/wenexus/common/database.py`），提供 `AsyncSession` 依赖注入。当前 Python 后端目录为空，需先搭建基础数据库连接层。
 
 **Session 验证查询**：
 
@@ -154,36 +184,38 @@ LIMIT 1;
 **FastAPI 依赖注入**：
 
 ```python
-# src/core/auth.py
+# backend/python/src/wenexus/common/auth.py
 
+from dataclasses import dataclass
 from fastapi import Depends, Request, HTTPException
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+@dataclass
+class UserInfo:
+    id: str
+    name: str
+    email: str
+    image: str | None
+    email_verified: bool
+
+_SESSION_QUERY = text("""
+    SELECT s.user_id, u.name, u.email, u.image, u.email_verified
+    FROM session s JOIN "user" u ON u.id = s.user_id
+    WHERE s.token = :token AND s.expires_at > NOW()
+    LIMIT 1
+""")
 
 async def get_session_token(request: Request) -> str | None:
     """从 Cookie 中提取 better-auth session token。"""
     return request.cookies.get("better-auth.session_token")
 
-async def get_current_user(
-    token: str | None = Depends(get_session_token),
-    db: AsyncSession = Depends(get_db),
-) -> UserInfo:
-    """验证 session 并返回用户信息。必须登录。"""
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    result = await db.execute(
-        text("""
-            SELECT s.user_id, u.name, u.email, u.image, u.email_verified
-            FROM session s JOIN "user" u ON u.id = s.user_id
-            WHERE s.token = :token AND s.expires_at > NOW()
-            LIMIT 1
-        """),
-        {"token": token},
-    )
+async def _query_user_by_token(db: AsyncSession, token: str) -> UserInfo | None:
+    """根据 session token 查询用户信息。内部共享函数。"""
+    result = await db.execute(_SESSION_QUERY, {"token": token})
     row = result.first()
     if not row:
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
-
+        return None
     return UserInfo(
         id=row.user_id,
         name=row.name,
@@ -192,6 +224,18 @@ async def get_current_user(
         email_verified=row.email_verified,
     )
 
+async def get_current_user(
+    token: str | None = Depends(get_session_token),
+    db: AsyncSession = Depends(get_db),
+) -> UserInfo:
+    """验证 session 并返回用户信息。必须登录，未认证抛 401。"""
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = await _query_user_by_token(db, token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    return user
+
 async def get_optional_user(
     token: str | None = Depends(get_session_token),
     db: AsyncSession = Depends(get_db),
@@ -199,28 +243,61 @@ async def get_optional_user(
     """可选认证：未登录返回 None，不抛异常。"""
     if not token:
         return None
-    # ... 同上查询逻辑，无结果返回 None
+    return await _query_user_by_token(db, token)
+```
+
+**Session 吊销**（Python 端检测到异常行为时可主动踢出用户）：
+
+```python
+async def revoke_session(db: AsyncSession, session_id: str) -> None:
+    """吊销指定 session，两端共享数据库所以立即生效。"""
+    await db.execute(
+        text("DELETE FROM session WHERE id = :sid"),
+        {"sid": session_id},
+    )
+    await db.commit()
 ```
 
 **路由使用示例**：
 
 ```python
-@router.get("/api/v1/profile")
+@router.get("/api/py/v1/profile")
 async def get_profile(user: UserInfo = Depends(get_current_user)):
     """需要登录的端点。"""
     return {"user": user}
 
-@router.get("/api/v1/feed")
+@router.get("/api/py/v1/feed")
 async def get_feed(user: UserInfo | None = Depends(get_optional_user)):
     """公开端点，登录用户有个性化内容。"""
     return {"personalized": user is not None}
 ```
 
-### 2.4 数据库 Schema 注意事项
+### 2.5 Session 续期策略
+
+**设计决策**：Python 端不负责 session 续期。
+
+理由：better-auth 在 Next.js 侧自动续期 session（每次 `getSession` 调用时更新 `expiresAt`）。前端 SPA 通过 `client.ts` 中的节流 fetch 定期调用 Next.js session 端点，已覆盖续期需求。当前产品形态下不存在"只访问 Python API 而不访问前端"的场景。
+
+### 2.6 数据库 Schema 注意事项
 
 - Python 端使用 `text()` 原生 SQL 查询 session 表，不定义 ORM 模型（避免与 Drizzle schema 维护两套）
 - 如果前端配置了非 `public` schema（通过 `db_schema` 配置），Python 端查询需加 schema 前缀：`{schema}.session`
 - Session token 字段有 unique 索引，查询性能不是问题
+- 基线阶段不加 session 验证缓存；后续如有性能瓶颈，可引入 `cachetools.TTLCache`（TTL 30s）做进程内缓存
+
+**Schema 兼容性保障**：通过集成测试验证 Python 端 SQL 与实际表结构一致：
+
+```python
+# tests/test_auth_schema.py
+async def test_session_query_matches_schema(db):
+    """确保 auth 查询与实际 schema 兼容，Drizzle 迁移后此测试会检测到不兼容变更。"""
+    result = await db.execute(text("""
+        SELECT s.user_id, u.name, u.email, u.image, u.email_verified
+        FROM session s JOIN "user" u ON u.id = s.user_id
+        LIMIT 0
+    """))
+    assert set(result.keys()) == {"user_id", "name", "email", "image", "email_verified"}
+```
 
 ## 三、微信登录集成方案
 
@@ -247,36 +324,137 @@ Browser                    WeNexus Server              微信开放平台
   │◀─ 登录成功，Set-Cookie ─────│                         │
 ```
 
-### 3.2 better-auth 自定义社交 Provider
+**CSRF 防护**：流程中的 `state` 参数由 better-auth 框架自动生成、存储和验证，无需手动处理。
 
-在 `getSocialProviders()` 中新增 wechat provider：
+### 3.2 实现方式：Generic OAuth Plugin
+
+使用 better-auth 的 [Generic OAuth Plugin](https://www.better-auth.com/docs/plugins/generic-oauth) 接入微信，而非直接在 `socialProviders` 中硬编码。Generic OAuth Plugin 提供更完整的自定义能力（token 交换、token 刷新、类型安全的 profile 映射）。
+
+**微信 Profile 类型定义**：
 
 ```typescript
-// frontend/apps/web/src/core/auth/config.ts — getSocialProviders()
+// frontend/apps/web/src/core/auth/types.ts
 
-if (configs.wechat_app_id && configs.wechat_app_secret) {
-  providers.wechat = {
-    clientId: configs.wechat_app_id,
-    clientSecret: configs.wechat_app_secret,
-    // 微信 OAuth 端点
-    authorizationUrl: "https://open.weixin.qq.com/connect/qrconnect",
-    tokenUrl: "https://api.weixin.qq.com/sns/oauth2/access_token",
-    userInfoUrl: "https://api.weixin.qq.com/sns/userinfo",
-    // 微信特殊参数映射
-    redirectURI: `${envConfigs.app_url}/api/auth/callback/wechat`,
-    scopes: ["snsapi_login"],
-    // 微信返回字段映射到 better-auth user
-    mapProfileToUser: (profile: any) => ({
-      name: profile.nickname,
-      image: profile.headimgurl,
-      // 微信无 email，使用 openid 作为唯一标识
-      email: `${profile.openid}@wechat.placeholder`,
-    }),
-  };
+interface WeChatProfile {
+  openid: string;
+  unionid?: string;
+  nickname: string;
+  headimgurl: string;
+  sex: number;
+  province: string;
+  city: string;
+  country: string;
+  privilege: string[];
 }
 ```
 
-### 3.3 配置项
+**Generic OAuth 配置**：
+
+```typescript
+// frontend/apps/web/src/core/auth/config.ts — plugins 数组
+
+import { genericOAuth } from "better-auth/plugins/generic-oauth";
+
+// 在 getAuthOptions() 的 plugins 数组中添加：
+if (configs.wechat_app_id && configs.wechat_app_secret) {
+  plugins.push(
+    genericOAuth({
+      providerId: "wechat",
+      clientId: configs.wechat_app_id,
+      clientSecret: configs.wechat_app_secret,
+      authorizationUrl: "https://open.weixin.qq.com/connect/qrconnect",
+      tokenUrl: "https://api.weixin.qq.com/sns/oauth2/access_token",
+      userInfoUrl: "https://api.weixin.qq.com/sns/userinfo",
+      scopes: ["snsapi_login"],
+      redirectURI: `${envConfigs.app_url}/api/auth/callback/wechat`,
+
+      // 微信 token 端点使用 appid/secret 而非标准 client_id/client_secret
+      // 返回值的 raw 字段保存完整响应（含 openid/unionid），供 getUserInfo 使用
+      getToken: async ({ code, redirectURI }) => {
+        const url = new URL("https://api.weixin.qq.com/sns/oauth2/access_token");
+        url.searchParams.set("appid", configs.wechat_app_id!);
+        url.searchParams.set("secret", configs.wechat_app_secret!);
+        url.searchParams.set("code", code);
+        url.searchParams.set("grant_type", "authorization_code");
+        const res = await fetch(url);
+        const data = await res.json();
+        return {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          accessTokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
+          raw: data, // 保留 openid、unionid 等微信特有字段
+        };
+      },
+
+      // 微信 userinfo 需要 access_token + openid 两个参数
+      // openid 从 getToken 返回的 raw 字段中获取
+      getUserInfo: async (tokens) => {
+        const openid = (tokens.raw as Record<string, string>)?.openid || "";
+        const url = new URL("https://api.weixin.qq.com/sns/userinfo");
+        url.searchParams.set("access_token", tokens.accessToken!);
+        url.searchParams.set("openid", openid);
+        const res = await fetch(url);
+        const profile: WeChatProfile = await res.json();
+        return {
+          id: profile.unionid || profile.openid,
+          name: profile.nickname,
+          image: profile.headimgurl,
+          email: `wx_${profile.unionid || profile.openid}@wechat.placeholder`,
+          emailVerified: false,
+          raw: profile,
+        };
+      },
+
+      // 微信 access_token 2 小时过期，支持刷新
+      refreshAccessToken: async (refreshToken) => {
+        const url = new URL("https://api.weixin.qq.com/sns/oauth2/refresh_token");
+        url.searchParams.set("appid", configs.wechat_app_id!);
+        url.searchParams.set("grant_type", "refresh_token");
+        url.searchParams.set("refresh_token", refreshToken);
+        const res = await fetch(url);
+        const data = await res.json();
+        return {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          accessTokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
+        };
+      },
+
+      // 授权 URL 需要 appid 而非 client_id
+      // 注意：better-auth 会自动附加 client_id 参数，微信端点会同时收到 client_id 和 appid
+      // 微信服务器优先识别 appid，忽略未知的 client_id 参数（需实际验证）
+      authorizationUrlParams: {
+        appid: configs.wechat_app_id!,
+      },
+    })
+  );
+}
+```
+
+### 3.3 Placeholder Email 策略
+
+**背景**：`user.email` 字段为 `notNull().unique()`，微信用户无 email。
+
+**方案**：使用确定性格式的 placeholder email：
+
+```
+wx_{unionid|openid}@wechat.placeholder
+```
+
+- 优先使用 `unionid`（跨微信应用唯一），fallback 到 `openid`
+- 前缀 `wx_` 避免与真实 email 格式冲突
+- 域名 `wechat.placeholder` 不可能是真实邮箱域名
+
+**邮件发送过滤**：所有发送邮件的逻辑中需检查 placeholder：
+
+```typescript
+// 邮件发送前
+if (user.email.endsWith("@wechat.placeholder")) return;
+```
+
+**后续优化**：如果接入更多无 email 的 provider（手机号登录等），应评估将 `email` 改为 nullable 的可行性。
+
+### 3.4 配置项
 
 | 配置项 | 来源 | 说明 |
 |--------|------|------|
@@ -285,20 +463,38 @@ if (configs.wechat_app_id && configs.wechat_app_secret) {
 
 前置条件：在 [微信开放平台](https://open.weixin.qq.com/) 注册网站应用，完成审核，配置回调域名。
 
-### 3.4 数据库复用
+### 3.5 数据库复用
 
 微信登录复用现有 `account` 表：
 
 | 字段 | 值 |
 |------|-----|
 | `providerId` | `'wechat'` |
-| `accountId` | 微信 openid |
-| `accessToken` | 微信 access_token |
-| `refreshToken` | 微信 refresh_token |
+| `accountId` | 微信 unionid 或 openid |
+| `accessToken` | 微信 access_token（2 小时有效） |
+| `refreshToken` | 微信 refresh_token（30 天有效） |
+| `accessTokenExpiresAt` | access_token 过期时间 |
+| `refreshTokenExpiresAt` | refresh_token 过期时间 |
 
 一个用户可同时绑定多个 provider（Google + GitHub + WeChat），通过 `account.userId` 关联到同一个 `user` 记录。
 
-### 3.5 前端集成
+### 3.6 账号关联
+
+better-auth 内置账号关联能力：
+
+| 端点 | 用途 |
+|------|------|
+| `/link-social` | 已登录用户绑定新的 OAuth provider |
+| `/unlink-account` | 解除某个 provider 的关联 |
+| `/list-accounts` | 列出当前用户已关联的所有 provider |
+
+**用户流程**：
+
+1. **首次微信登录**：创建新账号（带 placeholder email）
+2. **已登录用户绑定微信**：通过设置页调用 `/link-social`，将微信关联到已有账号
+3. **引导补充信息**：微信登录后如果检测到 placeholder email，前端引导用户补充真实邮箱或关联已有账号
+
+### 3.7 前端集成
 
 客户端通过 `authClient.signIn.social({ provider: "wechat" })` 触发微信登录流程，与 Google/GitHub OAuth 使用方式一致。
 
