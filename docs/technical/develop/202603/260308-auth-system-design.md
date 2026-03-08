@@ -159,103 +159,102 @@ Browser                    Next.js (better-auth)           Python FastAPI
 
 ### 2.4 实现设计
 
-**文件位置**：`backend/python/src/wenexus/common/auth.py`
+**分层结构**：认证功能按项目分层架构拆分为四个模块：
 
-**前置依赖**：`get_db` 数据库会话工厂需先实现（位于 `backend/python/src/wenexus/common/database.py`），提供 `AsyncSession` 依赖注入。当前 Python 后端目录为空，需先搭建基础数据库连接层。
+| 模块 | 文件 | 职责 |
+|------|------|------|
+| `util.schema` | `util/schema.py` | `UserInfo` DTO，跨层共享 |
+| `repository.auth` | `repository/auth.py` | 纯 SQL 查询，读取 session/user 表 |
+| `service.auth` | `service/auth.py` | 认证业务逻辑，不接触 HTTP 也不写 SQL |
+| `facade.deps` | `facade/deps.py` | HTTP 依赖注入，Cookie 提取、HTTPException |
 
-**Session 验证查询**：
+**Session 验证查询**（`repository/auth.py`）：
 
 ```sql
-SELECT
-  s.id AS session_id,
-  s.user_id,
-  s.expires_at,
-  u.name,
-  u.email,
-  u.image,
-  u.email_verified
-FROM session s
-JOIN "user" u ON u.id = s.user_id
+SELECT u.id, u.name, u.email, u.image, u."emailVerified"
+FROM "session" s
+JOIN "user" u ON s."userId" = u.id
 WHERE s.token = :token
-  AND s.expires_at > NOW()
-LIMIT 1;
+  AND s."expiresAt" > NOW()
 ```
 
-**FastAPI 依赖注入**：
+> 注意：better-auth 使用 camelCase 列名（如 `"expiresAt"`、`"userId"`），
+> 需用双引号引用以保留大小写。`"emailVerified"` 是 timestamp 类型，
+> Python 端通过 `is not None` 转换为 `bool`。
+
+**数据传输对象**（`util/schema.py`）：
 
 ```python
-# backend/python/src/wenexus/common/auth.py
-
-from dataclasses import dataclass
-from fastapi import Depends, Request, HTTPException
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-
 @dataclass
 class UserInfo:
+    """认证用户信息，从 better-auth session 表查询得到。"""
     id: str
     name: str
     email: str
     image: str | None
     email_verified: bool
+```
 
-_SESSION_QUERY = text("""
-    SELECT s.user_id, u.name, u.email, u.image, u.email_verified
-    FROM session s JOIN "user" u ON u.id = s.user_id
-    WHERE s.token = :token AND s.expires_at > NOW()
-    LIMIT 1
-""")
+**Repository 层**（`repository/auth.py`）：
 
-async def get_session_token(request: Request) -> str | None:
-    """从 Cookie 中提取 better-auth session token。"""
-    return request.cookies.get("better-auth.session_token")
-
-async def _query_user_by_token(db: AsyncSession, token: str) -> UserInfo | None:
-    """根据 session token 查询用户信息。内部共享函数。"""
+```python
+async def query_user_by_token(db: AsyncSession, token: str) -> UserInfo | None:
+    """根据 session token 查询用户信息，token 过期则返回 None。"""
     result = await db.execute(_SESSION_QUERY, {"token": token})
     row = result.first()
-    if not row:
+    if row is None:
         return None
     return UserInfo(
-        id=row.user_id,
+        id=row.id,
         name=row.name,
         email=row.email,
         image=row.image,
-        email_verified=row.email_verified,
+        email_verified=row.emailVerified is not None,
     )
+```
+
+**Facade 层依赖注入**（`facade/deps.py`）：
+
+```python
+async def get_session_token(request: Request) -> str | None:
+    """从 Cookie 中提取 better-auth session token。"""
+    return request.cookies.get("better-auth.session_token")
 
 async def get_current_user(
     token: str | None = Depends(get_session_token),
     db: AsyncSession = Depends(get_db),
 ) -> UserInfo:
-    """验证 session 并返回用户信息。必须登录，未认证抛 401。"""
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    user = await _query_user_by_token(db, token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    """要求认证的依赖：无有效 session 时抛出 401。"""
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, ...)
+    user = await authenticate(db, token)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, ...)
     return user
 
 async def get_optional_user(
     token: str | None = Depends(get_session_token),
     db: AsyncSession = Depends(get_db),
 ) -> UserInfo | None:
-    """可选认证：未登录返回 None，不抛异常。"""
-    if not token:
+    """可选认证的依赖：无有效 session 时返回 None 而非抛异常。"""
+    if token is None:
         return None
-    return await _query_user_by_token(db, token)
+    return await authenticate(db, token)
 ```
 
-**Session 吊销**（Python 端检测到异常行为时可主动踢出用户）：
+**Session 吊销**（`service/auth.py` → `repository/auth.py`）：
 
 ```python
-async def revoke_session(db: AsyncSession, session_id: str) -> None:
-    """吊销指定 session，两端共享数据库所以立即生效。"""
-    await db.execute(
-        text("DELETE FROM session WHERE id = :sid"),
-        {"sid": session_id},
-    )
+# repository/auth.py
+async def delete_session(db: AsyncSession, session_id: str) -> None:
+    """删除指定的 session 记录。"""
+    await db.execute(text('DELETE FROM "session" WHERE id = :session_id'), {"session_id": session_id})
     await db.commit()
+
+# service/auth.py
+async def revoke_session(db: AsyncSession, session_id: str) -> None:
+    """撤销指定的 session。"""
+    await delete_session(db, session_id)
 ```
 
 **路由使用示例**：
@@ -292,11 +291,11 @@ async def get_feed(user: UserInfo | None = Depends(get_optional_user)):
 async def test_session_query_matches_schema(db):
     """确保 auth 查询与实际 schema 兼容，Drizzle 迁移后此测试会检测到不兼容变更。"""
     result = await db.execute(text("""
-        SELECT s.user_id, u.name, u.email, u.image, u.email_verified
-        FROM session s JOIN "user" u ON u.id = s.user_id
+        SELECT u.id, u.name, u.email, u.image, u."emailVerified"
+        FROM "session" s JOIN "user" u ON s."userId" = u.id
         LIMIT 0
     """))
-    assert set(result.keys()) == {"user_id", "name", "email", "image", "email_verified"}
+    assert set(result.keys()) == {"id", "name", "email", "image", "emailVerified"}
 ```
 
 ## 三、微信登录集成方案

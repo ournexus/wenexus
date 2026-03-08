@@ -2,4 +2,4 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 # Run pre-commit hooks with smart fix wrapper
-tools/scripts/precommit-wrapper.sh --hook run --hook-stage pre-commit
+tools/scripts/precommit-wrapper.sh --hook --hook-stage pre-commit
