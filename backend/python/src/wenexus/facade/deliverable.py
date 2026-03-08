@@ -1,5 +1,5 @@
 """
-api.deliverable - Deliverable content generation endpoints.
+facade.deliverable - Deliverable content generation endpoints.
 
 Depends: fastapi
 Consumers: main (router inclusion)

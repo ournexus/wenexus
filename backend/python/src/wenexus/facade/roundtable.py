@@ -1,5 +1,5 @@
 """
-api.roundtable - Roundtable discussion session endpoints.
+facade.roundtable - Roundtable discussion session endpoints.
 
 Depends: fastapi
 Consumers: main (router inclusion)

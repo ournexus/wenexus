@@ -2,7 +2,7 @@
 config - Application settings loaded from environment variables.
 
 Depends: pydantic-settings
-Consumers: main, db, api modules
+Consumers: main, repository.db, facade, service modules
 """
 
 from pydantic_settings import BaseSettings

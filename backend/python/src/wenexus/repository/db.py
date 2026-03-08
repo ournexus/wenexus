@@ -1,12 +1,12 @@
 """
-db - Async database connection management using SQLAlchemy.
+repository.db - Async database connection management using SQLAlchemy.
 
 Engine and session factory are created lazily on first use so that
 importing this module without a DATABASE_URL (e.g. in CI unit tests)
 does not raise an error.
 
 Depends: sqlalchemy, asyncpg, config
-Consumers: api modules, service layer
+Consumers: facade (get_db dependency), repository modules
 """
 
 from collections.abc import AsyncGenerator
