@@ -1,16 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * @see https://playwright.dev/docs/test-configuration
- */
 export default defineConfig({
-  testDir: '.',
-  testMatch: '**/*.spec.ts',
+  testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['html', { open: 'never' }]],
+  reporter: 'html',
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
@@ -25,11 +21,12 @@ export default defineConfig({
     },
   ],
 
-  /* 启动 Next.js dev server */
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // 不自动启动服务器，假设服务器已在运行
+  // 如需自动启动，取消注释以下配置
+  // webServer: {
+  //   command: 'pnpm --filter @wenexus/web dev',
+  //   url: 'http://localhost:3000',
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120_000,
+  // },
 });

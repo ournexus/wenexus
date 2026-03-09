@@ -26,9 +26,8 @@
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf:upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv src/shared/types/cloudflare.d.ts",
-    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
-    "test:e2e:smoke": "playwright test --config=e2e/playwright.config.ts --grep 'Smoke'",
-    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui"
+    "test:e2e": "pnpm --filter @wenexus/e2e test",
+    "test:e2e:ui": "pnpm --filter @wenexus/e2e test:ui"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.89",
@@ -137,7 +136,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
-    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20",
