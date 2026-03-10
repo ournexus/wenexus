@@ -25,7 +25,22 @@ use: {
 
 这样 CI 环境获得 50% 的额外时间用于导航操作，本地开发仍保持快速反馈。
 
-### 2. 分阶段等待策略
+### 2. 增加 AUTH_CONFIG 中的 waitForURL 超时
+
+由于 `waitForURL` 调用使用的是 `AUTH_CONFIG.timeout.long` 而不是全局的 `navigationTimeout`，需要同时增加这个值：
+
+```typescript
+export const AUTH_CONFIG = {
+  timeout: {
+    short: 10_000,
+    medium: 15_000,
+    long: 30_000,  // 从 20_000 增加到 30_000
+  },
+  // ...
+}
+```
+
+### 3. 分阶段等待策略
 
 改进 `auth.ts` 中的 `login()` 和 `register()` 方法，采用 4 阶段等待模式：
 

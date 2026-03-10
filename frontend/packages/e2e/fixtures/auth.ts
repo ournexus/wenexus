@@ -10,7 +10,7 @@ export const AUTH_CONFIG = {
   timeout: {
     short: 10_000,
     medium: 15_000,
-    long: 20_000,
+    long: 30_000,
   },
   routes: {
     signIn: '/sign-in',
