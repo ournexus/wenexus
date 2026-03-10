@@ -78,11 +78,20 @@ export class AuthPage {
   }
 
   async logout(): Promise<void> {
+    // Call sign-out API and wait for it to complete
     await this.page.evaluate(() =>
-      fetch('/api/auth/sign-out', { method: 'POST' }),
+      fetch('/api/auth/sign-out', { method: 'POST' }).then(() => true),
     );
+
+    // Clear all auth state
     await this.page.context().clearCookies();
-    // Wait for logout to complete
+    await this.page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    // Navigate to home to ensure we're in a clean state
+    await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
     await this.page.waitForLoadState('networkidle');
   }
 
