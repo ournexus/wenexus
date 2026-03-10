@@ -82,6 +82,8 @@ export class AuthPage {
       fetch('/api/auth/sign-out', { method: 'POST' }),
     );
     await this.page.context().clearCookies();
+    // Wait for logout to complete
+    await this.page.waitForLoadState('networkidle');
   }
 
   async isLoggedIn(): Promise<boolean> {
