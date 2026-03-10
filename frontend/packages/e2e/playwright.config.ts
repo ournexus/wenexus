@@ -21,12 +21,10 @@ export default defineConfig({
     },
   ],
 
-  // 不自动启动服务器，假设服务器已在运行
-  // 如需自动启动，取消注释以下配置
-  // webServer: {
-  //   command: 'pnpm --filter @wenexus/web dev',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120_000,
-  // },
+  webServer: {
+    command: 'pnpm --filter @wenexus/web dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });
