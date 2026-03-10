@@ -17,6 +17,20 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: wenexus
+          POSTGRES_PASSWORD: wenexus_dev_pwd
+          POSTGRES_DB: wenexus_dev
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v2
@@ -42,6 +56,9 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+        env:
+          DATABASE_URL: postgresql://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev
+          AUTH_SECRET: wenexus-ci-auth-secret-key-32ch
 
       # Build step requires DATABASE_URL and other env vars.
       # Skipped until CI secrets are configured.
