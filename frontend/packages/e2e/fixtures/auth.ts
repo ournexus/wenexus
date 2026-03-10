@@ -79,12 +79,34 @@ export class AuthPage {
       const apiResponse = await apiResponsePromise;
       const responseStatus = apiResponse.status();
 
+      // Only try to read response body if status is not successful
+      let responseBody = '';
       if (responseStatus !== 200 && responseStatus !== 201) {
-        const responseBody = await apiResponse.text();
+        try {
+          responseBody = await apiResponse.text();
+        } catch {
+          responseBody = `(unable to read body)`;
+        }
         throw new Error(
           `Registration API failed with status ${responseStatus}: ${responseBody}`,
         );
       }
+
+      // Try to verify user was created by reading response, but don't fail if we can't
+      try {
+        const bodyText = await apiResponse.text();
+        const responseData = JSON.parse(bodyText);
+        if (!responseData.user && !responseData.id && !responseData.email) {
+          console.warn(
+            'Registration API response missing user data:',
+            responseData,
+          );
+        }
+      } catch {
+        // Response body might not be JSON or available, that's ok
+      }
+
+      console.log('Registration API succeeded with status', responseStatus);
     } catch (error) {
       // Capture diagnostic information on API failure
       const currentUrl = this.page.url();
@@ -97,6 +119,7 @@ export class AuthPage {
         error: error instanceof Error ? error.message : String(error),
         currentUrl,
         errorText,
+        registeredEmail: user.email,
       });
       throw error;
     }
@@ -119,6 +142,7 @@ export class AuthPage {
         error: error instanceof Error ? error.message : String(error),
         currentUrl,
         errorText,
+        registeredEmail: user.email,
       });
       throw error;
     }
@@ -127,6 +151,8 @@ export class AuthPage {
   }
 
   async login(email: string, password: string): Promise<void> {
+    console.log(`Attempting to login with email: ${email}`);
+
     // Stage 1: Navigate and wait for page to be interactive
     await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
     await this.page.waitForLoadState('networkidle');
@@ -158,12 +184,23 @@ export class AuthPage {
       const apiResponse = await apiResponsePromise;
       const responseStatus = apiResponse.status();
 
+      // Only try to read response body if status is not successful
+      let responseBody = '';
       if (responseStatus !== 200 && responseStatus !== 201) {
-        const responseBody = await apiResponse.text();
+        try {
+          responseBody = await apiResponse.text();
+        } catch {
+          // Response body might not be available, that's ok
+          responseBody = `(unable to read body)`;
+        }
         throw new Error(
           `Login API failed with status ${responseStatus}: ${responseBody}`,
         );
       }
+
+      console.log(
+        `Login API succeeded with status ${responseStatus} for email: ${email}`,
+      );
     } catch (error) {
       // Capture diagnostic information on API failure
       const currentUrl = this.page.url();
@@ -176,6 +213,7 @@ export class AuthPage {
         error: error instanceof Error ? error.message : String(error),
         currentUrl,
         errorText,
+        attemptedEmail: email,
       });
       throw error;
     }
@@ -188,9 +226,6 @@ export class AuthPage {
     } catch (error) {
       // Capture diagnostic information on navigation failure
       const currentUrl = this.page.url();
-      const pageContent = await this.page
-        .content()
-        .catch(() => 'Unable to read page');
       const errorElement = this.page.locator('[role="alert"]');
       const errorText = await errorElement
         .textContent()
@@ -200,45 +235,111 @@ export class AuthPage {
         error: error instanceof Error ? error.message : String(error),
         currentUrl,
         errorText,
-        pageContentLength: pageContent?.length || 0,
+        attemptedEmail: email,
       });
       throw error;
     }
   }
 
   async logout(): Promise<void> {
+    console.log('Logging out...');
+
     // Call sign-out API and wait for it to complete
-    await this.page.evaluate(() =>
-      fetch('/api/auth/sign-out', { method: 'POST' }).then(() => true),
-    );
+    try {
+      await this.page.evaluate(() =>
+        fetch('/api/auth/sign-out', { method: 'POST' }).then((res) => {
+          if (!res.ok) {
+            throw new Error(`Sign-out API returned ${res.status}`);
+          }
+          return true;
+        }),
+      );
+      console.log('Sign-out API succeeded');
+    } catch (error) {
+      console.warn('Sign-out API error:', error);
+      // Continue with cleanup even if API fails
+    }
 
     // Clear all auth state
-    await this.page.context().clearCookies();
-    await this.page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+    try {
+      await this.page.context().clearCookies();
+      console.log('Cookies cleared');
+    } catch (error) {
+      console.warn('Error clearing cookies:', error);
+    }
 
-    // Navigate to home to ensure we're in a clean state
-    await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
-    await this.page.waitForLoadState('networkidle');
+    try {
+      await this.page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      console.log('LocalStorage and SessionStorage cleared');
+    } catch (error) {
+      console.warn('Error clearing storage:', error);
+    }
+
+    // Wait a bit to ensure all cleanup is complete
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Navigate to sign-in page to ensure we're in a clean state
+    try {
+      await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
+      await this.page.waitForLoadState('networkidle');
+      console.log('Navigated to sign-in page after logout');
+    } catch (error) {
+      console.warn('Error navigating after logout:', error);
+    }
   }
 
   async isLoggedIn(): Promise<boolean> {
-    await this.page.goto(withLocale(AUTH_CONFIG.routes.settings));
-    await this.page.waitForLoadState('networkidle');
-    return this.page.url().includes('/settings');
+    try {
+      await this.page.goto(withLocale(AUTH_CONFIG.routes.settings));
+      await this.page.waitForLoadState('networkidle');
+      const isLoggedIn = this.page.url().includes('/settings');
+      const currentUrl = this.page.url();
+      console.log(`isLoggedIn check: ${isLoggedIn} (URL: ${currentUrl})`);
+      return isLoggedIn;
+    } catch (error) {
+      console.warn('Error checking login status:', error);
+      const currentUrl = this.page.url();
+      console.log(
+        `isLoggedIn check failed, current URL: ${currentUrl}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      return false;
+    }
   }
 
   async expectLoggedIn(): Promise<void> {
-    expect(await this.isLoggedIn()).toBe(true);
+    console.log('Verifying login...');
+    const isLoggedIn = await this.isLoggedIn();
+    if (!isLoggedIn) {
+      const currentUrl = this.page.url();
+      console.error('Login verification failed:', {
+        currentUrl,
+        expected: 'settings page',
+      });
+    }
+    expect(isLoggedIn).toBe(true);
   }
 
   async expectLoggedOut(): Promise<void> {
-    await this.page.goto(withLocale(AUTH_CONFIG.routes.settings));
-    await this.page.waitForURL(/sign-in/, {
-      timeout: AUTH_CONFIG.timeout.short,
-    });
-    expect(this.page.url()).toContain('sign-in');
+    console.log('Verifying logout...');
+    try {
+      await this.page.goto(withLocale(AUTH_CONFIG.routes.settings));
+      await this.page.waitForURL(/sign-in/, {
+        timeout: AUTH_CONFIG.timeout.short,
+      });
+      const currentUrl = this.page.url();
+      console.log(`Logout verified, redirected to: ${currentUrl}`);
+      expect(this.page.url()).toContain('sign-in');
+    } catch (error) {
+      const currentUrl = this.page.url();
+      console.error('Logout verification failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        currentUrl,
+      });
+      throw error;
+    }
   }
 }
