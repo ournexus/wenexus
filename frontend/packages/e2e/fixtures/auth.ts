@@ -63,13 +63,65 @@ export class AuthPage {
     await nameInput.fill(user.name);
     await this.page.locator('#email').fill(user.email);
     await this.page.locator('#password').fill(user.password);
-    await this.page.locator('button[type="submit"]').click();
 
-    // Stage 4: Wait for navigation to complete (home or verify page)
-    await this.page.waitForURL(
-      (url) => isHomePage(url.pathname) || url.pathname.includes('/verify'),
+    // Stage 4: Wait for registration API response before checking URL
+    const submitButton = this.page.locator('button[type="submit"]');
+    const apiResponsePromise = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth/sign-up') ||
+        response.url().includes('/api/auth/register'),
       { timeout: AUTH_CONFIG.timeout.long },
     );
+
+    await submitButton.click();
+
+    try {
+      const apiResponse = await apiResponsePromise;
+      const responseStatus = apiResponse.status();
+
+      if (responseStatus !== 200 && responseStatus !== 201) {
+        const responseBody = await apiResponse.text();
+        throw new Error(
+          `Registration API failed with status ${responseStatus}: ${responseBody}`,
+        );
+      }
+    } catch (error) {
+      // Capture diagnostic information on API failure
+      const currentUrl = this.page.url();
+      const errorElement = this.page.locator('[role="alert"]');
+      const errorText = await errorElement
+        .textContent()
+        .catch(() => 'No error element found');
+
+      console.error('Registration API Response Error:', {
+        error: error instanceof Error ? error.message : String(error),
+        currentUrl,
+        errorText,
+      });
+      throw error;
+    }
+
+    // Stage 5: Wait for navigation to complete (home or verify page)
+    try {
+      await this.page.waitForURL(
+        (url) => isHomePage(url.pathname) || url.pathname.includes('/verify'),
+        { timeout: AUTH_CONFIG.timeout.long },
+      );
+    } catch (error) {
+      // Capture diagnostic information on navigation failure
+      const currentUrl = this.page.url();
+      const errorElement = this.page.locator('[role="alert"]');
+      const errorText = await errorElement
+        .textContent()
+        .catch(() => 'No error element found');
+
+      console.error('Registration Navigation Failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        currentUrl,
+        errorText,
+      });
+      throw error;
+    }
 
     return this.page.url().includes('/verify') ? 'verify' : 'success';
   }
@@ -90,12 +142,68 @@ export class AuthPage {
     // Stage 3: Fill form and submit
     await this.page.locator('#email').fill(email);
     await this.page.locator('#password').fill(password);
-    await this.page.locator('button[type="submit"]').click();
 
-    // Stage 4: Wait for navigation away from sign-in page
-    await this.page.waitForURL((url) => !url.pathname.includes('/sign-in'), {
-      timeout: AUTH_CONFIG.timeout.long,
-    });
+    // Stage 4: Wait for login API response before checking URL
+    const submitButton = this.page.locator('button[type="submit"]');
+    const apiResponsePromise = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth/sign-in') ||
+        response.url().includes('/api/auth/login'),
+      { timeout: AUTH_CONFIG.timeout.long },
+    );
+
+    await submitButton.click();
+
+    try {
+      const apiResponse = await apiResponsePromise;
+      const responseStatus = apiResponse.status();
+
+      if (responseStatus !== 200 && responseStatus !== 201) {
+        const responseBody = await apiResponse.text();
+        throw new Error(
+          `Login API failed with status ${responseStatus}: ${responseBody}`,
+        );
+      }
+    } catch (error) {
+      // Capture diagnostic information on API failure
+      const currentUrl = this.page.url();
+      const errorElement = this.page.locator('[role="alert"]');
+      const errorText = await errorElement
+        .textContent()
+        .catch(() => 'No error element found');
+
+      console.error('Login API Response Error:', {
+        error: error instanceof Error ? error.message : String(error),
+        currentUrl,
+        errorText,
+      });
+      throw error;
+    }
+
+    // Stage 5: Wait for navigation away from sign-in page
+    try {
+      await this.page.waitForURL((url) => !url.pathname.includes('/sign-in'), {
+        timeout: AUTH_CONFIG.timeout.long,
+      });
+    } catch (error) {
+      // Capture diagnostic information on navigation failure
+      const currentUrl = this.page.url();
+      const pageContent = await this.page
+        .content()
+        .catch(() => 'Unable to read page');
+      const errorElement = this.page.locator('[role="alert"]');
+      const errorText = await errorElement
+        .textContent()
+        .catch(() => 'No error element found');
+
+      console.error('Login Navigation Failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        currentUrl,
+        errorText,
+        pageContentLength: pageContent?.length || 0,
+      });
+      throw error;
+    }
   }
 
   async logout(): Promise<void> {

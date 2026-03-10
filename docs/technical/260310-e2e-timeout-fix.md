@@ -8,7 +8,11 @@ E2E 测试在本地通过，但在 CI 环境中超时失败，错误信息：
 TimeoutError: page.waitForURL: Timeout 20000ms exceeded
 ```
 
-**根本原因**：CI 环境资源受限导致响应较慢，20 秒超时不足以完成登录/注册流程。
+**根本原因分析**：
+
+1. 初期认为只是超时时间不足（CI 环境资源较慢）
+2. 后发现真正原因是登录后 **URL 没有变化**，而不仅仅是时间问题
+3. 原因：未等待 API 调用完成就检查 URL 变化
 
 ## 解决方案
 
@@ -40,27 +44,67 @@ export const AUTH_CONFIG = {
 }
 ```
 
-### 3. 分阶段等待策略
+### 3. 改用 waitForResponse 等待 API 调用
 
-改进 `auth.ts` 中的 `login()` 和 `register()` 方法，采用 4 阶段等待模式：
+关键修改：在 `login()` 和 `register()` 方法中，使用 `waitForResponse` 等待 API 调用完成，而不是仅依赖 `waitForLoadState`：
 
-- **Stage 1**：导航并等待页面加载完成 (`waitForLoadState('networkidle')`)
-- **Stage 2**：验证表单元素可见 (使用 `expect().toBeVisible()`)
-- **Stage 3**：填写表单并提交
-- **Stage 4**：等待导航完成
+```typescript
+const apiResponsePromise = this.page.waitForResponse(
+  (response) =>
+    response.url().includes('/api/auth/sign-in') ||
+    response.url().includes('/api/auth/login'),
+  { timeout: AUTH_CONFIG.timeout.long },
+);
 
-这种分段方式的好处：
+await submitButton.click();
+const apiResponse = await apiResponsePromise;
 
-- 提前检测问题（如表单加载失败）而非等到提交才超时
-- 每个阶段使用适当的超时时间，避免单一超时过长
-- 在 CI 中更容易定位问题位置
+if (apiResponse.status() !== 200 && apiResponse.status() !== 201) {
+  throw new Error(`Login API failed: ${await apiResponse.text()}`);
+}
+```
+
+**好处**：
+
+- 确保 API 请求确实完成，而不是假设网络空闲就代表登录成功
+- 能立即检测 API 失败（如 401 未授权、500 服务器错误等）
+
+### 4. 添加诊断错误处理
+
+为 API 失败和导航超时添加详细的诊断信息：
+
+```typescript
+try {
+  const apiResponse = await apiResponsePromise;
+  // ... 检查响应
+} catch (error) {
+  const currentUrl = this.page.url();
+  const errorText = await this.page
+    .locator('[role="alert"]')
+    .textContent()
+    .catch(() => 'No error element found');
+
+  console.error('Login API Response Error:', {
+    error: error.message,
+    currentUrl,
+    errorText,  // 服务器返回的错误信息
+  });
+  throw error;
+}
+```
+
+当 CI 中测试失败时，将输出：
+
+- 当前 URL（检查页面是否正确重定向）
+- 服务器返回的错误信息（如表单验证失败、认证错误等）
+- 完整的错误堆栈
 
 ## 测试验证
 
 本地环境测试结果：✅ 全部通过
 
 ```
-6 passed (1.3m)
+6 passed (1.2m)
 - 路由保护 (2 tests)
 - 页面渲染 (2 tests)
 - 错误处理 (1 test)
@@ -69,5 +113,5 @@ export const AUTH_CONFIG = {
 
 ## 文件变更
 
-- `frontend/packages/e2e/playwright.config.ts` - CI 超时配置
-- `frontend/packages/e2e/fixtures/auth.ts` - 分阶段等待策略
+- `frontend/packages/e2e/playwright.config.ts` - CI 环境超时配置
+- `frontend/packages/e2e/fixtures/auth.ts` - 改用 waitForResponse + 诊断错误处理
