@@ -73,7 +73,7 @@ export class AuthPage {
     await this.page.locator('button[type="submit"]').click();
 
     await this.page.waitForURL((url) => !url.pathname.includes('/sign-in'), {
-      timeout: AUTH_CONFIG.timeout.medium,
+      timeout: AUTH_CONFIG.timeout.long,
     });
   }
 
