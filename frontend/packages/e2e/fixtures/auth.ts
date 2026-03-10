@@ -45,17 +45,27 @@ export class AuthPage {
   constructor(private page: Page) {}
 
   async register(user: TestUser): Promise<'success' | 'verify'> {
+    // Stage 1: Navigate and wait for page to be interactive
     await this.page.goto(withLocale(AUTH_CONFIG.routes.signUp));
     await this.page.waitForLoadState('networkidle');
 
+    // Stage 2: Wait for form fields to be visible and ready
     const nameInput = this.page.locator('#name');
     await expect(nameInput).toBeVisible({ timeout: AUTH_CONFIG.timeout.short });
+    await expect(this.page.locator('#email')).toBeVisible({
+      timeout: AUTH_CONFIG.timeout.short,
+    });
+    await expect(this.page.locator('#password')).toBeVisible({
+      timeout: AUTH_CONFIG.timeout.short,
+    });
 
+    // Stage 3: Fill form and submit
     await nameInput.fill(user.name);
     await this.page.locator('#email').fill(user.email);
     await this.page.locator('#password').fill(user.password);
     await this.page.locator('button[type="submit"]').click();
 
+    // Stage 4: Wait for navigation to complete (home or verify page)
     await this.page.waitForURL(
       (url) => isHomePage(url.pathname) || url.pathname.includes('/verify'),
       { timeout: AUTH_CONFIG.timeout.long },
@@ -65,13 +75,24 @@ export class AuthPage {
   }
 
   async login(email: string, password: string): Promise<void> {
+    // Stage 1: Navigate and wait for page to be interactive
     await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
     await this.page.waitForLoadState('networkidle');
 
+    // Stage 2: Wait for form fields to be visible and ready
+    await expect(this.page.locator('#email')).toBeVisible({
+      timeout: AUTH_CONFIG.timeout.short,
+    });
+    await expect(this.page.locator('#password')).toBeVisible({
+      timeout: AUTH_CONFIG.timeout.short,
+    });
+
+    // Stage 3: Fill form and submit
     await this.page.locator('#email').fill(email);
     await this.page.locator('#password').fill(password);
     await this.page.locator('button[type="submit"]').click();
 
+    // Stage 4: Wait for navigation away from sign-in page
     await this.page.waitForURL((url) => !url.pathname.includes('/sign-in'), {
       timeout: AUTH_CONFIG.timeout.long,
     });
