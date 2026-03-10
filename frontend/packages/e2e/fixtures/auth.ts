@@ -244,19 +244,35 @@ export class AuthPage {
   async logout(): Promise<void> {
     console.log('Logging out...');
 
-    // Call sign-out API and wait for it to complete
+    // Call sign-out API using page.request (Playwright native API)
+    // This is more reliable and handles headers correctly
     try {
-      await this.page.evaluate(() =>
-        fetch('/api/auth/sign-out', { method: 'POST' }).then((res) => {
-          if (!res.ok) {
-            throw new Error(`Sign-out API returned ${res.status}`);
-          }
-          return true;
-        }),
-      );
-      console.log('Sign-out API succeeded');
+      const response = await this.page.request.post('/api/auth/sign-out', {
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: new URL(this.page.url()).origin,
+        },
+        data: {},
+      });
+
+      const responseStatus = response.status();
+      console.log(`Sign-out API returned status ${responseStatus}`);
+
+      if (!response.ok()) {
+        const responseBody = await response
+          .text()
+          .catch(() => '(unable to read body)');
+        console.warn(
+          `Sign-out API failed with status ${responseStatus}: ${responseBody}`,
+        );
+      } else {
+        console.log('Sign-out API succeeded');
+      }
     } catch (error) {
-      console.warn('Sign-out API error:', error);
+      console.warn(
+        'Sign-out API error:',
+        error instanceof Error ? error.message : String(error),
+      );
       // Continue with cleanup even if API fails
     }
 

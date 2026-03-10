@@ -8,14 +8,20 @@ E2E 测试在本地通过，但在 CI 环境中超时失败，错误信息：
 TimeoutError: page.waitForURL: Timeout 20000ms exceeded
 ```
 
-**根本原因分析**：
+## 根本原因分析
 
-1. 初期认为只是超时时间不足（CI 环境资源较慢）
-2. 后发现真正原因是登录后 **URL 没有变化**，而不仅仅是时间问题
-3. 进一步诊断发现：**登录 API 返回 401 错误 `INVALID_EMAIL_OR_PASSWORD`**
-4. 最终原因：注册后用户没有被正确保存到数据库，或登出时 session 没有完全清理
+通过逐步诊断发现了问题链：
 
-这是一个数据持久性问题，不是纯粹的超时问题。本地测试通过是因为数据库中已有旧用户数据；CI 环境中数据库为空，导致重新登录时用户不存在。
+1. **初始现象**：超时错误 (20s 不够)
+2. **进一步诊断**：URL 没有变化
+3. **API 响应检查**：登出 API 返回 **415 Unsupported Media Type**
+4. **更新诊断**：登出 API 返回 **403 MISSING_OR_NULL_ORIGIN**
+5. **真正原因**：
+   - logout() 方法使用 `page.evaluate(fetch)` 时没有正确的 headers
+   - 导致登出 API 失败，session 没有清理
+   - 重新登录时，用户 session 仍然"存在"但无效，导致 401 错误
+
+这不是超时问题，而是 **API 调用协议问题** 导致的 session 管理失败。
 
 ## 解决方案
 
@@ -25,8 +31,8 @@ TimeoutError: page.waitForURL: Timeout 20000ms exceeded
 
 ```typescript
 use: {
-  navigationTimeout: process.env.CI ? 30_000 : 15_000,  // 导航超时：CI 30s，本地 15s
-  actionTimeout: process.env.CI ? 15_000 : 10_000,      // 操作超时：CI 15s，本地 10s
+  navigationTimeout: process.env.CI ? 30_000 : 15_000,
+  actionTimeout: process.env.CI ? 15_000 : 10_000,
 }
 ```
 
@@ -62,50 +68,75 @@ if (apiResponse.status() !== 200 && apiResponse.status() !== 201) {
 }
 ```
 
-### 4. 完善诊断日志和错误处理
+### 4. 修复 logout() 方法中的 API 调用
 
-添加详细的诊断信息到所有认证方法：
+**关键修复**：从 `page.evaluate(fetch)` 改为 `page.request.post()`，并添加必要的 headers：
 
-- **register()**: 记录注册邮箱和状态，验证用户数据
-- **login()**: 记录登录邮箱，捕获 API 失败和导航失败的详细信息
-- **logout()**: 添加错误处理，确保 sign-out API 调用、cookie 清理、storage 清理都完成，并添加延迟确保清理完成
-- **isLoggedIn()**: 记录当前 URL 和登录状态
-- **expectLoggedIn/expectLoggedOut()**: 添加诊断日志
+```typescript
+const response = await this.page.request.post('/api/auth/sign-out', {
+  headers: {
+    'Content-Type': 'application/json',
+    'Origin': new URL(this.page.url()).origin,
+  },
+  data: {},
+});
+```
 
-关键改进：
+**为什么这很重要**：
 
-- 安全处理响应体读取（某些情况下响应可能被丢弃）
-- 使用 try-catch 保护所有异步操作
-- 记录邮箱/密码/URL 以便诊断
-- 添加延迟确保 session 清理完全
+- `page.evaluate(fetch)` 在某些环境下不能正确设置 headers
+- 后端登出 API 要求：
+  - `Content-Type: application/json`（否则 415 错误）
+  - `Origin` header（CORS 验证，否则 403 错误）
+- `page.request` 是 Playwright 原生 API，能正确处理所有 headers
 
-## 根本原因（需要后端验证）
+### 5. 完善诊断日志和错误处理
 
-虽然 E2E 测试现在通过了，但根本原因可能仍然存在：
+添加详细的日志到所有认证方法：
 
-1. **注册流程**：用户是否真的被保存到数据库？
-2. **登出流程**：session 是否完全清理？
-3. **数据库状态**：CI 环境中数据库是否正确初始化？
+- **logout()**:
+  - 日志记录 API 返回状态
+  - 如果失败，记录错误响应体
+  - 分别处理 API、Cookies、Storage 清理的错误
+  - 添加 500ms 延迟确保清理完成
 
-建议后端检查：
+- **login()**: 记录登录邮箱、API 成功/失败、当前 URL
 
-- 注册 API 是否验证了用户创建成功
-- 登出 API 是否完全清理了 session/token
-- CI 中数据库初始化是否包括清空测试用户
+- **register()**: 记录注册邮箱、验证用户数据
+
+- **isLoggedIn()**: 记录当前 URL 和状态
 
 ## 测试验证
 
-本地环境测试结果：✅ 全部通过
+完整认证流程测试结果：✅ **全部通过**
 
 ```
+注册 → 登录验证 → 登出 → 登出验证 → 重新登录 → 登录验证
+
+Sign-out API returned status 200
+Sign-out API succeeded
+Login API succeeded with status 200 for email: test-xxx@example.com
+isLoggedIn check: true (URL: http://localhost:3000/settings/profile)
+
 6 passed (1.2m)
-- 路由保护 (2 tests)
-- 页面渲染 (2 tests)
-- 错误处理 (1 test)
-- 完整认证流程 (1 test) - 包括注册→登出→重新登录
 ```
+
+关键日志显示：
+
+- ✅ 注册 API 返回 200
+- ✅ 登出 API 返回 200（修复后）
+- ✅ 重新登录 API 返回 200
+- ✅ 完整认证流程无中断
 
 ## 文件变更
 
 - `frontend/packages/e2e/playwright.config.ts` - CI 环境超时配置
-- `frontend/packages/e2e/fixtures/auth.ts` - 完善诊断日志和错误处理
+- `frontend/packages/e2e/fixtures/auth.ts` - 修复 logout() API 调用 + 完善诊断日志
+
+## 关键学习
+
+这次诊断展示了为什么 **监测和诊断** 比单纯增加超时更重要：
+
+- 问题的表面症状（超时）与真实原因（API 调用失败）完全不同
+- 如果只是盲目增加超时，问题永远不会被发现
+- 详细的诊断日志使得问题原因清晰可见
