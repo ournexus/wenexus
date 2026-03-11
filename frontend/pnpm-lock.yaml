@@ -449,9 +449,6 @@ importers:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: ^4.7.0
         version: 4.7.1(prettier@3.8.1)
-      '@playwright/test':
-        specifier: ^1.58.2
-        version: 1.58.2
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.2.1
@@ -518,6 +515,12 @@ importers:
       wrangler:
         specifier: ^4.34.0
         version: 4.68.0
+
+  packages/e2e:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.52.0
+        version: 1.58.2
 
   packages/shared:
     dependencies:

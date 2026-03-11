@@ -1,7 +1,7 @@
 import type {
-  UserPreference,
   UpdateUserPreference,
   UserIdentity,
+  UserPreference,
 } from '../types';
 
 export async function getUserPreference(
@@ -17,8 +17,6 @@ export async function updateUserPreference(
   throw new Error('Not implemented');
 }
 
-export async function getUserIdentity(
-  _userId: string
-): Promise<UserIdentity> {
+export async function getUserIdentity(_userId: string): Promise<UserIdentity> {
   throw new Error('Not implemented');
 }

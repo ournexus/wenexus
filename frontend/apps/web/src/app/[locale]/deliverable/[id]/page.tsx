@@ -8,9 +8,10 @@ export default async function DeliverablePage({
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold">Deliverable</h1>
-      <p className="mt-2 text-muted-foreground">Deliverable ID: {id}</p>
-      <p className="mt-4 text-sm text-muted-foreground">
-        This page will display generated deliverables (reports, articles, scripts, etc.).
+      <p className="text-muted-foreground mt-2">Deliverable ID: {id}</p>
+      <p className="text-muted-foreground mt-4 text-sm">
+        This page will display generated deliverables (reports, articles,
+        scripts, etc.).
       </p>
     </div>
   );

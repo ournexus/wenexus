@@ -30,7 +30,5 @@ export interface LLMResponse {
 
 export interface LLMGateway {
   generate(options: LLMGenerateOptions): Promise<LLMResponse>;
-  generateStream(
-    options: LLMGenerateOptions
-  ): AsyncIterable<LLMStreamChunk>;
+  generateStream(options: LLMGenerateOptions): AsyncIterable<LLMStreamChunk>;
 }

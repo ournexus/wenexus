@@ -1,7 +1,7 @@
 """
 main - FastAPI application entry point.
 
-Depends: fastapi, structlog, config, db, api.roundtable, api.deliverable
+Depends: fastapi, structlog, config, repository.db, facade.roundtable, facade.deliverable
 Consumers: uvicorn (runtime)
 """
 
@@ -12,10 +12,10 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from wenexus.api.deliverable import router as deliverable_router
-from wenexus.api.roundtable import router as roundtable_router
 from wenexus.config import settings
-from wenexus.db import check_db_connection
+from wenexus.facade.deliverable import router as deliverable_router
+from wenexus.facade.roundtable import router as roundtable_router
+from wenexus.repository.db import check_db_connection
 
 logger = structlog.get_logger()
 

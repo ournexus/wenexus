@@ -1,22 +1,18 @@
 import { and, eq } from 'drizzle-orm';
 
+import { db } from '@/core/db';
+import { userPreference } from '@/config/db/schema';
+
 import type {
-  UserPreference,
   NewUserPreference,
   UpdateUserPreference,
+  UserPreference,
 } from '../types';
-
-import { userPreference } from '@/config/db/schema';
-import { db } from '@/core/db';
-
 
 export async function createUserPreferenceRecord(
   data: NewUserPreference
 ): Promise<UserPreference> {
-  const [result] = await db()
-    .insert(userPreference)
-    .values(data)
-    .returning();
+  const [result] = await db().insert(userPreference).values(data).returning();
   return result;
 }
 

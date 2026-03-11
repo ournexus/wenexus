@@ -1,22 +1,18 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 
+import { db } from '@/core/db';
+import { observationCard } from '@/config/db/schema';
+
 import type {
   NewObservationCard,
   ObservationCard,
   UpdateObservationCard,
 } from '../types';
 
-import { observationCard } from '@/config/db/schema';
-import { db } from '@/core/db';
-
-
 export async function createObservationCardRecord(
   data: NewObservationCard
 ): Promise<ObservationCard> {
-  const [result] = await db()
-    .insert(observationCard)
-    .values(data)
-    .returning();
+  const [result] = await db().insert(observationCard).values(data).returning();
   return result;
 }
 

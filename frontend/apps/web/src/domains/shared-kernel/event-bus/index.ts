@@ -6,8 +6,4 @@
  */
 
 export { domainEventBus } from './event-bus';
-export type {
-  DomainEvent,
-  DomainEventType,
-  DomainEventHandler,
-} from './types';
+export type { DomainEvent, DomainEventType, DomainEventHandler } from './types';

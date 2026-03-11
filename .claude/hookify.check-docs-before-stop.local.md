@@ -3,7 +3,7 @@ name: check-docs-before-stop
 enabled: true
 event: stop
 pattern: .*
-action: block
+action: warn
 ---
 
 **Stop! Documentation check required before finishing.**
@@ -18,6 +18,7 @@ Check if any of these were affected by your changes:
 - [ ] Module `__init__.py` or `index.ts` - Did you update module docstrings/JSDoc for changed modules?
 - [ ] `package.json` - Did you update the `description` field if functionality changed?
 - [ ] Directory `README.md` - Did you update README for directories where files changed?
+- [ ] `progess.md` - Did you update progess.md to log current state?
 
 ### 2. Unnecessary documentation that should be deleted
 

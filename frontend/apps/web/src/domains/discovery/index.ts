@@ -22,5 +22,9 @@ export {
 } from './types';
 
 // Services
-export { createTopic, getTopicById, listTopics } from './services/topic-service';
+export {
+  createTopic,
+  getTopicById,
+  listTopics,
+} from './services/topic-service';
 export { getFeedCards } from './services/feed-service';

@@ -29,7 +29,13 @@ const authOptions = {
   appName: envConfigs.app_name,
   baseURL: envConfigs.auth_url,
   secret: envConfigs.auth_secret,
-  trustedOrigins: envConfigs.app_url ? [envConfigs.app_url] : [],
+  trustedOrigins: [
+    ...(envConfigs.app_url ? [envConfigs.app_url] : []),
+    // 开发环境允许 localhost 和 127.0.0.1 互访
+    ...(process.env.NODE_ENV !== 'production'
+      ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+      : []),
+  ],
   user: {
     // Allow persisting custom columns on user table.
     // Without this, better-auth may ignore extra properties during create/update.

@@ -1,10 +1,9 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 
-import type { DiscussionMessage, NewDiscussionMessage } from '../types';
-
-import { discussionMessage } from '@/config/db/schema';
 import { db } from '@/core/db';
+import { discussionMessage } from '@/config/db/schema';
 
+import type { DiscussionMessage, NewDiscussionMessage } from '../types';
 
 export async function createMessageRecord(
   data: NewDiscussionMessage
