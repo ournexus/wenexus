@@ -66,14 +66,13 @@ backend/python/src/wenexus/
 | 业务逻辑 (`service/auth.py`) | ✅ 已实现 | `authenticate()`, `revoke_session()` |
 | 跨层 DTO (`util/schema.py`) | ✅ 已实现 | `UserInfo` dataclass |
 | 反向代理 Cookie 传递 | ✅ 已实现 | Next.js rewrites `/api/py/v1/*` → `http://localhost:8000/api/v1/*` |
-| 集成测试（真实 DB） | ✅ 已验证 | 7 passed, 1 skipped; SQL 与 Drizzle schema 兼容 |
+| 集成测试（真实 DB） | ✅ 已完成 | 13 passed; Cookie提取、依赖注入、异常流程验证 |
 | 微信登录 | ⬜ 待实现 | Generic OAuth Plugin 方案已设计 |
 
 > **注意**：设计文档 2.4 节中引用的文件路径 `common/auth.py` 和 `common/database.py` 已过时，实际代码已按分层架构重新组织。
 
 ### 未完成
 
-- [ ] 认证集成测试（真实用户和session的端到端验证）
 - [ ] 前后端业务链路调通（Next.js BFF → Python API → LLM → DB → Frontend 展示）
 - [ ] Roundtable 域 API routes + UI
 - [ ] Deliverable 域全部
