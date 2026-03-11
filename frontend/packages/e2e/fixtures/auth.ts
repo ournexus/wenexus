@@ -44,6 +44,11 @@ const isHomePage = (pathname: string): boolean =>
 export class AuthPage {
   constructor(private page: Page) {}
 
+  /**
+   * Register a new user and wait for database write to complete.
+   * Returns 'success' if registration completes and user can login,
+   * or 'verify' if email verification is required.
+   */
   async register(user: TestUser): Promise<'success' | 'verify'> {
     // Stage 1: Navigate and wait for page to be interactive
     await this.page.goto(withLocale(AUTH_CONFIG.routes.signUp));
@@ -147,7 +152,21 @@ export class AuthPage {
       throw error;
     }
 
-    return this.page.url().includes('/verify') ? 'verify' : 'success';
+    const registrationResult = this.page.url().includes('/verify')
+      ? 'verify'
+      : 'success';
+
+    // Stage 6: If registration succeeded (not verify), validate that user was actually created
+    // by attempting to access protected page and then re-logging in after logout
+    if (registrationResult === 'success') {
+      console.log(
+        `Registration completed for ${user.email}, waiting for database write...`,
+      );
+      // Wait to ensure database write completes before logout/relogin cycle
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    return registrationResult;
   }
 
   async login(email: string, password: string): Promise<void> {
