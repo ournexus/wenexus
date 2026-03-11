@@ -49,6 +49,10 @@ backend/python/src/wenexus/
 - [x] Python 后端分层架构重构（config/facade/app/service/repository/util 六层）
 - [x] Python 认证模块实现（共享 DB session 验证，拆分为 repository/service/facade 三层）
 - [x] 单元测试 11 个全部通过（config 2 + facade 3 + service 4 + main 2）
+- [x] Discovery 域 Python API 实现（facade: 2 endpoint, service: get_public_topics）
+- [x] Discovery 域集成测试 14 个全部通过（API 端点、分页、数据格式、完整性检查）
+- [x] 业务流程集成文档完成（260312-business-flow-integration.md）
+- [x] 前后端业务流程调通（Python API → DB 完整链路，Discovery 域端到端验证）
 
 ### 认证系统状态
 
@@ -73,13 +77,14 @@ backend/python/src/wenexus/
 
 ### 未完成
 
-- [ ] 前后端业务链路调通（Next.js BFF → Python API → LLM → DB → Frontend 展示）
+- [ ] Next.js BFF → Python API 集成（当前 BFF 直接查询 DB，需改为调用 Python API）
 - [ ] Roundtable 域 API routes + UI
 - [ ] Deliverable 域全部
 - [ ] Identity 域全部
 - [ ] 微信登录集成
 - [ ] 种子数据
 - [ ] OpenRouter API Key 配置
+- [ ] Discovery ExpertCount 计算与 Roundtable 域集成
 
 ---
 

@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from wenexus.config import settings
 from wenexus.facade.deliverable import router as deliverable_router
+from wenexus.facade.discovery import router as discovery_router
 from wenexus.facade.roundtable import router as roundtable_router
 from wenexus.repository.db import check_db_connection
 
@@ -68,3 +69,4 @@ async def health() -> dict[str, str]:
 
 app.include_router(roundtable_router, prefix="/api/v1")
 app.include_router(deliverable_router, prefix="/api/v1")
+app.include_router(discovery_router, prefix="/api/v1")
