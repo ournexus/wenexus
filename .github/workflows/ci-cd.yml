@@ -48,6 +48,12 @@ jobs:
       - name: Install Playwright browsers
         run: cd packages/e2e && pnpm playwright install
 
+      - name: Initialize database tables for E2E tests
+        run: cd apps/web && pnpm exec tsx scripts/init-db-e2e.ts
+        env:
+          DATABASE_URL: postgresql://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev
+          NODE_ENV: test
+
       - name: Run linting
         run: pnpm lint
 

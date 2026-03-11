@@ -82,7 +82,32 @@ const response = await this.page.request.post('/api/auth/sign-out', {
 尝试添加 500ms 延迟，但无法解决注册数据未保存问题。
 确认问题在后端，不是时序问题。
 
-## 当前测试状态
+## 阶段 5：数据库初始化问题（最终根本原因！）
+
+**发现**：CI 有 PostgreSQL 容器但没有表初始化！
+
+### 问题
+
+```
+test-frontend job:
+  ✅ PostgreSQL 16 container started
+  ✅ DATABASE_URL env var set
+  ❌ 数据库表没有被创建
+  ❌ E2E 测试运行
+  ❌ 注册 API 返回 200（假装成功）
+  ❌ 用户数据写不进表（表不存在）
+  ❌ 重新登录返回 401
+```
+
+### 为什么本地测试通过
+
+本地开发时表已经存在（从之前的开发、迁移或初始化），但 CI 每次启动新的 PostgreSQL 容器。
+
+### 解决方案
+
+添加数据库初始化步骤到 CI 配置（见下方）
+
+## 修复汇总
 
 ### 测试结果
 
