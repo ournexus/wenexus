@@ -51,9 +51,10 @@ async def db_session() -> AsyncGenerator[None, None]:
     数据库 session fixture（集成测试用）。
 
     TODO: 实现事务回滚模式，每个测试运行在一个事务中，测试结束后回滚。
+    当前仅提供占位符，真实数据库连接由各测试的专用 fixture 提供。
     """
-    # from wenexus.db import async_session
-    # async with async_session() as session:
+    # from wenexus.repository.db import async_session_factory
+    # async with async_session_factory() as session:
     #     yield session
     #     await session.rollback()
     yield None
