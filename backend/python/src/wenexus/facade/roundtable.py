@@ -5,7 +5,8 @@ Depends: fastapi, service.roundtable, repository.db
 Consumers: main (router inclusion)
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.facade.deps import get_current_user
@@ -16,10 +17,18 @@ from wenexus.service.roundtable import (
     get_session_detail,
     get_session_messages,
     get_sessions,
+    send_message,
 )
 from wenexus.util.schema import UserInfo
 
 router = APIRouter(prefix="/roundtable", tags=["roundtable"])
+
+
+class SendMessageRequest(BaseModel):
+    """Request body for sending a message to a discussion session."""
+
+    content: str
+    generate_ai_reply: bool = True
 
 
 @router.get("/experts")
@@ -233,3 +242,53 @@ async def create_session_endpoint(
         "code": 0,
         "data": session,
     }
+
+
+@router.post("/sessions/{session_id}/messages")
+async def send_message_endpoint(
+    session_id: str,
+    request: SendMessageRequest,
+    user: UserInfo = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Send a message to a discussion session.
+
+    Hybrid mode:
+    - Synchronously saves user message
+    - Asynchronously generates expert AI replies
+
+    Args:
+        session_id: Discussion session ID
+        request: SendMessageRequest with content and generate_ai_reply flag
+        user: Current user
+        db: Database session
+
+    Returns:
+        {
+            "code": 0,
+            "data": {
+                "userMessage": {...},
+                "aiReplies": [...],
+                "status": "success" or "pending",
+                "sessionId": "..."
+            }
+        }
+    """
+    # Verify user owns this session
+    session = await get_session_detail(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session["userId"] != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Send message (hybrid mode)
+    result = await send_message(
+        db,
+        session_id=session_id,
+        user_id=user.id,
+        content=request.content,
+        generate_ai_reply=request.generate_ai_reply,
+    )
+
+    return result

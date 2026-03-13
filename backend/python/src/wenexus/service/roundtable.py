@@ -3,11 +3,24 @@ service.roundtable - Roundtable 域服务层。
 
 实现讨论会话、专家、消息的业务逻辑。
 
-Depends: repository.roundtable, util.schema
+Depends: repository.roundtable, util.schema, util.llm
 Consumers: facade.roundtable
 """
 
+import asyncio
+
+import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from wenexus.repository.roundtable import (
+    get_session_context,
+    get_session_experts,
+    save_message,
+    update_session_status,
+)
+from wenexus.util.llm import generate_expert_response
+
+logger = structlog.get_logger()
 
 
 async def get_experts(
@@ -196,14 +209,11 @@ async def get_session_messages(
     result = await db.execute(
         text(
             """
-        SELECT cm.id, cm.role, cm.content, cm.model, cm.provider,
-               cm.status, cm.created_at
-        FROM chat_message cm
-        JOIN chat c ON cm.chat_id = c.id
-        WHERE c.id IN (
-            SELECT ds.id FROM discussion_session ds WHERE ds.id = :session_id
-        )
-        ORDER BY cm.created_at ASC
+        SELECT dm.id, dm.role, dm.content, dm.status, dm.created_at,
+               dm.expert_id, dm.user_id
+        FROM discussion_message dm
+        WHERE dm.session_id = :session_id
+        ORDER BY dm.created_at ASC
         LIMIT :limit OFFSET :offset
     """
         ),
@@ -217,9 +227,9 @@ async def get_session_messages(
                 "id": row.id,
                 "role": row.role,
                 "content": row.content,
-                "model": row.model,
-                "provider": row.provider,
                 "status": row.status,
+                "expertId": row.expert_id,
+                "userId": row.user_id,
                 "createdAt": row.created_at.isoformat() if row.created_at else None,
             }
         )
@@ -293,3 +303,142 @@ async def create_session(
 
     # 3. 获取新创建的会话详情
     return await get_session_detail(db, session_id)
+
+
+async def send_message(
+    db: AsyncSession,
+    session_id: str,
+    user_id: str,
+    content: str,
+    generate_ai_reply: bool = True,
+) -> dict:
+    """Send a message to a discussion session (hybrid mode).
+
+    Synchronously saves user message, asynchronously generates AI expert replies.
+
+    Args:
+        db: Database session
+        session_id: Discussion session ID
+        user_id: Current user ID
+        content: Message content
+        generate_ai_reply: Whether to generate AI expert replies (async)
+
+    Returns:
+        Dict with:
+            - userMessage: Saved user message dict
+            - aiReplies: List of expert response dicts (may be incomplete if async)
+            - status: "success" or "partial" (if AI generation still pending)
+    """
+    # 1. Sync: Save user message
+    user_message = await save_message(
+        db,
+        session_id=session_id,
+        role="participant",
+        content=content,
+        user_id=user_id,
+    )
+
+    await logger.ainfo(
+        "user_message_saved",
+        session_id=session_id,
+        user_id=user_id,
+        message_id=user_message["id"],
+    )
+
+    # 2. Update session status to "discussing"
+    await update_session_status(db, session_id, "discussing")
+
+    # 3. Async: Generate AI expert replies (fire and forget for hybrid mode)
+    ai_replies = []
+    if generate_ai_reply:
+        # Get session context and experts
+        context = await get_session_context(db, session_id)
+        if context:
+            experts = await get_session_experts(db, session_id)
+
+            # Generate responses from all assigned experts concurrently
+            if experts:
+                tasks = [
+                    _generate_and_save_expert_response(
+                        db, session_id, expert, context, content
+                    )
+                    for expert in experts
+                ]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for result in results:
+                    if isinstance(result, dict):
+                        ai_replies.append(result)
+                    elif isinstance(result, Exception):
+                        await logger.aerror(
+                            "expert_response_error",
+                            session_id=session_id,
+                            error=str(result),
+                        )
+
+    return {
+        "code": 0,
+        "data": {
+            "userMessage": user_message,
+            "aiReplies": ai_replies,
+            "status": "success" if generate_ai_reply else "pending",
+            "sessionId": session_id,
+        },
+    }
+
+
+async def _generate_and_save_expert_response(
+    db: AsyncSession, session_id: str, expert: dict, context: dict, user_message: str
+) -> dict | None:
+    """Helper: Generate and save expert response.
+
+    Args:
+        db: Database session
+        session_id: Discussion session ID
+        expert: Expert dict with id, name, role, stance, systemPrompt
+        context: Session context
+        user_message: The user message to respond to
+
+    Returns:
+        Saved expert message dict or None if generation failed
+    """
+    try:
+        response_content = await generate_expert_response(
+            expert_name=expert["name"],
+            expert_role=expert["role"],
+            expert_stance=expert["stance"],
+            system_prompt=expert.get("systemPrompt"),
+            session_context=context,
+            user_message=user_message,
+        )
+
+        if response_content:
+            expert_message = await save_message(
+                db,
+                session_id=session_id,
+                role="expert",
+                content=response_content,
+                expert_id=expert["id"],
+            )
+            await logger.ainfo(
+                "expert_response_saved",
+                session_id=session_id,
+                expert_id=expert["id"],
+                message_id=expert_message["id"],
+            )
+            return expert_message
+        else:
+            await logger.awarn(
+                "expert_response_generation_failed",
+                session_id=session_id,
+                expert_id=expert["id"],
+            )
+            return None
+
+    except Exception as e:
+        await logger.aerror(
+            "expert_response_save_error",
+            session_id=session_id,
+            expert_id=expert["id"],
+            error=str(e),
+        )
+        return None
