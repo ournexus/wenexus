@@ -5,7 +5,7 @@ Depends: fastapi, service.roundtable, repository.db
 Consumers: main (router inclusion)
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from wenexus.service.roundtable import (
     send_message,
 )
 from wenexus.util.schema import UserInfo
+from wenexus.util.websocket import ws_manager
 
 router = APIRouter(prefix="/roundtable", tags=["roundtable"])
 
@@ -291,4 +292,78 @@ async def send_message_endpoint(
         generate_ai_reply=request.generate_ai_reply,
     )
 
+    # Broadcast new message to WebSocket clients
+    if result.get("data"):
+        await ws_manager.broadcast(
+            session_id,
+            {
+                "type": "new_message",
+                "message": result["data"]["userMessage"],
+            },
+        )
+
     return result
+
+
+@router.websocket("/ws/sessions/{session_id}")
+async def websocket_endpoint(
+    session_id: str,
+    websocket: WebSocket,
+    user: UserInfo = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """WebSocket endpoint for real-time session updates.
+
+    Broadcasts new messages and session state changes to connected clients.
+
+    Args:
+        session_id: Discussion session ID
+        websocket: WebSocket connection
+        user: Current user
+        db: Database session
+    """
+    # Verify user owns this session
+    session = await get_session_detail(db, session_id)
+    if not session:
+        await websocket.close(code=4004, reason="Session not found")
+        return
+
+    if session["userId"] != user.id:
+        await websocket.close(code=4003, reason="Forbidden")
+        return
+
+    # Accept connection
+    await ws_manager.connect(session_id, websocket)
+
+    # Send connection confirmation
+    await websocket.send_json(
+        {
+            "type": "connected",
+            "sessionId": session_id,
+            "message": "Connected to discussion session",
+        }
+    )
+
+    try:
+        # Keep connection alive and handle incoming messages
+        while True:
+            # Wait for incoming message (or connection close)
+            data = await websocket.receive_json()
+
+            # Echo back or process incoming messages if needed
+            # For now, just acknowledge
+            if data.get("type") == "ping":
+                await websocket.send_json({"type": "pong"})
+
+    except WebSocketDisconnect:
+        ws_manager.disconnect(session_id, websocket)
+    except Exception as e:
+        import structlog
+
+        logger = structlog.get_logger()
+        await logger.aerror(
+            "websocket_error",
+            session_id=session_id,
+            error=str(e),
+        )
+        ws_manager.disconnect(session_id, websocket)

@@ -53,6 +53,13 @@ backend/python/src/wenexus/
 - [x] Discovery 域集成测试 14 个全部通过（API 端点、分页、数据格式、完整性检查）
 - [x] 业务流程集成文档完成（260312-business-flow-integration.md）
 - [x] 前后端业务流程调通（Python API → DB 完整链路，Discovery 域端到端验证）
+- [x] **Roundtable 消息发送功能**（混合模式）✨ NEW
+  - [x] Repository 层：save_message, get_session_context, get_session_experts, update_session_status
+  - [x] Service 层：send_message (混合模式),_generate_and_save_expert_response
+  - [x] Util 层：LLM 集成 (OpenRouter API)
+  - [x] Facade 层：POST /sessions/{id}/messages 端点
+  - [x] 集成测试 2 个全部通过
+  - [x] 技术文档已完成
 
 ### 认证系统状态
 
@@ -77,13 +84,14 @@ backend/python/src/wenexus/
 
 ### 未完成
 
-- [ ] Next.js BFF → Python API 集成（当前 BFF 直接查询 DB，需改为调用 Python API）
-- [ ] Roundtable 域 API routes + UI
+- [ ] 前端集成 Roundtable 消息发送 UI（调用 POST /sessions/{id}/messages）
+- [ ] WebSocket 实时消息推送（替代轮询）
+- [ ] Roundtable 域其他 API routes（edit session, delete message, etc.）
 - [ ] Deliverable 域全部
 - [ ] Identity 域全部
 - [ ] 微信登录集成
 - [ ] 种子数据
-- [ ] OpenRouter API Key 配置
+- [ ] OpenRouter API Key 配置（从环境变量读取）
 - [ ] Discovery ExpertCount 计算与 Roundtable 域集成
 
 ---

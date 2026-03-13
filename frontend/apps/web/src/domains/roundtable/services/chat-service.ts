@@ -89,3 +89,36 @@ export async function updateSession(
 ): Promise<DiscussionSession> {
   return updateSessionRecord(sessionId, data);
 }
+
+export interface SendMessageResult {
+  userMessage: DiscussionMessage;
+  aiReplies: DiscussionMessage[];
+  status: 'success' | 'pending';
+  sessionId: string;
+}
+
+export async function sendMessage(
+  sessionId: string,
+  content: string,
+  generateAiReply: boolean = true
+): Promise<SendMessageResult> {
+  const response = await fetch('/api/domains/roundtable/messages/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sessionId,
+      content,
+      generateAiReply,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (data.code !== 0) {
+    throw new Error(data.message || 'Failed to send message');
+  }
+
+  return data.data as SendMessageResult;
+}
