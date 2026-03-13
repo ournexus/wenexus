@@ -8,8 +8,11 @@ Consumers: facade.roundtable
 """
 
 import asyncio
+import json
+import uuid
 
 import structlog
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.repository.roundtable import (
@@ -37,8 +40,6 @@ async def get_experts(
     Returns:
         专家列表
     """
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     result = await db.execute(
@@ -88,8 +89,6 @@ async def get_sessions(
     Returns:
         讨论会话列表
     """
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     result = await db.execute(
@@ -137,10 +136,6 @@ async def get_session_detail(db: AsyncSession, session_id: str) -> dict | None:
     Returns:
         会话详情或 None
     """
-    import json
-
-    from sqlalchemy import text
-
     result = await db.execute(
         text(
             """
@@ -202,8 +197,6 @@ async def get_session_messages(
     Returns:
         消息列表
     """
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     result = await db.execute(
@@ -258,11 +251,6 @@ async def create_session(
     Returns:
         新创建的会话或 None (如果验证失败)
     """
-    import json
-    import uuid
-
-    from sqlalchemy import text
-
     # 1. 验证 topic 存在
     topic_result = await db.execute(
         text("SELECT id FROM topic WHERE id = :topic_id"),

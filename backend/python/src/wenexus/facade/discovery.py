@@ -6,6 +6,7 @@ Consumers: main (router inclusion)
 """
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.repository.db import get_db
@@ -45,6 +46,16 @@ async def get_feed(
             }
         }
     """
+    # 获取符合条件的总记录数
+    total_result = await db.execute(
+        text("""
+            SELECT COUNT(*) as count
+            FROM topic
+            WHERE visibility = 'public' AND status = 'active'
+        """)
+    )
+    total = total_result.scalar() or 0
+
     topics = await get_public_topics(db, page=page, limit=limit)
 
     # 转换为前端期望的格式
@@ -61,7 +72,7 @@ async def get_feed(
         "code": 0,
         "data": {
             "cards": cards,
-            "total": len(cards),
+            "total": total,
             "page": page,
             "limit": limit,
         },
@@ -94,13 +105,23 @@ async def get_topics(
             }
         }
     """
+    # 获取符合条件的总记录数
+    total_result = await db.execute(
+        text("""
+            SELECT COUNT(*) as count
+            FROM topic
+            WHERE visibility = 'public' AND status = 'active'
+        """)
+    )
+    total = total_result.scalar() or 0
+
     topics = await get_public_topics(db, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "topics": topics,
-            "total": len(topics),
+            "total": total,
             "page": page,
             "limit": limit,
         },

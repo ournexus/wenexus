@@ -7,11 +7,14 @@ Depends: repository.discovery, util.schema
 Consumers: facade.discovery
 """
 
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-async def get_public_topics(db, page: int = 1, limit: int = 20) -> list[dict]:
+
+async def get_public_topics(
+    db: AsyncSession, page: int = 1, limit: int = 20
+) -> list[dict]:
     """获取公开话题列表。"""
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     # 从数据库获取公开话题

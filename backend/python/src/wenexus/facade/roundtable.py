@@ -7,6 +7,7 @@ Consumers: main (router inclusion)
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.facade.deps import get_current_user
@@ -56,13 +57,19 @@ async def list_experts(
             }
         }
     """
+    # 获取符合条件的总记录数
+    total_result = await db.execute(
+        text("SELECT COUNT(*) as count FROM expert WHERE status = 'active'")
+    )
+    total = total_result.scalar() or 0
+
     experts = await get_experts(db, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "experts": experts,
-            "total": len(experts),
+            "total": total,
             "page": page,
             "limit": limit,
         },
@@ -95,13 +102,22 @@ async def list_sessions(
             }
         }
     """
+    # 获取符合条件的总记录数
+    total_result = await db.execute(
+        text(
+            "SELECT COUNT(*) as count FROM discussion_session WHERE user_id = :user_id"
+        ),
+        {"user_id": user.id},
+    )
+    total = total_result.scalar() or 0
+
     sessions = await get_sessions(db, user_id=user.id, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "sessions": sessions,
-            "total": len(sessions),
+            "total": total,
             "page": page,
             "limit": limit,
         },
@@ -195,13 +211,22 @@ async def get_messages(
             "message": "Forbidden",
         }
 
+    # 获取符合条件的总记录数
+    total_result = await db.execute(
+        text(
+            "SELECT COUNT(*) as count FROM discussion_message WHERE session_id = :session_id"
+        ),
+        {"session_id": session_id},
+    )
+    total = total_result.scalar() or 0
+
     messages = await get_session_messages(db, session_id, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "messages": messages,
-            "total": len(messages),
+            "total": total,
             "page": page,
             "limit": limit,
         },
