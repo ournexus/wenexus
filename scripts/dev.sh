@@ -92,6 +92,9 @@ setup_cloudflare_tunnel() {
     return
   fi
 
+  # 清理可能冲突的配置文件（快速隧道不需要配置文件）
+  rm -f ~/.cloudflared/config.yml 2>/dev/null || true
+
   log "启动 Cloudflare Tunnel 快速隧道..."
   cloudflared tunnel --url http://localhost:3000 > "$LOG_DIR/tunnel.log" 2>&1 &
   echo $! > "$LOG_DIR/tunnel.pid"
