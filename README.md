@@ -60,41 +60,37 @@ wenexus/
 - Java 17+（仅 Java 后端开发需要）
 - Python 3.11+ & uv（仅 Python 后端开发需要）
 
-### 一键本地启动（前端）
+### 一键本地启动
 
 ```bash
-# 1. 启动本地数据库（PostgreSQL + Redis）
-docker compose up -d
+# 启动全部（数据库 + 前端 + Python 后端）
+./scripts/dev.sh
 
-# 2. 安装依赖
-cd frontend && pnpm install
+# 仅启动数据库 + 前端
+./scripts/dev.sh frontend
 
-# 3. 配置环境变量
-cp apps/web/.env.example apps/web/.env.development
-# 编辑 apps/web/.env.development，填写 AUTH_SECRET：
-#   openssl rand -base64 32
-
-# 4. 启动开发服务器
-pnpm dev
-# 访问 http://localhost:3000
+# 停止所有服务
+./scripts/dev.sh stop
 ```
 
-> **提示**：`.env.development` 中的数据库默认指向 Docker Compose 启动的本地实例，
-> 无需额外配置即可直接运行。
+脚本会自动完成：数据库就绪检测、依赖安装、已有进程的优雅关闭与重启。
+日志输出到 `scripts/logs/`。
 
-### 完整本地启动（前端 + Python 后端）
+> **首次运行**：若 `frontend/apps/web/.env.development` 不存在，脚本会自动从
+> `.env.example` 创建，但需要手动填写 `AUTH_SECRET`：
+>
+> ```bash
+> openssl rand -base64 32
+> ```
 
-```bash
-# 终端 1：数据库
-docker compose up -d
+启动成功后访问：
 
-# 终端 2：前端
-cd frontend && pnpm install && pnpm dev
-
-# 终端 3：Python 后端
-cd backend/python && uv sync --dev && uv run uvicorn src.main:app --reload
-# 访问 http://localhost:8000/docs
-```
+| 服务 | 地址 |
+|------|------|
+| 前端 | <http://localhost:3000> |
+| Python API | <http://localhost:8000/docs> |
+| PostgreSQL | `localhost:5432` |
+| Redis | `localhost:6379` |
 
 ### Available Scripts（根目录）
 
