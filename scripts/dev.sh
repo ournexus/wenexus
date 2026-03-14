@@ -6,6 +6,10 @@
 #   ./scripts/dev.sh frontend  # 仅启动数据库 + 前端
 #   ./scripts/dev.sh stop      # 停止所有服务
 #
+# 数据库支持（自动检测，优先级从高到低）：
+#   1. Homebrew PostgreSQL@16 / PostgreSQL + Redis
+#   2. Docker / docker-compose
+#
 # 日志文件输出到 scripts/logs/
 
 set -euo pipefail
@@ -50,7 +54,6 @@ stop_pid_file() {
     if kill -0 "$pid" 2>/dev/null; then
       warn "停止已有 $name 进程 (PID $pid)..."
       kill -TERM "$pid" 2>/dev/null || true
-      # 等待最多 5 秒
       local i=0
       while kill -0 "$pid" 2>/dev/null && (( i < 10 )); do
         sleep 0.5; (( i++ ))
@@ -79,9 +82,7 @@ stop_all() {
   stop_pid_file "$PID_FILE_PYTHON"   "Python 后端"
   stop_port 3000
   stop_port 8000
-  log "停止 Docker Compose 服务..."
-  (docker compose down 2>/dev/null || docker-compose down 2>/dev/null || true)
-  ok "所有服务已停止。"
+  ok "所有应用进程已停止（数据库服务保持运行）。"
 }
 
 # ── stop 子命令 ───────────────────────────────────────────────────────────────
@@ -91,22 +92,98 @@ if [[ "$MODE" == "stop" ]]; then
 fi
 
 # ── 前置检查 ──────────────────────────────────────────────────────────────────
-need docker
 need pnpm
-
 if [[ "$MODE" == "all" ]]; then
   need uv
 fi
 
-# 兼容 docker compose (plugin) 和 docker-compose (standalone)
-if docker compose version &>/dev/null 2>&1; then
-  DOCKER_COMPOSE="docker compose"
+# ── 检测并启动数据库 ──────────────────────────────────────────────────────────
+# 优先 Homebrew 本地服务，其次 Docker
+PSQL=""
+for p in psql /usr/local/opt/postgresql@16/bin/psql /opt/homebrew/opt/postgresql@16/bin/psql \
+          /usr/local/opt/postgresql@15/bin/psql /opt/homebrew/opt/postgresql@15/bin/psql; do
+  if command -v "$p" &>/dev/null || [[ -x "$p" ]]; then
+    PSQL="$p"; break
+  fi
+done
+
+if [[ -n "$PSQL" ]] && command -v brew &>/dev/null; then
+  # ── Homebrew PostgreSQL ──────────────────────────────────────────────────
+  log "使用 Homebrew PostgreSQL..."
+
+  # 确保 PostgreSQL 服务在运行
+  if ! brew services list | grep -E "postgresql" | grep -q "started"; then
+    log "启动 PostgreSQL 服务..."
+    brew services start postgresql@16 2>/dev/null || brew services start postgresql 2>/dev/null || true
+    sleep 2
+  else
+    ok "PostgreSQL 已在运行"
+  fi
+
+  # 确保 Redis 服务在运行
+  if command -v redis-cli &>/dev/null; then
+    if ! brew services list | grep "redis" | grep -q "started"; then
+      log "启动 Redis 服务..."
+      brew services start redis 2>/dev/null || true
+    else
+      ok "Redis 已在运行"
+    fi
+  fi
+
+  # 等待 PostgreSQL 接受连接
+  log "等待 PostgreSQL 就绪..."
+  local_i=0
+  until "$PSQL" -U "$(whoami)" postgres -c "SELECT 1" &>/dev/null 2>&1; do
+    (( local_i++ ))
+    if (( local_i > 20 )); then
+      err "PostgreSQL 启动超时。"
+      exit 1
+    fi
+    sleep 1
+  done
+  ok "PostgreSQL 就绪"
+
+  # 确保 wenexus 用户和数据库存在
+  "$PSQL" -U "$(whoami)" postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='wenexus'" \
+    | grep -q 1 || "$PSQL" -U "$(whoami)" postgres \
+      -c "CREATE USER wenexus WITH SUPERUSER PASSWORD 'wenexus_dev_pwd';" 2>/dev/null || true
+
+  "$PSQL" -U "$(whoami)" postgres -tc "SELECT 1 FROM pg_database WHERE datname='wenexus_dev'" \
+    | grep -q 1 || "$PSQL" -U "$(whoami)" postgres \
+      -c "CREATE DATABASE wenexus_dev OWNER wenexus;" 2>/dev/null || true
+
 else
-  need docker-compose
-  DOCKER_COMPOSE="docker-compose"
+  # ── Docker fallback ──────────────────────────────────────────────────────
+  need docker
+
+  # 检测 compose 命令
+  if docker compose version &>/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+  elif command -v docker-compose &>/dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+  else
+    err "找不到 docker compose / docker-compose，且本机没有 Homebrew PostgreSQL。"
+    err "请安装其中之一：brew install postgresql@16 redis"
+    exit 1
+  fi
+
+  log "使用 Docker Compose 启动数据库..."
+  $DOCKER_COMPOSE -f "$REPO_ROOT/docker-compose.yml" up -d
+
+  log "等待 PostgreSQL 就绪..."
+  local_i=0
+  until docker exec wenexus-postgres pg_isready -U wenexus -d wenexus_dev &>/dev/null; do
+    (( local_i++ ))
+    if (( local_i > 30 )); then
+      err "PostgreSQL 启动超时，请检查 Docker 状态。"
+      exit 1
+    fi
+    sleep 1
+  done
+  ok "PostgreSQL 就绪"
 fi
 
-# ── 停止已有实例 ──────────────────────────────────────────────────────────────
+# ── 停止前端/后端已有实例 ─────────────────────────────────────────────────────
 log "检查已有进程..."
 stop_pid_file "$PID_FILE_FRONTEND" "前端"
 stop_pid_file "$PID_FILE_PYTHON"   "Python 后端"
@@ -121,23 +198,6 @@ if [[ ! -f "$ENV_FILE" ]]; then
   warn "请编辑 $ENV_FILE，至少填写 AUTH_SECRET："
   warn "  openssl rand -base64 32"
 fi
-
-# ── 启动数据库 ────────────────────────────────────────────────────────────────
-log "启动 Docker Compose 服务（PostgreSQL + Redis）..."
-$DOCKER_COMPOSE -f "$REPO_ROOT/docker-compose.yml" up -d
-
-# 等待 PostgreSQL 就绪
-log "等待 PostgreSQL 就绪..."
-local_i=0
-until docker exec wenexus-postgres pg_isready -U wenexus -d wenexus_dev &>/dev/null; do
-  (( local_i++ ))
-  if (( local_i > 20 )); then
-    err "PostgreSQL 启动超时，请检查 Docker 状态。"
-    exit 1
-  fi
-  sleep 1
-done
-ok "PostgreSQL 就绪"
 
 # ── 安装前端依赖 ──────────────────────────────────────────────────────────────
 log "检查前端依赖..."
@@ -170,11 +230,11 @@ if [[ "$MODE" == "all" ]]; then
 fi
 
 # ── 等待前端就绪并打印访问地址 ───────────────────────────────────────────────
-log "等待前端就绪..."
+log "等待前端就绪（首次编译约需 10-30s）..."
 local_j=0
 until curl -sf http://localhost:3000 &>/dev/null; do
   (( local_j++ ))
-  if (( local_j > 60 )); then
+  if (( local_j > 90 )); then
     warn "前端尚未就绪，可能还在编译中，请查看日志：$LOG_FRONTEND"
     break
   fi
