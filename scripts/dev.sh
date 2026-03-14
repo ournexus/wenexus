@@ -80,7 +80,7 @@ stop_all() {
   stop_port 3000
   stop_port 8000
   log "停止 Docker Compose 服务..."
-  docker compose -f "$REPO_ROOT/docker-compose.yml" down 2>/dev/null || true
+  (docker compose down 2>/dev/null || docker-compose down 2>/dev/null || true)
   ok "所有服务已停止。"
 }
 
@@ -96,6 +96,14 @@ need pnpm
 
 if [[ "$MODE" == "all" ]]; then
   need uv
+fi
+
+# 兼容 docker compose (plugin) 和 docker-compose (standalone)
+if docker compose version &>/dev/null 2>&1; then
+  DOCKER_COMPOSE="docker compose"
+else
+  need docker-compose
+  DOCKER_COMPOSE="docker-compose"
 fi
 
 # ── 停止已有实例 ──────────────────────────────────────────────────────────────
@@ -116,7 +124,7 @@ fi
 
 # ── 启动数据库 ────────────────────────────────────────────────────────────────
 log "启动 Docker Compose 服务（PostgreSQL + Redis）..."
-docker compose -f "$REPO_ROOT/docker-compose.yml" up -d
+$DOCKER_COMPOSE -f "$REPO_ROOT/docker-compose.yml" up -d
 
 # 等待 PostgreSQL 就绪
 log "等待 PostgreSQL 就绪..."
