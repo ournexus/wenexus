@@ -41,15 +41,12 @@ export function useWebSocket(
 
     try {
       // Construct WebSocket URL
-      // In development: connect directly to Python backend (localhost:8000)
-      // In production: use same host as frontend (with reverse proxy handling WebSocket)
+      // Use NEXT_PUBLIC_WEBSOCKET_BASE_URL env var if available, otherwise derive from current host
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
-
-      // For development environment (localhost:3000), connect to backend on localhost:8000
-      const wsHost = host === 'localhost:3000' ? 'localhost:8000' : host;
-
-      const url = `${protocol}//${wsHost}/api/v1/roundtable/ws/sessions/${sessionId}`;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_WEBSOCKET_BASE_URL || `${protocol}//${host}`;
+      const url = `${baseUrl}/api/v1/roundtable/ws/sessions/${sessionId}`;
 
       const ws = new WebSocket(url);
 

@@ -26,6 +26,33 @@ from wenexus.util.llm import generate_expert_response
 logger = structlog.get_logger()
 
 
+async def count_experts(db: AsyncSession, status: str = "active") -> int:
+    """获取活跃专家总数。"""
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM expert WHERE status = :status"),
+        {"status": status},
+    )
+    return result.scalar() or 0
+
+
+async def count_user_sessions(db: AsyncSession, user_id: str) -> int:
+    """获取用户的讨论会话总数。"""
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM discussion_session WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    )
+    return result.scalar() or 0
+
+
+async def count_session_messages(db: AsyncSession, session_id: str) -> int:
+    """获取会话消息总数。"""
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM discussion_message WHERE session_id = :session_id"),
+        {"session_id": session_id},
+    )
+    return result.scalar() or 0
+
+
 async def get_experts(
     db: AsyncSession, status: str = "active", page: int = 1, limit: int = 20
 ) -> list[dict]:

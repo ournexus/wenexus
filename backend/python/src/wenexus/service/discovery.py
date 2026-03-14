@@ -11,6 +11,17 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
+async def count_public_topics(db: AsyncSession) -> int:
+    """获取公开活跃话题总数。"""
+    result = await db.execute(
+        text("""
+            SELECT COUNT(*) FROM topic
+            WHERE visibility = 'public' AND status = 'active'
+        """)
+    )
+    return result.scalar() or 0
+
+
 async def get_public_topics(
     db: AsyncSession, page: int = 1, limit: int = 20
 ) -> list[dict]:

@@ -6,11 +6,10 @@ Consumers: main (router inclusion)
 """
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.repository.db import get_db
-from wenexus.service.discovery import get_public_topics
+from wenexus.service.discovery import count_public_topics, get_public_topics
 
 router = APIRouter(prefix="/discovery", tags=["discovery"])
 
@@ -47,14 +46,7 @@ async def get_feed(
         }
     """
     # 获取符合条件的总记录数
-    total_result = await db.execute(
-        text("""
-            SELECT COUNT(*) as count
-            FROM topic
-            WHERE visibility = 'public' AND status = 'active'
-        """)
-    )
-    total = total_result.scalar() or 0
+    total = await count_public_topics(db)
 
     topics = await get_public_topics(db, page=page, limit=limit)
 
@@ -106,14 +98,7 @@ async def get_topics(
         }
     """
     # 获取符合条件的总记录数
-    total_result = await db.execute(
-        text("""
-            SELECT COUNT(*) as count
-            FROM topic
-            WHERE visibility = 'public' AND status = 'active'
-        """)
-    )
-    total = total_result.scalar() or 0
+    total = await count_public_topics(db)
 
     topics = await get_public_topics(db, page=page, limit=limit)
 
