@@ -85,9 +85,46 @@ stop_all() {
   ok "所有应用进程已停止（数据库服务保持运行）。"
 }
 
+# ── Cloudflare Tunnel 支持 ─────────────────────────────────────────────────────
+setup_cloudflare_tunnel() {
+  if ! command -v cloudflared &>/dev/null; then
+    warn "cloudflared 未安装，跳过公网访问设置"
+    return
+  fi
+
+  log "启动 Cloudflare Tunnel 快速隧道..."
+  cloudflared tunnel --url http://localhost:3000 > "$LOG_DIR/tunnel.log" 2>&1 &
+  echo $! > "$LOG_DIR/tunnel.pid"
+
+  # 等待 tunnel 就绪并获取 URL
+  local k=0
+  while ! grep -q "https://.*\.trycloudflare\.com" "$LOG_DIR/tunnel.log" 2>/dev/null && (( k < 30 )); do
+    sleep 1; (( k++ ))
+  done
+
+  # 获取公网 URL
+  local public_url
+  public_url=$(grep -o 'https://[^[:space:]]*\.trycloudflare\.com' "$LOG_DIR/tunnel.log" | head -1)
+  if [[ -n "$public_url" ]]; then
+    ok "公网访问地址: ${CYAN}$public_url${RESET}"
+  else
+    warn "无法获取公网 URL，请查看日志: $LOG_DIR/tunnel.log"
+  fi
+}
+
 # ── stop 子命令 ───────────────────────────────────────────────────────────────
 if [[ "$MODE" == "stop" ]]; then
   stop_all
+  # 停止 tunnel
+  if [[ -f "$LOG_DIR/tunnel.pid" ]]; then
+    tunnel_pid=$(cat "$LOG_DIR/tunnel.pid")
+    if kill -0 "$tunnel_pid" 2>/dev/null; then
+      kill -TERM "$tunnel_pid" 2>/dev/null || true
+      sleep 1
+      kill -9 "$tunnel_pid" 2>/dev/null || true
+    fi
+    rm -f "$LOG_DIR/tunnel.pid"
+  fi
   exit 0
 fi
 
@@ -241,6 +278,9 @@ until curl -sf http://localhost:3000 &>/dev/null; do
   sleep 1
 done
 
+# ── 设置 Cloudflare Tunnel 公网访问 ──────────────────────────────────────────────
+setup_cloudflare_tunnel
+
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo -e "${GREEN}  WeNexus 本地环境已启动${RESET}"
@@ -253,4 +293,5 @@ echo ""
 echo -e "  停止所有服务：${YELLOW}./scripts/dev.sh stop${RESET}"
 echo -e "  前端日志：    ${YELLOW}tail -f $LOG_FRONTEND${RESET}"
 [[ "$MODE" == "all" ]] && echo -e "  后端日志：    ${YELLOW}tail -f $LOG_PYTHON${RESET}"
+echo -e "  Tunnel 日志： ${YELLOW}tail -f $LOG_DIR/tunnel.log${RESET}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
