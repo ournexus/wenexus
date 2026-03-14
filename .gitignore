@@ -121,3 +121,6 @@ scripts/logs/
 
 # Docker local data
 docker-data/
+
+# Auto-generated reports
+reports/
