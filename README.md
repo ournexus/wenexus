@@ -54,39 +54,63 @@ wenexus/
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm 9+ (`npm install -g pnpm`)
-- Java 17+
-- Maven 3.8+
-- Python 3.11+
-- uv (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- Docker & Docker Compose（本地数据库）
+- Java 17+（仅 Java 后端开发需要）
+- Python 3.11+ & uv（仅 Python 后端开发需要）
 
-### Quick Start
+### 一键本地启动（前端）
 
 ```bash
-# Install root dependencies and setup pre-commit
-pnpm install
-pnpm run setup:precommit
+# 1. 启动本地数据库（PostgreSQL + Redis）
+docker compose up -d
 
-# Frontend development
-cd frontend && pnpm install && pnpm dev
+# 2. 安装依赖
+cd frontend && pnpm install
 
-# Java backend
-cd backend/java && mvn clean package
+# 3. 配置环境变量
+cp apps/web/.env.example apps/web/.env.development
+# 编辑 apps/web/.env.development，填写 AUTH_SECRET：
+#   openssl rand -base64 32
 
-# Python backend
-cd backend/python && uv sync --dev && uv run uvicorn src.main:app --reload
+# 4. 启动开发服务器
+pnpm dev
+# 访问 http://localhost:3000
 ```
 
-### Available Scripts (from root)
+> **提示**：`.env.development` 中的数据库默认指向 Docker Compose 启动的本地实例，
+> 无需额外配置即可直接运行。
 
-| Command | Description |
-|---------|-------------|
-| `pnpm frontend:dev` | Start frontend dev server |
-| `pnpm frontend:build` | Build all frontend apps |
-| `pnpm backend:java:build` | Build Java services |
-| `pnpm backend:python:dev` | Start Python dev server |
-| `pnpm precommit` | Run all pre-commit hooks |
+### 完整本地启动（前端 + Python 后端）
+
+```bash
+# 终端 1：数据库
+docker compose up -d
+
+# 终端 2：前端
+cd frontend && pnpm install && pnpm dev
+
+# 终端 3：Python 后端
+cd backend/python && uv sync --dev && uv run uvicorn src.main:app --reload
+# 访问 http://localhost:8000/docs
+```
+
+### Available Scripts（根目录）
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm frontend:dev` | 启动前端开发服务器 |
+| `pnpm frontend:build` | 构建所有前端应用 |
+| `pnpm backend:java:build` | 构建 Java 服务 |
+| `pnpm backend:python:dev` | 启动 Python 开发服务器 |
+| `pnpm precommit` | 手动运行所有 pre-commit hooks |
+
+## Deployment
+
+部署文档见 [`docs/technical/deployment/`](docs/technical/deployment/)：
+
+- [Cloudflare Workers 部署](docs/technical/deployment/cloudflare-workers.md)
 
 ## Architecture Overview
 
