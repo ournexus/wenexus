@@ -8,8 +8,11 @@ Consumers: facade.roundtable
 """
 
 import asyncio
+import json
+import uuid
 
 import structlog
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.repository.roundtable import (
@@ -21,6 +24,33 @@ from wenexus.repository.roundtable import (
 from wenexus.util.llm import generate_expert_response
 
 logger = structlog.get_logger()
+
+
+async def count_experts(db: AsyncSession, status: str = "active") -> int:
+    """获取活跃专家总数。"""
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM expert WHERE status = :status"),
+        {"status": status},
+    )
+    return result.scalar() or 0
+
+
+async def count_user_sessions(db: AsyncSession, user_id: str) -> int:
+    """获取用户的讨论会话总数。"""
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM discussion_session WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    )
+    return result.scalar() or 0
+
+
+async def count_session_messages(db: AsyncSession, session_id: str) -> int:
+    """获取会话消息总数。"""
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM discussion_message WHERE session_id = :session_id"),
+        {"session_id": session_id},
+    )
+    return result.scalar() or 0
 
 
 async def get_experts(
@@ -37,8 +67,6 @@ async def get_experts(
     Returns:
         专家列表
     """
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     result = await db.execute(
@@ -88,8 +116,6 @@ async def get_sessions(
     Returns:
         讨论会话列表
     """
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     result = await db.execute(
@@ -137,10 +163,6 @@ async def get_session_detail(db: AsyncSession, session_id: str) -> dict | None:
     Returns:
         会话详情或 None
     """
-    import json
-
-    from sqlalchemy import text
-
     result = await db.execute(
         text(
             """
@@ -202,8 +224,6 @@ async def get_session_messages(
     Returns:
         消息列表
     """
-    from sqlalchemy import text
-
     offset = (page - 1) * limit
 
     result = await db.execute(
@@ -258,11 +278,6 @@ async def create_session(
     Returns:
         新创建的会话或 None (如果验证失败)
     """
-    import json
-    import uuid
-
-    from sqlalchemy import text
-
     # 1. 验证 topic 存在
     topic_result = await db.execute(
         text("SELECT id FROM topic WHERE id = :topic_id"),

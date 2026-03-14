@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from wenexus.facade.deps import get_current_user
 from wenexus.repository.db import get_db
 from wenexus.service.roundtable import (
+    count_experts,
+    count_session_messages,
+    count_user_sessions,
     create_session,
     get_experts,
     get_session_detail,
@@ -56,13 +59,16 @@ async def list_experts(
             }
         }
     """
+    # 获取符合条件的总记录数
+    total = await count_experts(db)
+
     experts = await get_experts(db, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "experts": experts,
-            "total": len(experts),
+            "total": total,
             "page": page,
             "limit": limit,
         },
@@ -95,13 +101,16 @@ async def list_sessions(
             }
         }
     """
+    # 获取符合条件的总记录数
+    total = await count_user_sessions(db, user.id)
+
     sessions = await get_sessions(db, user_id=user.id, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "sessions": sessions,
-            "total": len(sessions),
+            "total": total,
             "page": page,
             "limit": limit,
         },
@@ -195,13 +204,16 @@ async def get_messages(
             "message": "Forbidden",
         }
 
+    # 获取符合条件的总记录数
+    total = await count_session_messages(db, session_id)
+
     messages = await get_session_messages(db, session_id, page=page, limit=limit)
 
     return {
         "code": 0,
         "data": {
             "messages": messages,
-            "total": len(messages),
+            "total": total,
             "page": page,
             "limit": limit,
         },

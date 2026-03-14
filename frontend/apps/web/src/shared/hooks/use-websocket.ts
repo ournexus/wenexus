@@ -41,9 +41,12 @@ export function useWebSocket(
 
     try {
       // Construct WebSocket URL
+      // Use NEXT_PUBLIC_WEBSOCKET_BASE_URL env var if available, otherwise derive from current host
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
-      const url = `${protocol}//${host}/api/v1/roundtable/ws/sessions/${sessionId}`;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_WEBSOCKET_BASE_URL || `${protocol}//${host}`;
+      const url = `${baseUrl}/api/v1/roundtable/ws/sessions/${sessionId}`;
 
       const ws = new WebSocket(url);
 

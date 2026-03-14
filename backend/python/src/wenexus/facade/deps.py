@@ -48,3 +48,40 @@ async def get_optional_user(
     if token is None:
         return None
     return await authenticate(db, token)
+
+
+async def get_session_for_user(
+    session_id: str,
+    user: UserInfo = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+) -> dict:
+    """验证会话存在且用户有权访问的依赖项。
+
+    Args:
+        session_id: 会话 ID
+        user: 当前用户
+        db: 数据库 session
+
+    Returns:
+        会话详情字典
+
+    Raises:
+        HTTPException: 会话不存在（404）或用户无权访问（403）
+    """
+    from wenexus.service.roundtable import get_session_detail
+
+    session = await get_session_detail(db, session_id)
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    if session["userId"] != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden",
+        )
+
+    return session

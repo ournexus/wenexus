@@ -9,7 +9,6 @@ Consumers: service.roundtable
 
 import json
 import uuid
-from datetime import datetime
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +40,8 @@ async def save_message(
     message_id = str(uuid.uuid4())
     citations_json = json.dumps(citations or [])
 
-    await db.execute(
+    # Use RETURNING to get database-generated timestamp
+    result = await db.execute(
         text(
             """
         INSERT INTO discussion_message (
@@ -52,6 +52,7 @@ async def save_message(
             :id, :session_id, :user_id, :expert_id, :role, :content,
             CAST(:citations AS jsonb), :status, NULL, NOW(), NOW()
         )
+        RETURNING id, created_at
     """
         ),
         {
@@ -67,6 +68,10 @@ async def save_message(
     )
     await db.commit()
 
+    # Get the database-generated timestamp
+    row = result.first()
+    created_at = row.created_at.isoformat() if row and row.created_at else None
+
     return {
         "id": message_id,
         "sessionId": session_id,
@@ -76,7 +81,7 @@ async def save_message(
         "content": content,
         "citations": citations or [],
         "status": "active",
-        "createdAt": datetime.now().isoformat(),
+        "createdAt": created_at,
     }
 
 
