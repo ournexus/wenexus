@@ -106,9 +106,6 @@ Thumbs.db
 .autofix-backup/
 .autofix.log
 
-# Claude Code plugins
-.claude/skills/
-
 # Test artifacts
 playwright-report/
 test-results/
