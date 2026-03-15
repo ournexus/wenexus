@@ -14,11 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from wenexus.util.schema import UserInfo
 
 _SESSION_QUERY = text("""
-    SELECT u.id, u.name, u.email, u.image, u."emailVerified"
+    SELECT u.id, u.name, u.email, u.image, u.email_verified
     FROM "session" s
-    JOIN "user" u ON s."userId" = u.id
+    JOIN "user" u ON s.user_id = u.id
     WHERE s.token = :token
-      AND s."expiresAt" > NOW()
+      AND s.expires_at > NOW()
 """)
 
 _DELETE_SESSION = text("""
@@ -37,7 +37,7 @@ async def query_user_by_token(db: AsyncSession, token: str) -> UserInfo | None:
         name=row.name,
         email=row.email,
         image=row.image,
-        email_verified=row.emailVerified is not None,
+        email_verified=row.email_verified if row.email_verified is not None else False,
     )
 
 

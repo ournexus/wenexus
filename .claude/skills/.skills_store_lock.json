@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "xhs": {
+      "name": "小红书 - RedNote",
+      "zip_url": "http://lightmake.site/api/v1/download?slug=xhs",
+      "source": "skillhub",
+      "version": "1.2.5"
+    }
+  }
+}

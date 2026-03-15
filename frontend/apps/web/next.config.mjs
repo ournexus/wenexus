@@ -55,6 +55,18 @@ const nextConfig = {
   async redirects() {
     return [];
   },
+  async rewrites() {
+    return [
+      {
+        // Rewrite /api/py/v1/* to Python backend /api/v1/*
+        // This allows requests to stay within localhost:3000 domain,
+        // preserving Cookie domain matching without CORS issues.
+        // See: docs/technical/develop/202603/260311-reverse-proxy-setup.md
+        source: '/api/py/v1/:path*',
+        destination: `${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/api/v1/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {

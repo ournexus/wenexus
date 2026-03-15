@@ -106,7 +106,6 @@ Thumbs.db
 .autofix-backup/
 .autofix.log
 
-
 # Test artifacts
 playwright-report/
 test-results/
@@ -119,3 +118,6 @@ scripts/logs/
 
 # Docker local data
 docker-data/
+
+# Auto-generated reports
+reports/

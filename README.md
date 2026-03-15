@@ -54,39 +54,59 @@ wenexus/
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm 9+ (`npm install -g pnpm`)
-- Java 17+
-- Maven 3.8+
-- Python 3.11+
-- uv (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- Docker & Docker Compose（本地数据库）
+- Java 17+（仅 Java 后端开发需要）
+- Python 3.11+ & uv（仅 Python 后端开发需要）
 
-### Quick Start
+### 一键本地启动
 
 ```bash
-# Install root dependencies and setup pre-commit
-pnpm install
-pnpm run setup:precommit
+# 启动全部（数据库 + 前端 + Python 后端）
+./scripts/dev.sh
 
-# Frontend development
-cd frontend && pnpm install && pnpm dev
+# 仅启动数据库 + 前端
+./scripts/dev.sh frontend
 
-# Java backend
-cd backend/java && mvn clean package
-
-# Python backend
-cd backend/python && uv sync --dev && uv run uvicorn src.main:app --reload
+# 停止所有服务
+./scripts/dev.sh stop
 ```
 
-### Available Scripts (from root)
+脚本会自动完成：数据库就绪检测、依赖安装、已有进程的优雅关闭与重启。
+日志输出到 `scripts/logs/`。
 
-| Command | Description |
-|---------|-------------|
-| `pnpm frontend:dev` | Start frontend dev server |
-| `pnpm frontend:build` | Build all frontend apps |
-| `pnpm backend:java:build` | Build Java services |
-| `pnpm backend:python:dev` | Start Python dev server |
-| `pnpm precommit` | Run all pre-commit hooks |
+> **首次运行**：若 `frontend/apps/web/.env.development` 不存在，脚本会自动从
+> `.env.example` 创建，但需要手动填写 `AUTH_SECRET`：
+>
+> ```bash
+> openssl rand -base64 32
+> ```
+
+启动成功后访问：
+
+| 服务 | 地址 |
+|------|------|
+| 前端 | <http://localhost:3000> |
+| Python API | <http://localhost:8000/docs> |
+| PostgreSQL | `localhost:5432` |
+| Redis | `localhost:6379` |
+
+### Available Scripts（根目录）
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm frontend:dev` | 启动前端开发服务器 |
+| `pnpm frontend:build` | 构建所有前端应用 |
+| `pnpm backend:java:build` | 构建 Java 服务 |
+| `pnpm backend:python:dev` | 启动 Python 开发服务器 |
+| `pnpm precommit` | 手动运行所有 pre-commit hooks |
+
+## Deployment
+
+部署文档见 [`docs/technical/deployment/`](docs/technical/deployment/)：
+
+- [Cloudflare Workers 部署](docs/technical/deployment/cloudflare-workers.md)
 
 ## Architecture Overview
 

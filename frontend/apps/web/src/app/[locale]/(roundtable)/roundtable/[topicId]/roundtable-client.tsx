@@ -11,6 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
+import { useWebSocket } from '@/shared/hooks/use-websocket';
+
+import { MessageInput } from './message-input';
 
 interface TopicInfo {
   id: string;
@@ -67,6 +70,7 @@ export function RoundtableClient({
   const [phase, setPhase] = useState<string>(initialStatus);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -180,11 +184,89 @@ export function RoundtableClient({
     }
   };
 
-  const expertMessages = messages.filter((m) => m.role === 'expert');
-  const canStart =
-    phase === 'initializing' && messages.length === 0 && !loading;
-  const canNextTurn = phase === 'discussing' && !loading;
-  const canGetConsensus = expertMessages.length >= 2 && !loading;
+  // Polling to fetch new AI replies
+  const startPolling = useCallback(() => {
+    if (pollIntervalRef.current) return;
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/domains/roundtable/messages?sessionId=${sessionId}`
+        );
+        const json = await res.json();
+        if (json.code === 0) {
+          setMessages(json.data.messages);
+        }
+      } catch (e) {
+        console.error('Failed to poll messages:', e);
+      }
+    }, 2000); // Poll every 2 seconds
+  }, [sessionId]);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
+  // Handle message sent
+  const handleMessageSent = async (result: {
+    userMessage: any;
+    aiReplies: any[];
+    status: string;
+  }) => {
+    // Add user message immediately
+    setMessages((prev) => [...prev, result.userMessage]);
+
+    // Add any immediate AI replies
+    if (result.aiReplies.length > 0) {
+      setMessages((prev) => [...prev, ...result.aiReplies]);
+    }
+
+    // If status is "pending", start polling for remaining AI replies
+    if (result.status === 'pending') {
+      startPolling();
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, [stopPolling]);
+
+  // Setup WebSocket connection for real-time updates
+  const handleWebSocketMessage = useCallback(
+    (msg: any) => {
+      if (msg.type === 'new_message' && msg.message) {
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          if (prev.some((m) => m.id === msg.message.id)) {
+            return prev;
+          }
+          return [...prev, msg.message];
+        });
+        // Stop polling once we get real-time updates
+        stopPolling();
+      }
+    },
+    [stopPolling]
+  );
+
+  const { connected: wsConnected } = useWebSocket(
+    sessionId,
+    handleWebSocketMessage,
+    (error) => {
+      console.error('WebSocket error:', error);
+      // Fallback to polling if WebSocket fails
+      if (!wsConnected) {
+        startPolling();
+      }
+    },
+    { enabled: true, autoConnect: true }
+  );
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6">
@@ -208,6 +290,13 @@ export function RoundtableClient({
               会话: {sessionId.slice(0, 8)}...
             </span>
           )}
+          {/* WebSocket connection indicator */}
+          <div
+            className={`h-2 w-2 rounded-full ${
+              wsConnected ? 'bg-green-500' : 'bg-yellow-500'
+            }`}
+            title={wsConnected ? '已连接' : '离线模式 (轮询)'}
+          />
         </div>
       </div>
 
@@ -218,49 +307,73 @@ export function RoundtableClient({
         </div>
       )}
 
-      {/* Messages */}
-      <div className="mb-6 space-y-4">
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-        {loading && (
-          <div className="flex items-center gap-2 py-4">
-            <div className="h-2 w-2 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
-            <div className="h-2 w-2 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
-            <div className="h-2 w-2 animate-bounce rounded-full bg-current" />
-            <span className="text-muted-foreground ml-2 text-sm">
-              {phase === 'fact_checking'
-                ? '求真者正在核查事实...'
-                : '专家正在思考...'}
-            </span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+      {/* Main content with messages and input */}
+      <div className="flex flex-col gap-4">
+        {/* Messages */}
+        <div className="flex-1 space-y-4">
+          {messages.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center">
+              <p>暂无消息。点击下方按钮开始讨论或发送消息。</p>
+            </div>
+          ) : (
+            messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
+          )}
+          {loading && (
+            <div className="flex items-center gap-2 py-4">
+              <div className="h-2 w-2 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+              <div className="h-2 w-2 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+              <div className="h-2 w-2 animate-bounce rounded-full bg-current" />
+              <span className="text-muted-foreground ml-2 text-sm">
+                {phase === 'fact_checking'
+                  ? '求真者正在核查事实...'
+                  : '专家正在思考...'}
+              </span>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-      {/* Controls */}
-      <div className="bg-background sticky bottom-0 border-t pt-4 pb-6">
+        {/* Message input */}
+        <MessageInput
+          sessionId={sessionId}
+          onMessageSent={handleMessageSent}
+          disabled={loading || phase === 'initializing'}
+        />
+
+        {/* Controls toolbar */}
         <div className="flex flex-wrap gap-3">
-          {canStart && (
-            <Button onClick={handleStartDiscussion} size="lg">
+          {phase === 'initializing' && (
+            <Button
+              onClick={handleStartDiscussion}
+              size="lg"
+              disabled={loading}
+            >
               开始讨论
             </Button>
           )}
-          {canNextTurn && (
-            <Button onClick={handleNextTurn} size="lg">
-              下一轮发言
-            </Button>
-          )}
-          {canGetConsensus && (
-            <Button onClick={handleGetConsensus} variant="outline" size="lg">
-              查看共识度
-            </Button>
+          {phase === 'discussing' && (
+            <>
+              <Button onClick={handleNextTurn} size="lg" disabled={loading}>
+                下一轮发言
+              </Button>
+              <Button
+                onClick={handleGetConsensus}
+                variant="outline"
+                size="lg"
+                disabled={
+                  loading ||
+                  messages.filter((m) => m.role === 'expert').length < 2
+                }
+              >
+                查看共识度
+              </Button>
+            </>
           )}
         </div>
 
         {/* Consensus panel */}
         {consensus && (
-          <Card className="mt-4">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 共识度分析
