@@ -10,6 +10,7 @@ implementation_artifacts: "{project-root}/docs/bmad/implementation-artifacts"
 project_knowledge: "{project-root}/docs"
 
 # Core Configuration Values
+# NOTE: user_name is the project owner, not the current developer
 user_name: xiaohui
 communication_language: Chinese
 document_output_language: Chinese

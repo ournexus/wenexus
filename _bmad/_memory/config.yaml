@@ -5,6 +5,7 @@
 
 
 # Core Configuration Values
+# NOTE: user_name is the project owner, not the current developer
 user_name: xiaohui
 communication_language: Chinese
 document_output_language: Chinese
