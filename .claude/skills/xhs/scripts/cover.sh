@@ -517,7 +517,7 @@ try:
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=15) as resp:
         data = json.loads(resp.read())
-    
+
     text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
     # 清理：去掉可能的空行和多余空格
     lines = [l.strip() for l in text.split('\n') if l.strip()]
