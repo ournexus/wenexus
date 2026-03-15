@@ -12,6 +12,8 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    navigationTimeout: process.env.CI ? 30_000 : 15_000,
+    actionTimeout: process.env.CI ? 15_000 : 10_000,
   },
 
   projects: [
@@ -21,12 +23,10 @@ export default defineConfig({
     },
   ],
 
-  // 不自动启动服务器，假设服务器已在运行
-  // 如需自动启动，取消注释以下配置
-  // webServer: {
-  //   command: 'pnpm --filter @wenexus/web dev',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120_000,
-  // },
+  webServer: {
+    command: 'pnpm --filter @wenexus/web dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+  },
 });
