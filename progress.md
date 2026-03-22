@@ -53,13 +53,40 @@ backend/python/src/wenexus/
 - [x] Discovery 域集成测试 14 个全部通过（API 端点、分页、数据格式、完整性检查）
 - [x] 业务流程集成文档完成（260312-business-flow-integration.md）
 - [x] 前后端业务流程调通（Python API → DB 完整链路，Discovery 域端到端验证）
-- [x] **Roundtable 消息发送功能**（混合模式）✨ NEW
+- [x] **Roundtable 消息发送功能**（混合模式）
   - [x] Repository 层：save_message, get_session_context, get_session_experts, update_session_status
   - [x] Service 层：send_message (混合模式),_generate_and_save_expert_response
   - [x] Util 层：LLM 集成 (OpenRouter API)
   - [x] Facade 层：POST /sessions/{id}/messages 端点
   - [x] 集成测试 2 个全部通过
   - [x] 技术文档已完成
+- [x] **Python 后端分层架构深度优化**（PR #31）✨ NEW
+  - [x] SQL 查询全部移至 repository 层（之前混在 service 中）
+  - [x] App 编排层实现（分页、认证检查、session 创建）
+  - [x] Facade 层规范化（直接调用 app，不穿过 service）
+  - [x] 去重认证检查（consolidate 到 app 层）
+  - [x] 移除死代码（get_session_for_user）
+- [x] **Cloudflare Workers 部署方案**（PR #31）
+  - [x] 环境变量 Proxy 延迟加载（解决 Workers 无法在静态初始化时读取 secrets）
+  - [x] 移除 next/font/google（不兼容 Workers 运行时）
+  - [x] 修复 esbuild keepNames 错误（`__name is not defined`）
+- [x] **BMAD 规划文档**（PR #31）
+  - [x] 产品需求文档 (PRD) 完整版（用户旅程、领域模型、NFR）
+  - [x] 技术架构设计（分层决策、关键组件）
+  - [x] 用户故事与 Epics（完整的工作分解）
+  - [x] UX 设计规范（交互流、界面原型）
+  - [x] 实现就绪报告（220326 版本）
+- [x] **初始数据库 Schema**（PR #31）
+  - [x] Drizzle 迁移完整实现（0000_rapid_the_watchers）
+  - [x] 核心领域表（topics, roundtable_sessions, experts, messages, observation_cards, deliverables）
+  - [x] 认证表（better-auth 兼容）
+  - [x] Migration 元数据与 journal
+- [x] **E2E 测试基础设施**（PR #31）
+  - [x] Playwright signup 完整流程测试
+  - [x] 测试环境配置（.env.test）
+  - [x] PR 意见处理 Claude 命令
+- [x] **安全加固**（PR #31）
+  - [x] .wrangler 和 .dev.vars 加入 .gitignore
 
 ### 认证系统状态
 
