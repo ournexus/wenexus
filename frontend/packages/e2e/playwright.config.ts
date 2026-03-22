@@ -23,10 +23,9 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'pnpm --filter @wenexus/web dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-  },
+  // 禁用 webServer：在开发环境中手动启动服务
+  // 运行前需要：
+  // 1. pnpm dev --filter @wenexus/web (或在 frontend 目录运行 pnpm dev)
+  // 2. Python 后端也需要启动
+  // webServer: { ... }
 });

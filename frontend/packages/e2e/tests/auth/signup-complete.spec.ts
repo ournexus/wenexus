@@ -40,11 +40,13 @@ test.describe('完整注册流程', () => {
 
     // 2. 填写注册表单
     console.log('Step 2: Fill signup form');
+    const nameInput = page.locator('#name');
     const emailInput = page.locator('#email');
     const passwordInput = page.locator('#password');
     const submitButton = page.locator('button[type="submit"]');
 
-    await expect(emailInput).toBeVisible({ timeout: 10_000 });
+    await expect(nameInput).toBeVisible({ timeout: 10_000 });
+    await nameInput.fill('Test User');
     await emailInput.fill(testEmail);
     await passwordInput.fill(testPassword);
 
@@ -87,11 +89,12 @@ test.describe('完整注册流程', () => {
     await page.goto('/sign-up');
     await page.waitForLoadState('networkidle');
 
+    const nameInput = page.locator('#name');
     const emailInput = page.locator('#email');
     const passwordInput = page.locator('#password');
     const submitButton = page.locator('button[type="submit"]');
 
-    await expect(emailInput).toBeVisible({ timeout: 10_000 });
+    await expect(nameInput).toBeVisible({ timeout: 10_000 });
 
     // 测试空表单提交
     console.log('Test 1: Empty form submission');
@@ -101,6 +104,7 @@ test.describe('完整注册流程', () => {
 
     // 测试无效邮箱
     console.log('Test 2: Invalid email format');
+    await nameInput.fill('Test User');
     await emailInput.fill('invalid-email');
     await passwordInput.fill('ValidPassword123!');
     await submitButton.click();
@@ -109,6 +113,7 @@ test.describe('完整注册流程', () => {
 
     // 测试弱密码（如果有密码强度验证）
     console.log('Test 3: Weak password');
+    await nameInput.fill('Test User');
     await emailInput.fill('valid@email.com');
     await passwordInput.fill('123');
     await submitButton.click();
