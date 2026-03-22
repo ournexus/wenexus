@@ -14,6 +14,7 @@ const eslintConfig = [
     ignores: [
       ".next/",
       ".source/",
+      ".wrangler/",
       "out/",
       "dist/",
       "node_modules/",

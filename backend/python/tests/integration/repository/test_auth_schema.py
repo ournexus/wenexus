@@ -87,7 +87,7 @@ class TestAuthSchemaCompatibility:
             "image": "text",
         }
 
-        for col_name, col_type in expected_user_cols.items():
+        for col_name, _col_type in expected_user_cols.items():
             assert col_name in user_columns, f"Missing column in user table: {col_name}"
             # PostgreSQL 可能返回不同的类型名（如 character varying vs text），所以只检查存在性
             assert user_columns[col_name] is not None
@@ -110,7 +110,7 @@ class TestAuthSchemaCompatibility:
             "expires_at": "timestamp",
         }
 
-        for col_name, col_type in expected_session_cols.items():
+        for col_name, _col_type in expected_session_cols.items():
             assert col_name in session_columns, (
                 f"Missing column in session table: {col_name}"
             )
@@ -152,7 +152,7 @@ class TestAuthSchemaCompatibility:
         )
 
         # 查询应该执行成功（即使没有返回结果）
-        row = result.first()
+        result.first()
         assert result is not None
 
     @pytest.mark.asyncio
