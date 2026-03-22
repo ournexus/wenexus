@@ -997,10 +997,10 @@ repository（SQL 查询、数据持久化）
 
 **🔴 Critical — 违反架构分层原则**
 
-| 编号 | 问题 | 位置 | 修复方案 |
-|------|------|------|----------|
-| TD-1 | Service 层包含 SQL 查询 | `service/roundtable.py`（8 个函数直接写 SQL）、`service/discovery.py`（2 个函数） | SQL 下沉到 `repository/roundtable.py` 和新建 `repository/discovery.py`，service 只调 repository 函数 |
-| TD-2 | Facade 跳过 App 层直接调 Service | `facade/roundtable.py` 直接 import service 函数，`app/` 层为空 | 实现 app 编排层，facade → app → service |
+| 编号 | 问题 | 位置 | 状态 |
+|------|------|------|------|
+| ~~TD-1~~ | ~~Service 层包含 SQL 查询~~ | ~~`service/roundtable.py`、`service/discovery.py`~~ | ✅ 已修复：SQL 下沉到 `repository/roundtable.py` 和 `repository/discovery.py` |
+| ~~TD-2~~ | ~~Facade 跳过 App 层直接调 Service~~ | ~~`facade/roundtable.py`、`facade/discovery.py`~~ | ✅ 已修复：实现 `app/roundtable.py` 和 `app/discovery.py` 编排层 |
 | TD-3 | 前端跨域依赖 | `domains/discovery/services/feed-service.ts` 第 1 行 import Roundtable 域的 `getExperts` | 改为通过 shared-kernel Event Bus 通信 |
 
 **🟠 High — 需要修复**
@@ -1009,27 +1009,27 @@ repository（SQL 查询、数据持久化）
 |------|------|------|----------|
 | TD-4 | `shared/services/` 混放扩展服务 | `ads.ts`, `affiliate.ts`, `analytics.ts`, `payment.ts` 等应在 `extensions/` | 迁移到 `extensions/` 目录，`shared/services/` 只保留真正跨域的（如 `rbac.ts`, `storage.ts`） |
 | TD-5 | `shared/models/` 包含领域模型 | `chat.ts` → Roundtable, `order.ts` → Identity/Payment, `post.tsx` → Discovery | 迁移到对应域的 `models/` 目录 |
-| TD-6 | Facade 层重复授权逻辑 | `facade/roundtable.py` 4 处重复 `userId != user.id` 检查 | 授权逻辑抽取到 app 层统一处理 |
+| ~~TD-6~~ | ~~Facade 层重复授权逻辑~~ | ~~`facade/roundtable.py` 4 处重复 `userId != user.id` 检查~~ | ✅ 已修复：授权逻辑统一到 app 层 |
 
 **🟡 Medium — 代码整洁度**
 
-| 编号 | 问题 | 位置 | 修复方案 |
-|------|------|------|----------|
-| TD-7 | 前端 6 个空遗留目录 | `src/hooks/`, `src/types/`, `src/components/`, `src/pages/`, `src/store/`, `src/utils/` | 直接删除 |
-| TD-8 | 后端 2 个空目录 | `api/`（空）, `common/`（空） | 直接删除 |
+| 编号 | 问题 | 位置 | 状态 |
+|------|------|------|------|
+| ~~TD-7~~ | ~~前端 6 个空遗留目录~~ | ~~`src/hooks/`, `src/types/`, `src/components/`, `src/pages/`, `src/store/`, `src/utils/`~~ | ✅ 已删除 |
+| ~~TD-8~~ | ~~后端 2 个空目录~~ | ~~`api/`（空）, `common/`（空）~~ | ✅ 已删除 |
 | TD-9 | `shared/lib/` 职责混杂 | 11 个文件混合工具函数、基础设施、业务辅助 | 按职责归类，或保持现状（影响不大） |
 
 **🟢 Low — 注意事项**
 
-| 编号 | 问题 | 位置 | 说明 |
+| 编号 | 问题 | 位置 | 状态 |
 |------|------|------|------|
-| TD-10 | 死代码 | `facade/deps.py` 中 `get_session_for_user()` 未使用 | 清理 |
+| ~~TD-10~~ | ~~死代码~~ | ~~`facade/deps.py` 中 `get_session_for_user()` 未使用~~ | ✅ 已清理 |
 | TD-11 | 域组件放置不一致 | Discovery 有 `components/`，Roundtable 无 | 在开发对应域 UI 时统一补齐 |
 
 **治理原则：**
 
-- TD-1/2/3 应在对应域的第一个 Epic 开发时优先修复（涉及的代码本身就要改）
-- TD-7/8 可以立即执行（删除空目录，零风险）
+- ~~TD-1/2/3 应在对应域的第一个 Epic 开发时优先修复（涉及的代码本身就要改）~~ TD-1/2 已修复，TD-3 待实现 Event Bus
+- ~~TD-7/8 可以立即执行（删除空目录，零风险）~~ 已完成
 - TD-4/5 在重构 Sprint 中统一处理
 - 新增代码必须遵循目标架构，不再积累新的技术债务
 
