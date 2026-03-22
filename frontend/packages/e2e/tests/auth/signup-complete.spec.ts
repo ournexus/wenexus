@@ -17,6 +17,11 @@ import { AuthPage } from '../../fixtures';
 
 test.describe('完整注册流程', () => {
   test.setTimeout(60_000);
+  // CI 环境下跳过：注册流程依赖完整的 auth 服务和邮箱验证
+  test.skip(
+    !!process.env.CI,
+    'Signup flow requires full auth service, skipped in CI',
+  );
 
   test('注册新用户 → 验证登录 → 登出 → 重新登录', async ({ page }) => {
     const auth = new AuthPage(page);

@@ -9,6 +9,7 @@ Consumers: service.roundtable, app.roundtable
 
 import json
 import uuid
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -424,15 +425,16 @@ async def save_message(
 # ---------------------------------------------------------------------------
 
 
-def _parse_expert_ids(raw: object) -> list:
+def _parse_expert_ids(raw: object) -> list[Any]:
     """安全解析 expert_ids JSON 字段。"""
     if not raw:
         return []
     try:
         if isinstance(raw, str):
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, list) else []
         if isinstance(raw, list):
             return raw
-        return raw or []
+        return []
     except (json.JSONDecodeError, TypeError):
         return []
