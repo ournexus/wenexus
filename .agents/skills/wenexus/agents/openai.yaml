@@ -1,0 +1,6 @@
+interface:
+  display_name: "Wenexus"
+  short_description: "Repo-specific patterns and workflows for wenexus"
+  default_prompt: "Use the wenexus repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
