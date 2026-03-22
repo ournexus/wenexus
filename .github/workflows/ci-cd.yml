@@ -46,7 +46,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd packages/e2e && pnpm playwright install
+        run: cd packages/e2e && pnpm playwright install --with-deps chromium
 
       - name: Initialize database tables for E2E tests
         run: cd apps/web && pnpm exec tsx scripts/init-db-e2e.ts

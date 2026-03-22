@@ -1,35 +1,52 @@
 /**
  * Database Initialization Script for E2E Testing
  *
- * Ensures database tables are created before running E2E tests.
- * This script initializes the better-auth tables required for authentication.
+ * Pushes Drizzle schema to the database, ensuring all tables exist
+ * before running E2E tests.
  *
  * Usage:
- *   tsx scripts/init-db-e2e.ts
+ *   DATABASE_URL=... tsx scripts/init-db-e2e.ts
  */
 
+import { execSync } from 'child_process';
 import { sql } from 'drizzle-orm';
 
 import { db } from '@/core/db';
 import { envConfigs } from '@/config';
 
 async function initializeDatabase() {
+  const dbUrl = envConfigs.database_url;
+  if (!dbUrl) {
+    console.error('❌ DATABASE_URL is not set');
+    process.exit(1);
+  }
+
+  console.log('🚀 Initializing database for E2E tests...');
+  console.log(`📊 Database Provider: ${envConfigs.database_provider}`);
+  console.log(`🗂️  Database URL: ${dbUrl.substring(0, 50)}...`);
+
+  // 1. Push Drizzle schema (creates/updates tables)
+  console.log('\n1️⃣  Pushing Drizzle schema to database...');
+  try {
+    execSync('npx drizzle-kit push --config=src/core/db/config.ts --force', {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+      env: { ...process.env },
+    });
+    console.log('✅ Schema push completed');
+  } catch {
+    console.error('❌ Schema push failed');
+    process.exit(1);
+  }
+
+  // 2. Verify database connection and tables
+  console.log('\n2️⃣  Verifying database tables...');
   const dbInstance = db();
 
   try {
-    console.log('🚀 Initializing database for E2E tests...');
-    console.log(`📊 Database Provider: ${envConfigs.database_provider}`);
-    console.log(
-      `🗂️  Database URL: ${envConfigs.database_url?.substring(0, 50)}...`
-    );
-
-    // Test database connection
-    console.log('\n1️⃣  Testing database connection...');
     await dbInstance.execute(sql`SELECT 1`);
     console.log('✅ Database connection successful');
 
-    // List existing tables
-    console.log('\n2️⃣  Checking existing tables...');
     const tables = await dbInstance.execute(sql`
       SELECT table_name
       FROM information_schema.tables
@@ -37,39 +54,27 @@ async function initializeDatabase() {
       ORDER BY table_name
     `);
 
-    if (tables.length > 0) {
-      console.log(`✅ Found ${tables.length} existing tables:`);
-      tables.forEach((row: any) => {
-        console.log(`   - ${row.table_name}`);
-      });
+    console.log(`✅ Found ${tables.length} tables:`);
+    tables.forEach((row: any) => {
+      console.log(`   - ${row.table_name}`);
+    });
+
+    // Verify auth tables exist
+    const existingNames = tables.map((t: any) => t.table_name);
+    const requiredAuth = ['user', 'session', 'account'];
+    const missing = requiredAuth.filter((t) => !existingNames.includes(t));
+
+    if (missing.length > 0) {
+      console.warn(`⚠️  Missing auth tables: ${missing.join(', ')}`);
     } else {
-      console.log('⚠️  No tables found - they will be created on first use');
+      console.log('✅ All required auth tables exist');
     }
-
-    // Verify better-auth required tables
-    console.log('\n3️⃣  Verifying better-auth tables...');
-    const requiredTables = ['users', 'sessions', 'accounts'];
-    const existingTableNames = tables.map((t: any) => t.table_name);
-
-    const missingTables = requiredTables.filter(
-      (table) => !existingTableNames.includes(table)
-    );
-
-    if (missingTables.length === 0) {
-      console.log('✅ All required better-auth tables exist');
-    } else {
-      console.log(`⚠️  Missing tables: ${missingTables.join(', ')}`);
-      console.log('   Note: Tables will be created on first API call');
-    }
-
-    console.log('\n✅ Database initialization check completed');
-    console.log(
-      '\n📝 Database is ready for E2E tests. If tables are missing, they will be created on first better-auth API call.\n'
-    );
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    console.error('❌ Database verification failed:', error);
     process.exit(1);
   }
+
+  console.log('\n✅ Database ready for E2E tests\n');
 }
 
 initializeDatabase().catch((error) => {

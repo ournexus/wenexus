@@ -13,6 +13,7 @@
   2. 测试创建真实的 user 和 session 记录
 """
 
+import contextlib
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -146,10 +147,8 @@ async def test_user_data(async_db: AsyncSession) -> dict[str, Any]:
     data = await _setup_test_user(async_db, user_id)
     yield data
     # 清理
-    try:
+    with contextlib.suppress(Exception):
         await _cleanup_test_user(async_db, user_id)
-    except Exception:
-        pass
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -159,10 +158,8 @@ async def test_expired_token(async_db: AsyncSession) -> dict[str, Any]:
     data = await _setup_test_user(async_db, user_id, is_expired=True)
     yield data
     # 清理
-    try:
+    with contextlib.suppress(Exception):
         await _cleanup_test_user(async_db, user_id)
-    except Exception:
-        pass
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -183,7 +180,7 @@ async def app_with_test_endpoints(async_db: AsyncSession) -> FastAPI:
     # 测试端点：需要认证
     @app.get("/test/protected")
     async def protected_endpoint(
-        user: UserInfo = Depends(get_current_user),
+        user: UserInfo = Depends(get_current_user),  # noqa: B008
     ) -> dict[str, Any]:
         """需要认证的端点。"""
         return {
@@ -200,7 +197,7 @@ async def app_with_test_endpoints(async_db: AsyncSession) -> FastAPI:
     # 测试端点：可选认证
     @app.get("/test/public")
     async def public_endpoint(
-        user: UserInfo | None = Depends(get_optional_user),
+        user: UserInfo | None = Depends(get_optional_user),  # noqa: B008
     ) -> dict[str, Any]:
         """可选认证的端点。"""
         if user is None:
@@ -242,7 +239,7 @@ async def app_and_client_with_db(async_db: AsyncSession) -> tuple[FastAPI, TestC
 
     @app.get("/test/protected")
     async def protected_endpoint(
-        user: UserInfo = Depends(get_current_user),
+        user: UserInfo = Depends(get_current_user),  # noqa: B008
     ) -> dict[str, Any]:
         """需要认证的端点。"""
         return {
@@ -258,7 +255,7 @@ async def app_and_client_with_db(async_db: AsyncSession) -> tuple[FastAPI, TestC
 
     @app.get("/test/public")
     async def public_endpoint(
-        user: UserInfo | None = Depends(get_optional_user),
+        user: UserInfo | None = Depends(get_optional_user),  # noqa: B008
     ) -> dict[str, Any]:
         """可选认证的端点。"""
         if user is None:
