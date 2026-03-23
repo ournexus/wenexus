@@ -160,10 +160,23 @@ export class AuthPage {
     // by attempting to access protected page and then re-logging in after logout
     if (registrationResult === 'success') {
       console.log(
-        `Registration completed for ${user.email}, waiting for database write...`,
+        `Registration completed for ${user.email}, verifying session...`,
       );
-      // Wait to ensure database write completes before logout/relogin cycle
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Verify session is active instead of using arbitrary delay
+      const sessionResponse = await this.page.request.get(
+        '/api/auth/get-session',
+        { headers: { Origin: new URL(this.page.url()).origin } },
+      );
+      if (sessionResponse.ok()) {
+        const session = await sessionResponse.json();
+        if (session?.session?.userId) {
+          console.log(
+            `Session confirmed for userId: ${session.session.userId}`,
+          );
+        } else {
+          console.warn('Registration succeeded but no active session found');
+        }
+      }
     }
 
     return registrationResult;
@@ -281,18 +294,18 @@ export class AuthPage {
         const responseBody = await response
           .text()
           .catch(() => '(unable to read body)');
-        console.warn(
+        throw new Error(
           `Sign-out API failed with status ${responseStatus}: ${responseBody}`,
         );
-      } else {
-        console.log('Sign-out API succeeded');
       }
+
+      console.log('Sign-out API succeeded');
     } catch (error) {
-      console.warn(
+      console.error(
         'Sign-out API error:',
         error instanceof Error ? error.message : String(error),
       );
-      // Continue with cleanup even if API fails
+      throw error;
     }
 
     // Clear all auth state
@@ -313,8 +326,18 @@ export class AuthPage {
       console.warn('Error clearing storage:', error);
     }
 
-    // Wait a bit to ensure all cleanup is complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Verify session is actually cleared via API
+    const sessionCheck = await this.page.request.get('/api/auth/get-session', {
+      headers: { Origin: new URL(this.page.url()).origin },
+    });
+    if (sessionCheck.ok()) {
+      const session = await sessionCheck.json();
+      if (session?.session?.userId) {
+        console.warn(
+          'Session still active after logout, cookies may not be fully cleared',
+        );
+      }
+    }
 
     // Navigate to sign-in page to ensure we're in a clean state
     try {
@@ -328,17 +351,47 @@ export class AuthPage {
 
   async isLoggedIn(): Promise<boolean> {
     try {
-      await this.page.goto(withLocale(AUTH_CONFIG.routes.settings));
-      await this.page.waitForLoadState('networkidle');
-      const isLoggedIn = this.page.url().includes('/settings');
-      const currentUrl = this.page.url();
-      console.log(`isLoggedIn check: ${isLoggedIn} (URL: ${currentUrl})`);
-      return isLoggedIn;
+      // Use session API for reliable auth state check instead of URL matching
+      // Retry on 429 (rate limit) since parallel tests can trigger it
+      const origin = new URL(this.page.url()).origin;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (attempts < maxAttempts) {
+        const response = await this.page.request.get('/api/auth/get-session', {
+          headers: { Origin: origin },
+        });
+
+        if (response.status() === 429) {
+          attempts++;
+          const retryAfter = Number(response.headers()['retry-after'] || 1);
+          console.log(
+            `get-session rate limited (attempt ${attempts}/${maxAttempts}), waiting ${retryAfter}s...`,
+          );
+          await new Promise((r) => setTimeout(r, retryAfter * 1000));
+          continue;
+        }
+
+        if (!response.ok()) {
+          console.log(
+            `isLoggedIn check: false (session API returned ${response.status()})`,
+          );
+          return false;
+        }
+
+        const session = await response.json();
+        const loggedIn = !!session?.session?.userId;
+        console.log(
+          `isLoggedIn check: ${loggedIn} (session userId: ${session?.session?.userId ?? 'none'})`,
+        );
+        return loggedIn;
+      }
+
+      console.warn('isLoggedIn: exhausted retries due to rate limiting');
+      return false;
     } catch (error) {
-      console.warn('Error checking login status:', error);
-      const currentUrl = this.page.url();
-      console.log(
-        `isLoggedIn check failed, current URL: ${currentUrl}`,
+      console.warn(
+        'isLoggedIn check failed:',
         error instanceof Error ? error.message : String(error),
       );
       return false;
