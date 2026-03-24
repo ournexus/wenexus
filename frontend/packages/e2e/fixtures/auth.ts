@@ -355,7 +355,7 @@ export class AuthPage {
       // Retry on 429 (rate limit) since parallel tests can trigger it
       const origin = new URL(this.page.url()).origin;
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = 6;
 
       while (attempts < maxAttempts) {
         const response = await this.page.request.get('/api/auth/get-session', {
@@ -365,10 +365,11 @@ export class AuthPage {
         if (response.status() === 429) {
           attempts++;
           const retryAfter = Number(response.headers()['retry-after'] || 1);
+          const jitter = Math.random() * 500;
           console.log(
-            `get-session rate limited (attempt ${attempts}/${maxAttempts}), waiting ${retryAfter}s...`,
+            `get-session rate limited (attempt ${attempts}/${maxAttempts}), waiting ${retryAfter}s + ${Math.round(jitter)}ms jitter...`,
           );
-          await new Promise((r) => setTimeout(r, retryAfter * 1000));
+          await new Promise((r) => setTimeout(r, retryAfter * 1000 + jitter));
           continue;
         }
 
