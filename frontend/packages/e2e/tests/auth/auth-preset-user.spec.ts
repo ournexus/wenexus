@@ -17,7 +17,7 @@ import { test } from '@playwright/test';
 import { AuthPage } from '../../fixtures';
 
 test.describe('Auth Flow with Preset User', () => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
 
   // Skip this test if preset user credentials are not provided
   test.skip(

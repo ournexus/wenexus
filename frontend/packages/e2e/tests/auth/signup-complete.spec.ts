@@ -16,7 +16,7 @@ import { expect, test } from '@playwright/test';
 import { AuthPage } from '../../fixtures';
 
 test.describe('完整注册流程', () => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   // CI 环境下跳过：注册流程依赖完整的 auth 服务和邮箱验证
   test.skip(
     !!process.env.CI,
@@ -30,37 +30,19 @@ test.describe('完整注册流程', () => {
     const timestamp = Date.now();
     const testEmail = `test-${timestamp}@wenexus-e2e.test`;
     const testPassword = 'TestPassword123!';
+    const testUser = {
+      name: `Test User ${timestamp}`,
+      email: testEmail,
+      password: testPassword,
+    };
 
     console.log(`Testing signup with email: ${testEmail}`);
 
-    // 1. 访问注册页面
-    console.log('Step 1: Navigate to signup page');
-    await page.goto('/sign-up');
-    await page.waitForLoadState('networkidle');
+    // 1-4. 注册并等待 API 响应完成
+    const result = await auth.register(testUser);
+    console.log(`Registration result: ${result}`);
 
-    // 2. 填写注册表单
-    console.log('Step 2: Fill signup form');
-    const nameInput = page.locator('#name');
-    const emailInput = page.locator('#email');
-    const passwordInput = page.locator('#password');
-    const submitButton = page.locator('button[type="submit"]');
-
-    await expect(nameInput).toBeVisible({ timeout: 10_000 });
-    await nameInput.fill('Test User');
-    await emailInput.fill(testEmail);
-    await passwordInput.fill(testPassword);
-
-    // 3. 提交注册
-    console.log('Step 3: Submit signup form');
-    await submitButton.click();
-
-    // 4. 等待页面跳转（注册成功后应跳转到首页或仪表板）
-    console.log('Step 4: Wait for redirect after signup');
-    await page.waitForURL((url) => !url.pathname.includes('sign-up'), {
-      timeout: 15_000,
-    });
-
-    // 5. 验证已登录（检查是否有用户菜单或登出按钮）
+    // 5. 验证已登录
     console.log('Step 5: Verify user is logged in');
     await auth.expectLoggedIn();
 

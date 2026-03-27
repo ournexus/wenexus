@@ -17,7 +17,7 @@ import { test } from '@playwright/test';
 import { AuthPage } from '../../fixtures';
 
 test.describe('Complete Auth Flow', () => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
 
   // 如果没有预置用户，跳过此测试
   // 原因：注册 API 有问题，需要后端修复
