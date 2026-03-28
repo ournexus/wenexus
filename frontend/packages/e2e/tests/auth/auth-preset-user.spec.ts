@@ -14,10 +14,11 @@
  */
 import { test } from '@playwright/test';
 
+import { E2E_TEST_TIMEOUT } from '../../config';
 import { AuthPage } from '../../fixtures';
 
 test.describe('Auth Flow with Preset User', () => {
-  test.setTimeout(120_000);
+  test.setTimeout(E2E_TEST_TIMEOUT);
 
   // Skip this test if preset user credentials are not provided
   test.skip(

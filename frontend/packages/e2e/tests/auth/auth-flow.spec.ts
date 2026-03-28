@@ -14,10 +14,11 @@
  */
 import { test } from '@playwright/test';
 
+import { E2E_TEST_TIMEOUT } from '../../config';
 import { AuthPage } from '../../fixtures';
 
 test.describe('Complete Auth Flow', () => {
-  test.setTimeout(120_000);
+  test.setTimeout(E2E_TEST_TIMEOUT);
 
   // 如果没有预置用户，跳过此测试
   // 原因：注册 API 有问题，需要后端修复

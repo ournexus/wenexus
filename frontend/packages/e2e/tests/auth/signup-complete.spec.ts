@@ -13,10 +13,11 @@
  */
 import { expect, test } from '@playwright/test';
 
+import { E2E_TEST_TIMEOUT } from '../../config';
 import { AuthPage } from '../../fixtures';
 
 test.describe('完整注册流程', () => {
-  test.setTimeout(120_000);
+  test.setTimeout(E2E_TEST_TIMEOUT);
   // CI 环境下跳过：注册流程依赖完整的 auth 服务和邮箱验证
   test.skip(
     !!process.env.CI,
@@ -28,15 +29,13 @@ test.describe('完整注册流程', () => {
 
     // 生成唯一测试邮箱（避免重复）
     const timestamp = Date.now();
-    const testEmail = `test-${timestamp}@wenexus-e2e.test`;
-    const testPassword = 'TestPassword123!';
     const testUser = {
       name: `Test User ${timestamp}`,
-      email: testEmail,
-      password: testPassword,
+      email: `test-${timestamp}@wenexus-e2e.test`,
+      password: 'TestPassword123!',
     };
 
-    console.log(`Testing signup with email: ${testEmail}`);
+    console.log(`Testing signup with email: ${testUser.email}`);
 
     // 1-4. 注册并等待 API 响应完成
     const result = await auth.register(testUser);
@@ -56,7 +55,7 @@ test.describe('完整注册流程', () => {
 
     // 8. 使用刚注册的账号重新登录
     console.log('Step 8: Re-login with registered account');
-    await auth.login(testEmail, testPassword);
+    await auth.login(testUser.email, testUser.password);
 
     // 9. 验证重新登录成功
     console.log('Step 9: Verify re-login successful');
