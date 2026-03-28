@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import path from 'path';
+
 import { defineConfig, devices } from '@playwright/test';
 
 config({
@@ -8,20 +9,23 @@ config({
     path.resolve(__dirname, '../../apps/web/.env.development'),
 });
 
+const isCI = !!process.env.CI;
+const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 1 : undefined,
   reporter: 'html',
 
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    navigationTimeout: process.env.CI ? 30_000 : 15_000,
-    actionTimeout: process.env.CI ? 15_000 : 10_000,
+    navigationTimeout: isCI ? 30_000 : 15_000,
+    actionTimeout: isCI ? 15_000 : 10_000,
   },
 
   projects: [
@@ -31,9 +35,17 @@ export default defineConfig({
     },
   ],
 
-  // 禁用 webServer：在开发环境中手动启动服务
-  // 运行前需要：
-  // 1. pnpm dev --filter @wenexus/web (或在 frontend 目录运行 pnpm dev)
-  // 2. Python 后端也需要启动
-  // webServer: { ... }
+  // CI: 自动启动 Next.js dev server
+  // 本地: 手动启动 (pnpm dev --filter @wenexus/web)
+  ...(isCI
+    ? {
+        webServer: {
+          command: 'pnpm dev',
+          cwd: path.resolve(__dirname, '../../apps/web'),
+          url: baseURL,
+          reuseExistingServer: false,
+          timeout: 120_000,
+        },
+      }
+    : {}),
 });

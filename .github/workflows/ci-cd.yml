@@ -37,13 +37,66 @@ jobs:
       - name: Run type checking
         run: pnpm typecheck
 
-      - name: Run tests
+      - name: Run unit tests
         run: pnpm test --filter '!@wenexus/e2e'
 
-      # Build step requires DATABASE_URL and other env vars.
-      # Skipped until CI secrets are configured.
-      # - name: Build applications
-      #   run: pnpm build
+  test-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: wenexus
+          POSTGRES_PASSWORD: wenexus_dev_pwd
+          POSTGRES_DB: wenexus_dev
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd packages/e2e && pnpm playwright install --with-deps chromium
+
+      - name: Initialize database
+        run: cd apps/web && pnpm exec tsx scripts/init-db-e2e.ts
+        env:
+          DATABASE_URL: postgresql://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev
+
+      - name: Run E2E tests
+        run: cd packages/e2e && pnpm test
+        env:
+          CI: 'true'
+          DATABASE_URL: postgresql://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev
+          AUTH_SECRET: wenexus-ci-auth-secret-key-32ch
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_NAME: WeNexus
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/packages/e2e/playwright-report/
+          retention-days: 7
 
   test-java-backend:
     runs-on: ubuntu-latest
@@ -128,7 +181,7 @@ jobs:
 
   deploy-staging:
     needs:
-      [test-frontend, test-java-backend, test-python-backend, security-scan]
+      [test-frontend, test-e2e, test-java-backend, test-python-backend, security-scan]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     environment: staging
@@ -161,7 +214,7 @@ jobs:
 
   deploy-production:
     needs:
-      [test-frontend, test-java-backend, test-python-backend, security-scan]
+      [test-frontend, test-e2e, test-java-backend, test-python-backend, security-scan]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
