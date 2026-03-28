@@ -17,6 +17,12 @@ export const AUTH_CONFIG = {
     signUp: '/sign-up',
     settings: '/settings',
   },
+  retry: {
+    /** get-session 429 限流最大重试次数 */
+    maxAttempts: 6,
+    /** 重试随机抖动上限（毫秒） */
+    jitterMs: 500,
+  },
 } as const;
 
 // ========== 类型 ==========
@@ -355,9 +361,8 @@ export class AuthPage {
       // Retry on 429 (rate limit) since parallel tests can trigger it
       const origin = new URL(this.page.url()).origin;
       let attempts = 0;
-      const maxAttempts = 6;
 
-      while (attempts < maxAttempts) {
+      while (attempts < AUTH_CONFIG.retry.maxAttempts) {
         const response = await this.page.request.get('/api/auth/get-session', {
           headers: { Origin: origin },
         });
@@ -365,9 +370,9 @@ export class AuthPage {
         if (response.status() === 429) {
           attempts++;
           const retryAfter = Number(response.headers()['retry-after'] || 1);
-          const jitter = Math.random() * 500;
+          const jitter = Math.random() * AUTH_CONFIG.retry.jitterMs;
           console.log(
-            `get-session rate limited (attempt ${attempts}/${maxAttempts}), waiting ${retryAfter}s + ${Math.round(jitter)}ms jitter...`,
+            `get-session rate limited (attempt ${attempts}/${AUTH_CONFIG.retry.maxAttempts}), waiting ${retryAfter}s + ${Math.round(jitter)}ms jitter...`,
           );
           await new Promise((r) => setTimeout(r, retryAfter * 1000 + jitter));
           continue;

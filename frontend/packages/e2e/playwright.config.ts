@@ -2,7 +2,11 @@ import { config } from 'dotenv';
 import path from 'path';
 import { defineConfig, devices } from '@playwright/test';
 
-config({ path: path.resolve(__dirname, '../../apps/web/.env.development') });
+config({
+  path:
+    process.env.DOTENV_PATH ||
+    path.resolve(__dirname, '../../apps/web/.env.development'),
+});
 
 export default defineConfig({
   testDir: './tests',
