@@ -88,30 +88,45 @@ stop_all() {
 # ── Cloudflare Tunnel 支持 ─────────────────────────────────────────────────────
 setup_cloudflare_tunnel() {
   if ! command -v cloudflared &>/dev/null; then
-    warn "cloudflared 未安装，跳过公网访问设置"
+    warn "cloudflared 未安装，跳过后端公网 Tunnel 设置"
     return
   fi
 
-  # 清理可能冲突的配置文件（快速隧道不需要配置文件）
-  rm -f ~/.cloudflared/config.yml 2>/dev/null || true
+  # 停止已有 tunnel 进程
+  if [[ -f "$LOG_DIR/tunnel.pid" ]]; then
+    local old_pid
+    old_pid=$(cat "$LOG_DIR/tunnel.pid")
+    kill -9 "$old_pid" 2>/dev/null || true
+    rm -f "$LOG_DIR/tunnel.pid"
+  fi
 
-  log "启动 Cloudflare Tunnel 快速隧道..."
-  cloudflared tunnel --url http://localhost:3000 > "$LOG_DIR/tunnel.log" 2>&1 &
-  echo $! > "$LOG_DIR/tunnel.pid"
-
-  # 等待 tunnel 就绪并获取 URL
-  local k=0
-  while ! grep -q "https://.*\.trycloudflare\.com" "$LOG_DIR/tunnel.log" 2>/dev/null && (( k < 30 )); do
-    sleep 1; (( k++ ))
-  done
-
-  # 获取公网 URL
-  local public_url
-  public_url=$(grep -o 'https://[^[:space:]]*\.trycloudflare\.com' "$LOG_DIR/tunnel.log" | head -1)
-  if [[ -n "$public_url" ]]; then
-    ok "公网访问地址: ${CYAN}$public_url${RESET}"
+  # 优先使用命名 Tunnel（固定域名），其次回退到临时快速隧道
+  if cloudflared tunnel list 2>/dev/null | grep -q "wenexus-backend" && \
+     [[ -f ~/.cloudflared/config.yml ]]; then
+    log "启动 Cloudflare Tunnel（固定域名模式：wenexus-backend）..."
+    cloudflared tunnel run wenexus-backend > "$LOG_DIR/tunnel.log" 2>&1 &
+    echo $! > "$LOG_DIR/tunnel.pid"
+    sleep 3
+    ok "后端 Tunnel 已启动（固定域名，见 ~/.cloudflared/config.yml）"
   else
-    warn "无法获取公网 URL，请查看日志: $LOG_DIR/tunnel.log"
+    log "启动 Cloudflare Tunnel（临时快速隧道，指向后端 :8000）..."
+    cloudflared tunnel --url http://localhost:8000 > "$LOG_DIR/tunnel.log" 2>&1 &
+    echo $! > "$LOG_DIR/tunnel.pid"
+
+    # 等待 tunnel 就绪并获取 URL
+    local k=0
+    while ! grep -q "https://.*\.trycloudflare\.com" "$LOG_DIR/tunnel.log" 2>/dev/null && (( k < 30 )); do
+      sleep 1; (( k++ ))
+    done
+
+    local public_url
+    public_url=$(grep -o 'https://[^[:space:]]*\.trycloudflare\.com' "$LOG_DIR/tunnel.log" | head -1)
+    if [[ -n "$public_url" ]]; then
+      ok "后端公网地址: ${CYAN}$public_url${RESET}"
+      warn "临时 URL 每次重启会变化。配置固定域名见：docs/technical/deployment/backend-local-tunnel.md"
+    else
+      warn "无法获取公网 URL，请查看日志: $LOG_DIR/tunnel.log"
+    fi
   fi
 }
 

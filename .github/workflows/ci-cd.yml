@@ -185,6 +185,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     environment: staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -202,15 +205,20 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Deploy frontend to Cloudflare Workers (staging)
-        run: pnpm cf:deploy --env staging
+      - name: Build frontend for Cloudflare Workers (staging)
+        run: pnpm cf:build
         working-directory: frontend/apps/web
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          AUTH_SECRET: ${{ secrets.STAGING_AUTH_SECRET }}
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          PYTHON_BACKEND_URL: ${{ secrets.STAGING_PYTHON_BACKEND_URL }}
+
+      - name: Set Wrangler secrets (staging)
+        working-directory: frontend/apps/web
+        run: |
+          echo "${{ secrets.STAGING_AUTH_SECRET }}" | pnpm exec wrangler secret put AUTH_SECRET --env staging
+          echo "${{ secrets.STAGING_DATABASE_URL }}" | pnpm exec wrangler secret put DATABASE_URL --env staging
+          echo "${{ secrets.STAGING_PYTHON_BACKEND_URL }}" | pnpm exec wrangler secret put PYTHON_BACKEND_URL --env staging
+
+      - name: Deploy frontend to Cloudflare Workers (staging)
+        run: pnpm exec wrangler deploy --env staging
+        working-directory: frontend/apps/web
 
   deploy-production:
     needs:
@@ -218,6 +226,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -235,12 +246,17 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Deploy frontend to Cloudflare Workers (production)
-        run: pnpm cf:deploy --env production
+      - name: Build frontend for Cloudflare Workers (production)
+        run: pnpm cf:build
         working-directory: frontend/apps/web
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          AUTH_SECRET: ${{ secrets.PROD_AUTH_SECRET }}
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-          PYTHON_BACKEND_URL: ${{ secrets.PROD_PYTHON_BACKEND_URL }}
+
+      - name: Set Wrangler secrets (production)
+        working-directory: frontend/apps/web
+        run: |
+          echo "${{ secrets.PROD_AUTH_SECRET }}" | pnpm exec wrangler secret put AUTH_SECRET --env production
+          echo "${{ secrets.PROD_DATABASE_URL }}" | pnpm exec wrangler secret put DATABASE_URL --env production
+          echo "${{ secrets.PROD_PYTHON_BACKEND_URL }}" | pnpm exec wrangler secret put PYTHON_BACKEND_URL --env production
+
+      - name: Deploy frontend to Cloudflare Workers (production)
+        run: pnpm exec wrangler deploy --env production
+        working-directory: frontend/apps/web

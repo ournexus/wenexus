@@ -1,6 +1,7 @@
 # WeNexus 部署方案全景
 
-> 本文档梳理"前端部署到 Cloudflare Workers + 后端本地机器暴露"这套混合部署方案的完整流程、注意事项与操作步骤。
+> 当前架构：前端 → Cloudflare Workers，后端 → 本地机器（Cloudflare Tunnel），数据库 → Supabase。
+> CI/CD 通过 GitHub Actions 自动触发，`develop` → staging，`main` → production。
 
 ---
 
@@ -10,231 +11,259 @@
 用户浏览器
     │
     ▼
-Cloudflare Workers (前端 Next.js via OpenNext)
+Cloudflare Workers  (前端 Next.js via OpenNext)
     │  PYTHON_BACKEND_URL
     ▼
-Cloudflare Tunnel ──► 本地机器 :8000 (FastAPI)
+Cloudflare Tunnel ──► 本地机器 :8000  (FastAPI)
                           │
-                          ▼
-                    本地 PostgreSQL :5432
-                    本地 Redis      :6379
+                          ├── Supabase PostgreSQL  (云数据库)
+                          └── Upstash Redis        (云 Redis)
 ```
 
-**说明：**
-
-- 前端 Next.js 运行在 Cloudflare Workers 的 edge 网络上，静态资源由 Cloudflare Assets 托管（免费、无限）。
-- 后端 FastAPI 运行在本地机器，通过 **Cloudflare Tunnel**（`cloudflared`）将本地端口安全暴露到公网，无需开放防火墙端口。
-- 数据库（PostgreSQL/Redis）在本地 Docker 容器中运行，仅供本地后端访问，不直接对外暴露。
+| 层 | 服务 | 说明 |
+|----|------|------|
+| 前端 | Cloudflare Workers | Next.js via OpenNext，静态资源走 Cloudflare Assets |
+| 后端 | 本地机器 + Cloudflare Tunnel | FastAPI，无需开放防火墙端口 |
+| 数据库 | Supabase (Transaction Pooler) | 公网可访问，Workers 和本地后端均可连接 |
+| 缓存 | Upstash Redis | 公网可访问，无需本地 Redis |
+| 部署 | GitHub Actions | push to `develop` → staging；push to `main` → production |
 
 ---
 
-## 2. Cloudflare Workers 付费方案说明
+## 2. 环境变量策略
 
-### 为什么需要付费方案
+### 变量分层
 
-当前项目前端 bundle gzip 约 **4.5 MiB**，超出免费计划 3 MiB 的 Worker 脚本上限，**必须升级到付费计划**才能部署。
+| 变量类型 | 存放位置 | 说明 |
+|----------|----------|------|
+| 公开配置（`NEXT_PUBLIC_*`、`DATABASE_PROVIDER`） | `wrangler.toml [vars]` | 明文提交，无敏感信息 |
+| 运行时 secrets（`DATABASE_URL`、`AUTH_SECRET`、`PYTHON_BACKEND_URL`） | Cloudflare Workers Secrets | 通过 `wrangler secret put` 或 CI/CD 设置，**不提交到 git** |
+| 本地开发 | `.env.development`（gitignored） | 本地 Docker PG + Upstash Redis，仅本机使用 |
+| 本地 CF Workers 预览 | `.dev.vars`（gitignored） | `pnpm cf:preview` 时使用，替代 Wrangler secrets |
 
-| 计划 | Worker 脚本大小（gzip） | 费用 | 请求配额 |
-|------|------------------------|------|----------|
-| **Workers Free** | 3 MiB | 免费 | 10万次/天 |
-| **Workers Paid** | **10 MiB** | **$5/月起** | 1000万次/月（含） |
+### 敏感变量清单
 
-本项目 bundle 约 4.5 MiB，Workers Paid 计划（10 MiB 上限）**完全够用**，不存在无法部署的情况。
+需要在 Cloudflare Dashboard 或 CI/CD 中设置：
 
-### 如何开通 Workers Paid
+```bash
+# 数据库（Supabase Transaction Pooler 连接串）
+wrangler secret put DATABASE_URL
 
-这个付费方案不在普通的"个人/企业套餐"里，而是单独的 Workers 开发者平台订阅：
+# Auth 签名密钥（openssl rand -base64 32）
+wrangler secret put AUTH_SECRET
+
+# Python 后端公网地址（Cloudflare Tunnel 固定域名）
+wrangler secret put PYTHON_BACKEND_URL
+```
+
+> ⚠️ **绝不**将真实 secrets 写入 `wrangler.toml` 的 `[vars]` 块，也不要在非 gitignored 文件中存放。
+
+---
+
+## 3. 数据库：Supabase
+
+项目已切换到 **Supabase** 作为生产数据库，本地开发继续使用 Docker PostgreSQL。
+
+### Supabase 连接串说明
+
+Supabase 提供两种连接方式，根据场景选择：
+
+| 模式 | 端口 | 适用场景 | 连接串格式 |
+|------|------|----------|-----------|
+| **Transaction Pooler** | 5432 | Serverless / Cloudflare Workers | `postgresql://postgres.[ref]:[pwd]@aws-*.pooler.supabase.com:5432/postgres?sslmode=require` |
+| **Direct Connection** | 5432 | 长连接服务（FastAPI）、迁移 | `postgresql://postgres:[pwd]@db.[ref].supabase.co:5432/postgres` |
+
+- **Cloudflare Workers** 使用 Transaction Pooler（短连接友好）
+- **Python FastAPI 后端** 使用 Direct Connection（asyncpg 长连接）
+- **迁移**（`pnpm db:push`）使用 Direct Connection
+
+### 运行数据库迁移
+
+```bash
+cd frontend/apps/web
+# 在 .env.production 中临时填入 Supabase Direct Connection URL，然后：
+pnpm db:push
+pnpm rbac:init
+```
+
+### 本地开发
+
+本地保持 Docker PostgreSQL（`localhost:5432`），不影响生产数据：
+
+```bash
+docker compose up -d postgres
+```
+
+---
+
+## 4. 后端：本地机器 + Cloudflare Tunnel
+
+FastAPI 后端在本地机器运行，通过 Cloudflare Tunnel 对外暴露固定 HTTPS URL。
+
+### 4.1 首次配置（仅做一次）
+
+```bash
+# 安装 cloudflared
+brew install cloudflared
+
+# 登录 Cloudflare 账号
+cloudflared tunnel login
+
+# 创建命名 Tunnel
+cloudflared tunnel create wenexus-backend
+# 输出：Created tunnel wenexus-backend with id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+创建 `~/.cloudflared/config.yml`：
+
+```yaml
+tunnel: wenexus-backend
+credentials-file: /Users/<你的用户名>/.cloudflared/<TUNNEL-UUID>.json
+
+ingress:
+  - hostname: api.wenexus.com    # 替换为你的域名
+    service: http://localhost:8000
+  - service: http_status:404
+```
+
+绑定 DNS（需要在 Cloudflare 管理该域名）：
+
+```bash
+cloudflared tunnel route dns wenexus-backend api.wenexus.com
+```
+
+### 4.2 日常启动
+
+```bash
+# 1. 启动后端
+cd backend/python
+uv run uvicorn src.wenexus.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 2. 启动 Tunnel（新终端）
+cloudflared tunnel run wenexus-backend
+```
+
+固定域名后，`PYTHON_BACKEND_URL` 永远是 `https://api.wenexus.com`，无需每次重启后更新 secret。
+
+### 4.3 后端 CORS 配置
+
+后端通过环境变量 `FRONTEND_URLS`（逗号分隔）控制允许的来源，在 `.env.development` 或生产环境变量中设置：
+
+```bash
+# 本地开发（仅本机前端）
+FRONTEND_URLS=http://localhost:3000
+
+# 生产（本机开发 + Cloudflare Workers 默认域名 + 自定义域名）
+FRONTEND_URLS=http://localhost:3000,https://wenexus-web.yihuimbin.workers.dev,https://wenexus.com
+```
+
+---
+
+## 5. 前端：Cloudflare Workers
+
+### 5.1 Cloudflare Workers Paid 计划
+
+当前 bundle gzip ~4.5 MiB，**必须**使用 Workers Paid 计划（$5/月，10 MiB 上限）：
 
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. 顶部导航选择你的账户
-3. 左侧菜单 → **Workers & Pages**
-4. 页面右侧找到 **Usage Model** 或 **Subscription** → 点击 **Upgrade to Paid**
-5. 按提示完成付款（$5/月，包含 10M 次请求）
+2. **Workers & Pages** → **Usage Model / Subscription** → **Upgrade to Paid**
 
-> **提示**：如果在 Workers & Pages 主页没找到订阅入口，也可以直接访问：
-> `https://dash.cloudflare.com/<你的账户ID>/workers/plans`
-
----
-
-## 3. 前端部署步骤
-
-### 3.1 前置准备
+### 5.2 手动部署（首次 / 紧急修复）
 
 ```bash
-# 安装 wrangler CLI（已在 devDependencies 中，无需全局安装）
 cd frontend/apps/web
-pnpm install
 
-# 登录 Cloudflare（会弹出浏览器授权）
+# 登录 Cloudflare
 pnpm exec wrangler login
-```
 
-### 3.2 配置 Secrets
+# 设置 Secrets（仅首次或更换密钥时）
+pnpm exec wrangler secret put DATABASE_URL        # Supabase Transaction Pooler URL
+pnpm exec wrangler secret put AUTH_SECRET         # openssl rand -base64 32
+pnpm exec wrangler secret put PYTHON_BACKEND_URL  # https://api.your-domain.com
 
-以下 secrets 必须在部署前配置好，否则运行时会报错：
-
-```bash
-# 数据库连接（必须是公网可访问的云数据库，本地 localhost 无效）
-# 推荐：Neon (neon.tech) 或 Supabase 的 PostgreSQL
-pnpm exec wrangler secret put DATABASE_URL
-
-# 认证密钥
-pnpm exec wrangler secret put AUTH_SECRET
-# 生成方式：openssl rand -base64 32
-
-# Python 后端地址（见第4节，使用 Cloudflare Tunnel 获取的公网 URL）
-pnpm exec wrangler secret put PYTHON_BACKEND_URL
-```
-
-> ⚠️ **重要**：`DATABASE_URL` 必须指向公网可访问的数据库。
-> Workers 运行在 Cloudflare 边缘节点，**无法访问你本地的 `localhost:5432`**。
-> 详见 [数据库方案](#5-数据库方案) 一节。
-
-### 3.3 构建并部署
-
-```bash
-cd frontend/apps/web
-
-# 一键构建 + 部署
+# 构建并部署（默认环境）
 pnpm cf:deploy
 ```
 
-等价命令：
+### 5.3 本地 Workers 预览
 
 ```bash
-opennextjs-cloudflare build && opennextjs-cloudflare deploy
-```
-
-### 3.4 部署到 staging / production 环境
-
-`wrangler.toml` 中已预定义了两个环境：
-
-```bash
-# staging 环境
-pnpm exec wrangler deploy --env staging
-
-# production 环境
-pnpm exec wrangler deploy --env production
-```
-
-### 3.5 本地预览 Workers 环境
-
-```bash
+# 在 .dev.vars 中填入 Supabase URL 和 AUTH_SECRET，然后：
 pnpm cf:preview
 ```
 
-此命令会在本地模拟 Workers 运行时，方便在部署前验证。
-
 ---
 
-## 4. 后端本地暴露方案
+## 6. CI/CD：GitHub Actions
 
-详细步骤见 [backend-local-tunnel.md](./backend-local-tunnel.md)，此处列出核心流程。
+详细说明见 [github-cicd.md](./github-cicd.md)，此处列出核心流程。
 
-### 推荐方案：Cloudflare Tunnel（免费）
+### 分支 → 环境映射
 
-```bash
-# 1. 安装 cloudflared
-brew install cloudflared
+| 分支 | 触发 Job | 目标环境 |
+|------|---------|---------|
+| `develop` | `deploy-staging` | `wenexus-web-staging.workers.dev` |
+| `main` | `deploy-production` | `wenexus-web.yihuimbin.workers.dev`（或自定义域名） |
 
-# 2. 登录 Cloudflare（仅首次需要）
-cloudflared tunnel login
+### 必须在 GitHub 配置的 Secrets
 
-# 3. 创建 tunnel（仅首次，会生成一个 UUID）
-cloudflared tunnel create wenexus-backend
+在 **Settings → Secrets and variables → Actions** 中添加：
 
-# 4. 启动本地后端
-cd backend/python
-uv run uvicorn src.wenexus.main:app --host 0.0.0.0 --port 8000
+**Repository Secrets（两个环境共用）：**
 
-# 5. 暴露本地端口（快速临时模式，无需额外配置）
-cloudflared tunnel --url http://localhost:8000
+| Secret | 说明 |
+|--------|------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（需要 `Workers Scripts:Edit` 权限） |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID |
 
-# 控制台会打印类似：
-# https://xxxx-xxxx-xxxx.trycloudflare.com → localhost:8000
+**Environment Secrets — `staging`：**
+
+| Secret | 说明 |
+|--------|------|
+| `STAGING_AUTH_SECRET` | staging 环境 Auth 密钥 |
+| `STAGING_DATABASE_URL` | Supabase Transaction Pooler URL（staging 项目） |
+| `STAGING_PYTHON_BACKEND_URL` | 后端 Tunnel URL（固定域名） |
+
+**Environment Secrets — `production`：**
+
+| Secret | 说明 |
+|--------|------|
+| `PROD_AUTH_SECRET` | 生产 Auth 密钥 |
+| `PROD_DATABASE_URL` | Supabase Transaction Pooler URL（生产项目） |
+| `PROD_PYTHON_BACKEND_URL` | 后端 Tunnel URL（固定域名） |
+
+### CI/CD 流程
+
 ```
-
-将打印的公网 URL 设置为 `PYTHON_BACKEND_URL` secret：
-
-```bash
-pnpm exec wrangler secret put PYTHON_BACKEND_URL
-# 输入：https://xxxx-xxxx-xxxx.trycloudflare.com
-```
-
-> **临时 URL 说明**：`trycloudflare.com` 的 URL 每次重启会变化。
-> 若需要固定 URL，需绑定自定义域名（见 [backend-local-tunnel.md](./backend-local-tunnel.md)）。
-
----
-
-## 5. 数据库方案
-
-Workers 运行在 Cloudflare 边缘，**无法连接本地 PostgreSQL**，需要使用云数据库。
-
-### 推荐：Neon（免费额度充足）
-
-1. 注册 [neon.tech](https://neon.tech)
-2. 创建项目，获取 connection string：
-
-   ```
-   postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-   ```
-
-3. 运行数据库迁移：
-
-   ```bash
-   cd frontend/apps/web
-   # 临时设置 DATABASE_URL 指向 Neon，然后：
-   pnpm db:push
-   pnpm rbac:init
-   ```
-
-4. 将 Neon 连接串配置为 Workers secret：
-
-   ```bash
-   pnpm exec wrangler secret put DATABASE_URL
-   ```
-
-### 备选：Supabase
-
-1. 注册 [supabase.com](https://supabase.com)
-2. 创建项目，使用 **Transaction Pooler** 连接串（适合 serverless 场景）
-3. 步骤同 Neon
-
-### 本地开发与线上数据库并存
-
-本地开发时继续使用 `.env.development` 中的 `localhost:5432`，Workers secret 中使用云数据库，互不干扰。
-
----
-
-## 6. 后端 CORS 配置
-
-后端 FastAPI 需要允许来自 Workers 域名的跨域请求。编辑 `backend/python/src/wenexus/main.py`（或 CORS 配置处），将前端 Workers 域名加入允许列表：
-
-```python
-# 允许 Workers 域名（staging 和 production 都需要加）
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://wenexus-web.workers.dev",           # Workers 默认域名
-    "https://wenexus-web-staging.workers.dev",   # staging
-    "https://wenexus.com",                        # 自定义域名（如已配置）
-]
+push to develop / main
+    │
+    ├── test-frontend   (lint + typecheck + unit tests)
+    ├── test-e2e        (Playwright, 使用临时 CI Postgres)
+    ├── test-python-backend (ruff + mypy + pytest)
+    ├── test-java-backend
+    └── security-scan (Trivy)
+            │
+            ▼ (all pass)
+    deploy-staging (develop) / deploy-production (main)
+        ├── Build: opennextjs-cloudflare build
+        ├── Secrets: wrangler secret put (DATABASE_URL / AUTH_SECRET / PYTHON_BACKEND_URL)
+        └── Deploy: wrangler deploy --env <staging|production>
 ```
 
 ---
 
-## 7. 当前 Bundle 大小优化现状
+## 7. Bundle 大小说明
 
-项目已通过以下方式将 bundle 从 ~23 MiB 压缩到 ~4.5 MiB（gzip）：
+| 指标 | 当前值 | Workers Paid 限制 |
+|------|--------|-------------------|
+| gzip 大小 | ~5.3 MiB | 10 MiB |
 
-| 优化措施 | 文件位置 | 节省量 |
-|---------|---------|--------|
-| Shiki 语言/主题 bundle stub | `patches/@opennextjs__cloudflare@1.17.0.patch` + `next.config.mjs` | ~10 MiB |
-| Prettier / yaml / acorn stub | 同上 | ~3 MiB |
-| DB 连接数限制（`DB_MAX_CONNECTIONS=1`） | `wrangler.toml` | 稳定性优化 |
+优化措施（已应用）：
 
-当前 4.5 MiB gzip 在 Workers Paid 计划的 10 MiB 限制范围内，**无需进一步优化即可部署**。
-
-若 bundle 持续增大，检查新增的大型依赖并在 `patches/@opennextjs__cloudflare@1.17.0.patch` 中追加 stub。
+| 措施 | 位置 |
+|------|------|
+| Shiki / Prettier / yaml / acorn stub | `patches/@opennextjs__cloudflare@1.17.0.patch` |
+| `DB_MAX_CONNECTIONS=1` | `wrangler.toml [vars]` |
 
 ---
 
@@ -242,24 +271,21 @@ ALLOWED_ORIGINS = [
 
 ### 首次部署
 
-- [ ] Cloudflare 账号已升级为 **Workers Paid** 计划
-- [ ] `wrangler login` 登录成功
-- [ ] 云数据库（Neon/Supabase）已创建并完成 schema 初始化
-- [ ] `wrangler secret put DATABASE_URL` 已配置（云数据库）
-- [ ] `wrangler secret put AUTH_SECRET` 已配置
-- [ ] 本地后端通过 Cloudflare Tunnel 已暴露并获得公网 URL
-- [ ] `wrangler secret put PYTHON_BACKEND_URL` 已配置
-- [ ] 后端 CORS 配置已包含 Workers 域名
-- [ ] `pnpm cf:deploy` 构建部署成功
+- [ ] Cloudflare Workers Paid 计划已开通
+- [ ] Supabase 项目已创建，schema 已初始化（`pnpm db:push && pnpm rbac:init`）
+- [ ] Cloudflare Tunnel 已创建并绑定固定域名（`api.your-domain.com`）
+- [ ] `FRONTEND_URLS` 已在 `backend/python/.env.development` 中包含 Workers 域名
+- [ ] Wrangler secrets 已设置（`DATABASE_URL`、`AUTH_SECRET`、`PYTHON_BACKEND_URL`）
+- [ ] GitHub Repository Secrets 已配置（`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）
+- [ ] GitHub Environment Secrets 已配置（`staging` 和 `production` 各三个）
+- [ ] 推送 `develop` 分支触发 CI/CD，确认 staging 部署成功
 
-### 日常重启后（Tunnel URL 变化时）
+### 日常开发
 
-- [ ] 重新启动本地后端：`uv run uvicorn src.wenexus.main:app --port 8000`
-- [ ] 重新启动 Cloudflare Tunnel：`cloudflared tunnel --url http://localhost:8000`
-- [ ] 更新 Workers secret：`pnpm exec wrangler secret put PYTHON_BACKEND_URL`
-- [ ] 重新部署 Worker（使 secret 生效）：`pnpm cf:deploy`
-
-> **避免每次更新的方法**：为 Cloudflare Tunnel 绑定自定义域名（固定 URL），详见 [backend-local-tunnel.md](./backend-local-tunnel.md)。
+- [ ] 本地启动后端：`uv run uvicorn src.wenexus.main:app --port 8000 --reload`
+- [ ] 本地启动 Tunnel：`cloudflared tunnel run wenexus-backend`（固定域名，无需更新 secret）
+- [ ] 功能开发在 feature 分支，PR 合并到 `develop` 自动触发 staging 部署
+- [ ] `develop` → `main` PR 合并触发 production 部署
 
 ---
 
@@ -267,6 +293,7 @@ ALLOWED_ORIGINS = [
 
 | 文档 | 说明 |
 |------|------|
+| [github-cicd.md](./github-cicd.md) | GitHub Actions CI/CD 详细配置指南 |
 | [cloudflare-workers.md](./cloudflare-workers.md) | Workers 部署命令、bundle 大小、常见问题 |
 | [backend-local-tunnel.md](./backend-local-tunnel.md) | Cloudflare Tunnel 详细配置（含固定域名） |
 | [external-dependencies.md](./external-dependencies.md) | 所有外部服务依赖清单 |

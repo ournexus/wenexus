@@ -5,7 +5,11 @@ Depends: pydantic-settings
 Consumers: main, repository.db, facade, service modules
 """
 
+import os
+
 from pydantic_settings import BaseSettings
+
+_APP_ENV = os.getenv("APP_ENV", "development")
 
 
 class Settings(BaseSettings):
@@ -15,10 +19,14 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    frontend_url: str = "http://localhost:3000"
+    frontend_urls: str = "http://localhost:3000"
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        return [u.strip() for u in self.frontend_urls.split(",") if u.strip()]
 
     class Config:
-        env_file = ".env.development"
+        env_file = f".env.{_APP_ENV}"
         env_file_encoding = "utf-8"
 
 
