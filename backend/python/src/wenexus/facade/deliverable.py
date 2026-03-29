@@ -5,7 +5,7 @@ Depends: fastapi
 Consumers: main (router inclusion)
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(prefix="/deliverable", tags=["deliverable"])
 
@@ -13,10 +13,14 @@ router = APIRouter(prefix="/deliverable", tags=["deliverable"])
 @router.get("/")
 async def list_deliverables() -> dict[str, object]:
     """List generated deliverables."""
-    return {"deliverables": [], "total": 0}
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented yet"
+    )
 
 
 @router.post("/")
 async def create_deliverable() -> dict[str, str]:
     """Create a new deliverable."""
-    return {"message": "Not implemented yet"}
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented yet"
+    )

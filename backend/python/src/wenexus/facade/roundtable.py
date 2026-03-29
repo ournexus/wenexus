@@ -19,7 +19,7 @@ from wenexus.app.roundtable import (
     list_sessions,
     send_message,
 )
-from wenexus.facade.deps import get_current_user
+from wenexus.facade.deps import get_current_user, raise_if_error
 from wenexus.repository.db import get_db
 from wenexus.repository.roundtable import find_session_by_id
 from wenexus.util.schema import UserInfo
@@ -33,6 +33,15 @@ class SendMessageRequest(BaseModel):
 
     content: str
     generate_ai_reply: bool = True
+
+
+class CreateSessionRequest(BaseModel):
+    """Request body for creating a new discussion session."""
+
+    topic_id: str
+    mode: str = "autopilot"
+    is_private: bool = False
+    expert_ids: list[str] | None = None
 
 
 @router.get("/experts")
@@ -63,7 +72,8 @@ async def get_session_endpoint(
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> dict:
     """获取讨论会话详情。"""
-    return await get_session_detail(db, session_id=session_id, user_id=user.id)
+    result = await get_session_detail(db, session_id=session_id, user_id=user.id)
+    return raise_if_error(result)
 
 
 @router.get("/sessions/{session_id}/messages")
@@ -75,19 +85,28 @@ async def get_messages_endpoint(
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> dict:
     """获取讨论会话的消息列表。"""
-    return await list_messages(
+    result = await list_messages(
         db, session_id=session_id, user_id=user.id, page=page, limit=limit
     )
+    return raise_if_error(result)
 
 
 @router.post("/sessions")
 async def create_session_endpoint(
-    topic_id: str,
+    request: CreateSessionRequest,
     user: UserInfo = Depends(get_current_user),  # noqa: B008
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> dict:
     """创建新的讨论会话。"""
-    return await create_session(db, topic_id=topic_id, user_id=user.id)
+    result = await create_session(
+        db,
+        topic_id=request.topic_id,
+        user_id=user.id,
+        mode=request.mode,
+        is_private=request.is_private,
+        expert_ids=request.expert_ids,
+    )
+    return raise_if_error(result)
 
 
 @router.post("/sessions/{session_id}/messages")
@@ -105,9 +124,10 @@ async def send_message_endpoint(
         content=request.content,
         generate_ai_reply=request.generate_ai_reply,
     )
+    result = raise_if_error(result)
 
     # 广播新消息到 WebSocket 客户端
-    if result.get("code") == 0 and result.get("data"):
+    if result.get("data"):
         await ws_manager.broadcast(
             session_id,
             {

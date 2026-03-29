@@ -11,6 +11,26 @@ Consumers: facade 路由模块 (roundtable, deliverable)
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+_CODE_TO_STATUS: dict[int, int] = {
+    400: status.HTTP_400_BAD_REQUEST,
+    403: status.HTTP_403_FORBIDDEN,
+    404: status.HTTP_404_NOT_FOUND,
+    409: status.HTTP_409_CONFLICT,
+    422: status.HTTP_422_UNPROCESSABLE_ENTITY,
+}
+
+
+def raise_if_error(result: dict) -> dict:
+    """如果 app 层返回错误码，转换为对应 HTTP 异常；否则原样返回。"""
+    code = result.get("code", 0)
+    if code != 0:
+        http_status = _CODE_TO_STATUS.get(code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(
+            status_code=http_status, detail=result.get("message", "Error")
+        )
+    return result
+
+
 from wenexus.repository.db import get_db
 from wenexus.service.auth import authenticate
 from wenexus.util.schema import UserInfo
