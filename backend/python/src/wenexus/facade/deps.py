@@ -11,12 +11,16 @@ Consumers: facade 路由模块 (roundtable, deliverable)
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from wenexus.repository.db import get_db
+from wenexus.service.auth import authenticate
+from wenexus.util.schema import UserInfo
+
 _CODE_TO_STATUS: dict[int, int] = {
     400: status.HTTP_400_BAD_REQUEST,
     403: status.HTTP_403_FORBIDDEN,
     404: status.HTTP_404_NOT_FOUND,
     409: status.HTTP_409_CONFLICT,
-    422: status.HTTP_422_UNPROCESSABLE_ENTITY,
+    422: status.HTTP_422_UNPROCESSABLE_CONTENT,
 }
 
 
@@ -29,11 +33,6 @@ def raise_if_error(result: dict) -> dict:
             status_code=http_status, detail=result.get("message", "Error")
         )
     return result
-
-
-from wenexus.repository.db import get_db
-from wenexus.service.auth import authenticate
-from wenexus.util.schema import UserInfo
 
 
 async def get_session_token(request: Request) -> str | None:
