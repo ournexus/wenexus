@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# LangGraph CLI cache
+.langgraph_api/
+
 # Testing
 coverage/
 *.lcov
