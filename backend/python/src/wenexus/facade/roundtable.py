@@ -13,11 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.app.roundtable import (
     create_session,
+    delete_message,
+    end_session,
     get_session_detail,
     list_experts,
     list_messages,
     list_sessions,
     send_message,
+    update_session,
 )
 from wenexus.facade.deps import get_current_user, raise_if_error
 from wenexus.repository.db import get_db
@@ -42,6 +45,13 @@ class CreateSessionRequest(BaseModel):
     mode: str = "autopilot"
     is_private: bool = False
     expert_ids: list[str] | None = None
+
+
+class UpdateSessionRequest(BaseModel):
+    """Request body for updating a discussion session."""
+
+    mode: str | None = None
+    is_private: bool | None = None
 
 
 @router.get("/experts")
@@ -109,6 +119,35 @@ async def create_session_endpoint(
     return raise_if_error(result)
 
 
+@router.patch("/sessions/{session_id}")
+async def update_session_endpoint(
+    session_id: str,
+    request: UpdateSessionRequest,
+    user: UserInfo = Depends(get_current_user),  # noqa: B008
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+) -> dict:
+    """更新讨论会话设置。"""
+    result = await update_session(
+        db,
+        session_id=session_id,
+        user_id=user.id,
+        mode=request.mode,
+        is_private=request.is_private,
+    )
+    return raise_if_error(result)
+
+
+@router.post("/sessions/{session_id}/end")
+async def end_session_endpoint(
+    session_id: str,
+    user: UserInfo = Depends(get_current_user),  # noqa: B008
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+) -> dict:
+    """结束讨论会话。"""
+    result = await end_session(db, session_id=session_id, user_id=user.id)
+    return raise_if_error(result)
+
+
 @router.post("/sessions/{session_id}/messages")
 async def send_message_endpoint(
     session_id: str,
@@ -146,6 +185,20 @@ async def send_message_endpoint(
             )
 
     return result
+
+
+@router.delete("/sessions/{session_id}/messages/{message_id}")
+async def delete_message_endpoint(
+    session_id: str,
+    message_id: str,
+    user: UserInfo = Depends(get_current_user),  # noqa: B008
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+) -> dict:
+    """删除讨论消息。"""
+    result = await delete_message(
+        db, session_id=session_id, message_id=message_id, user_id=user.id
+    )
+    return raise_if_error(result)
 
 
 @router.websocket("/ws/sessions/{session_id}")

@@ -137,6 +137,12 @@ backend/python/src/wenexus/
   - [x] `send_message()` autopilot 模式：专家回复后自动追加 Facilitator 合成消息（role=host）
   - [x] WebSocket 广播 `facilitator_message` 事件
   - [x] 响应体新增 `facilitatorMessage` 字段
+- [x] **Roundtable 域补充 API routes** ✨ NEW
+  - [x] PATCH `/sessions/{id}` — 更新会话设置（mode, is_private）
+  - [x] POST `/sessions/{id}/end` — 结束讨论会话（status → completed）
+  - [x] DELETE `/sessions/{id}/messages/{mid}` — 软删除消息（仅作者或会话所有者）
+  - [x] Repository: `update_session_fields`, `find_message_by_id`, `soft_delete_message`
+  - [x] App: 权限检查 + 状态冲突检测（409 已完成/已删除）
 
 ### 当前分支与未提交变更
 
@@ -173,7 +179,6 @@ backend/python/src/wenexus/
 
 ### 未完成
 
-- [ ] Roundtable 域补充 API routes（edit session, delete message, end discussion）
 - [ ] WebSocket 实时消息推送优化（目前已有 WebSocket + 轮询降级）
 - [ ] Deliverable 域全部（当前 facade stub 返回 501）
 - [ ] Identity 域全部

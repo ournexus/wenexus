@@ -14,11 +14,15 @@ from wenexus.repository.roundtable import (
     count_session_messages,
     count_user_sessions,
     find_experts,
+    find_message_by_id,
     find_messages,
     find_session_by_id,
     find_sessions,
     insert_session,
+    soft_delete_message,
     topic_exists,
+    update_session_fields,
+    update_session_status,
 )
 from wenexus.service.roundtable import send_message as _send_message
 
@@ -134,3 +138,67 @@ async def send_message(
         content=content,
         generate_ai_reply=generate_ai_reply,
     )
+
+
+async def update_session(
+    db: AsyncSession,
+    session_id: str,
+    user_id: str,
+    mode: str | None = None,
+    is_private: bool | None = None,
+) -> dict:
+    """更新讨论会话设置（含权限检查）。"""
+    session = await find_session_by_id(db, session_id)
+    if not session:
+        return {"code": 404, "message": "Session not found"}
+
+    if session["userId"] != user_id:
+        return {"code": 403, "message": "Forbidden"}
+
+    await update_session_fields(db, session_id, mode=mode, is_private=is_private)
+    updated = await find_session_by_id(db, session_id)
+    return {"code": 0, "data": updated}
+
+
+async def end_session(db: AsyncSession, session_id: str, user_id: str) -> dict:
+    """结束讨论会话（含权限检查）。"""
+    session = await find_session_by_id(db, session_id)
+    if not session:
+        return {"code": 404, "message": "Session not found"}
+
+    if session["userId"] != user_id:
+        return {"code": 403, "message": "Forbidden"}
+
+    if session["status"] == "completed":
+        return {"code": 409, "message": "Session already completed"}
+
+    await update_session_status(db, session_id, "completed")
+    updated = await find_session_by_id(db, session_id)
+    return {"code": 0, "data": updated}
+
+
+async def delete_message(
+    db: AsyncSession, session_id: str, message_id: str, user_id: str
+) -> dict:
+    """删除讨论消息（含权限检查：仅消息作者或会话所有者可删）。"""
+    session = await find_session_by_id(db, session_id)
+    if not session:
+        return {"code": 404, "message": "Session not found"}
+
+    message = await find_message_by_id(db, message_id)
+    if not message:
+        return {"code": 404, "message": "Message not found"}
+
+    if message["sessionId"] != session_id:
+        return {"code": 404, "message": "Message not found"}
+
+    if message["status"] == "deleted":
+        return {"code": 409, "message": "Message already deleted"}
+
+    is_session_owner = session["userId"] == user_id
+    is_message_author = message.get("userId") == user_id
+    if not (is_session_owner or is_message_author):
+        return {"code": 403, "message": "Forbidden"}
+
+    await soft_delete_message(db, message_id)
+    return {"code": 0, "data": {"id": message_id, "status": "deleted"}}

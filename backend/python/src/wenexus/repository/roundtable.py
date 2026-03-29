@@ -316,6 +316,27 @@ async def update_session_status(
     return True
 
 
+async def update_session_fields(
+    db: AsyncSession, session_id: str, **fields: Any
+) -> bool:
+    """更新讨论会话的可变字段（mode, is_private）。"""
+    allowed = {"mode", "is_private"}
+    updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not updates:
+        return False
+    set_clauses = ", ".join(f"{k} = :{k}" for k in updates)
+    updates["session_id"] = session_id
+    await db.execute(
+        text(
+            f"UPDATE discussion_session SET {set_clauses}, updated_at = NOW() "
+            "WHERE id = :session_id"
+        ),
+        updates,
+    )
+    await db.commit()
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Message queries
 # ---------------------------------------------------------------------------
@@ -418,6 +439,45 @@ async def save_message(
         "status": "active",
         "createdAt": created_at,
     }
+
+
+async def find_message_by_id(db: AsyncSession, message_id: str) -> dict | None:
+    """根据 ID 查询单条消息。"""
+    result = await db.execute(
+        text(
+            """
+        SELECT id, session_id, user_id, expert_id, role, content, status
+        FROM discussion_message
+        WHERE id = :message_id
+    """
+        ),
+        {"message_id": message_id},
+    )
+    row = result.first()
+    if not row:
+        return None
+    return {
+        "id": row.id,
+        "sessionId": row.session_id,
+        "userId": row.user_id,
+        "expertId": row.expert_id,
+        "role": row.role,
+        "content": row.content,
+        "status": row.status,
+    }
+
+
+async def soft_delete_message(db: AsyncSession, message_id: str) -> bool:
+    """软删除消息（status → deleted）。"""
+    await db.execute(
+        text(
+            "UPDATE discussion_message SET status = 'deleted', updated_at = NOW() "
+            "WHERE id = :message_id"
+        ),
+        {"message_id": message_id},
+    )
+    await db.commit()
+    return True
 
 
 # ---------------------------------------------------------------------------
