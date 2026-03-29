@@ -2,9 +2,12 @@
 # WeNexus 本地开发环境一键启动脚本
 #
 # 用法：
-#   ./scripts/dev.sh           # 启动全部（数据库 + 前端 + Python 后端 + Tunnel）
-#   ./scripts/dev.sh frontend  # 仅启动数据库 + 前端
-#   ./scripts/dev.sh stop      # 停止所有服务
+#   ./scripts/dev.sh           # 启动全部（数据库 + Python 后端 + Tunnel + 前端 Workers 预览）
+#   ./scripts/dev.sh frontend  # 仅启动数据库 + 前端 Workers 预览
+#   ./scripts/dev.sh stop      # 停止所有服务（前端 Ctrl+C 停止，此命令停止后端/数据库）
+#
+# 前端均使用 Cloudflare Workers 预览（pnpm cf:preview），模拟线上环境
+# Secrets 读取自 frontend/apps/web/.dev.vars
 #
 # 数据库支持（自动检测，优先级从高到低）：
 #   1. Homebrew PostgreSQL@16 / PostgreSQL + Redis
@@ -250,16 +253,28 @@ fi
 log "检查已有进程..."
 stop_pid_file "$PID_FILE_FRONTEND" "前端"
 stop_pid_file "$PID_FILE_PYTHON"   "Python 后端"
-stop_port 3000
+[[ "$MODE" == "frontend" ]] && stop_port 8787 || stop_port 3000
 [[ "$MODE" == "all" ]] && stop_port 8000
 
 # ── 配置环境变量检查 ──────────────────────────────────────────────────────────
-ENV_FILE="$FRONTEND_DIR/apps/web/.env.development"
-if [[ ! -f "$ENV_FILE" ]]; then
-  warn ".env.development 不存在，从示例文件创建..."
-  cp "$FRONTEND_DIR/apps/web/.env.example" "$ENV_FILE"
-  warn "请编辑 $ENV_FILE，至少填写 AUTH_SECRET："
-  warn "  openssl rand -base64 32"
+if [[ "$MODE" == "frontend" ]]; then
+  DEV_VARS_FILE="$FRONTEND_DIR/apps/web/.dev.vars"
+  if [[ ! -f "$DEV_VARS_FILE" ]]; then
+    err ".dev.vars 不存在，Workers 预览需要它提供 Secrets。"
+    err "请创建 $DEV_VARS_FILE，内容示例："
+    err "  DATABASE_URL=postgresql://..."
+    err "  AUTH_SECRET=..."
+    err "  PYTHON_BACKEND_URL=https://api.aispeeds.me"
+    exit 1
+  fi
+else
+  ENV_FILE="$FRONTEND_DIR/apps/web/.env.development"
+  if [[ ! -f "$ENV_FILE" ]]; then
+    warn ".env.development 不存在，从示例文件创建..."
+    cp "$FRONTEND_DIR/apps/web/.env.example" "$ENV_FILE"
+    warn "请编辑 $ENV_FILE，至少填写 AUTH_SECRET："
+    warn "  openssl rand -base64 32"
+  fi
 fi
 
 # ── 安装前端依赖 ──────────────────────────────────────────────────────────────
@@ -270,15 +285,21 @@ if [[ ! -d "$FRONTEND_DIR/node_modules" ]]; then
 fi
 
 # ── 启动前端 ──────────────────────────────────────────────────────────────────
-log "启动前端开发服务器..."
-(
-  cd "$FRONTEND_DIR"
-  pnpm --filter @wenexus/web dev
-) > "$LOG_FRONTEND" 2>&1 &
-echo $! > "$PID_FILE_FRONTEND"
-ok "前端已在后台启动 (PID $(cat "$PID_FILE_FRONTEND"))，日志：$LOG_FRONTEND"
+if [[ "$MODE" == "frontend" ]]; then
+  log "构建并启动 Cloudflare Workers 预览（模拟线上环境，首次构建约需 2-3 分钟）..."
+  echo ""
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  echo -e "${GREEN}  构建完成后访问：${CYAN}http://localhost:8787${RESET}"
+  echo -e "  Secrets 来源：${YELLOW}frontend/apps/web/.dev.vars${RESET}"
+  echo -e "  停止：${YELLOW}Ctrl+C${RESET}"
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  echo ""
+  cd "$FRONTEND_DIR/apps/web"
+  pnpm cf:preview
+  exit 0
+fi
 
-# ── 启动 Python 后端（可选）─────────────────────────────────────────────────
+# ── 启动 Python 后端（全栈模式，先于前端启动）────────────────────────────────
 if [[ "$MODE" == "all" ]]; then
   log "安装 Python 依赖..."
   (cd "$PYTHON_DIR" && uv sync --dev) 2>/dev/null || true
@@ -307,31 +328,24 @@ if [[ "$MODE" == "all" ]]; then
   setup_cloudflare_tunnel
 fi
 
-# ── 等待前端就绪并打印访问地址 ───────────────────────────────────────────────
-log "等待前端就绪（首次编译约需 10-30s）..."
-local_j=0
-until curl -sf http://localhost:3000 &>/dev/null; do
-  (( local_j++ ))
-  if (( local_j > 90 )); then
-    warn "前端尚未就绪，可能还在编译中，请查看日志：$LOG_FRONTEND"
-    break
-  fi
-  sleep 1
-done
-
+# ── 构建并启动前端（Workers 预览，前台运行）──────────────────────────────────
+log "构建并启动 Cloudflare Workers 预览（模拟线上环境，首次构建约需 2-3 分钟）..."
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "${GREEN}  WeNexus 本地环境已启动${RESET}"
+echo -e "${GREEN}  WeNexus 本地环境${RESET}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "  前端（本地）  →  ${CYAN}http://localhost:3000${RESET}"
+echo -e "  构建完成后访问：  ${CYAN}http://localhost:8787${RESET}"
 if [[ "$MODE" == "all" ]]; then
-  echo -e "  Python API（本地） → ${CYAN}http://localhost:8000/docs${RESET}"
-  echo -e "  Python API（公网） → ${CYAN}https://${BACKEND_TUNNEL_DOMAIN}/docs${RESET}"
+  echo -e "  Python API（本地）→ ${CYAN}http://localhost:8000/docs${RESET}"
+  echo -e "  Python API（公网）→ ${CYAN}https://${BACKEND_TUNNEL_DOMAIN}/docs${RESET}"
 fi
-echo -e "  PostgreSQL   →  ${CYAN}localhost:5432${RESET}"
+echo -e "  PostgreSQL        → ${CYAN}localhost:5432${RESET}"
 echo ""
-echo -e "  停止所有服务：${YELLOW}./scripts/dev.sh stop${RESET}"
-echo -e "  前端日志：    ${YELLOW}tail -f $LOG_FRONTEND${RESET}"
+echo -e "  Secrets 来源：${YELLOW}frontend/apps/web/.dev.vars${RESET}"
+echo -e "  停止：${YELLOW}Ctrl+C${RESET}（后端/Tunnel 进程需单独停止或重启机器）"
 [[ "$MODE" == "all" ]] && echo -e "  后端日志：    ${YELLOW}tail -f $LOG_PYTHON${RESET}"
 [[ "$MODE" == "all" ]] && echo -e "  Tunnel 日志： ${YELLOW}tail -f $LOG_DIR/tunnel.log${RESET}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo ""
+cd "$FRONTEND_DIR/apps/web"
+pnpm cf:preview
