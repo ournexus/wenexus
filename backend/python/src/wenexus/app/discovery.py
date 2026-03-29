@@ -20,7 +20,7 @@ async def get_feed(db: AsyncSession, page: int = 1, limit: int = 20) -> dict:
     cards = [
         {
             "topic": topic,
-            "expertCount": 0,  # TODO: 从 roundtable 域获取
+            "expertCount": topic.get("expertCount", 0),
             "consensusLevel": topic.get("consensusLevel", 0),
         }
         for topic in topics

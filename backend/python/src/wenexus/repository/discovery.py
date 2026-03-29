@@ -25,17 +25,31 @@ async def count_public_topics(db: AsyncSession) -> int:
 async def find_public_topics(
     db: AsyncSession, page: int = 1, limit: int = 20
 ) -> list[dict]:
-    """分页查询公开话题列表。"""
+    """分页查询公开话题列表，包含参与的专家数。"""
     offset = (page - 1) * limit
 
     result = await db.execute(
         text(
             """
-        SELECT id, title, description, type, status, consensus_level,
-               participant_count, tags, created_at
-        FROM topic
-        WHERE visibility = 'public' AND status = 'active'
-        ORDER BY created_at DESC
+        SELECT
+            t.id,
+            t.title,
+            t.description,
+            t.type,
+            t.status,
+            t.consensus_level,
+            t.participant_count,
+            t.tags,
+            t.created_at,
+            COALESCE(
+                (SELECT COUNT(DISTINCT jsonb_array_elements(ds.expert_ids)::text)
+                 FROM discussion_session ds
+                 WHERE ds.topic_id = t.id AND ds.expert_ids IS NOT NULL),
+                0
+            ) AS expert_count
+        FROM topic t
+        WHERE t.visibility = 'public' AND t.status = 'active'
+        ORDER BY t.created_at DESC
         LIMIT :limit OFFSET :offset
     """
         ),
@@ -51,6 +65,7 @@ async def find_public_topics(
             "status": row.status,
             "consensusLevel": row.consensus_level or 0,
             "participantCount": row.participant_count or 0,
+            "expertCount": row.expert_count or 0,
             "tags": row.tags,
             "createdAt": row.created_at.isoformat() if row.created_at else None,
         }
