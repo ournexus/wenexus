@@ -135,6 +135,15 @@ async def send_message_endpoint(
                 "message": result["data"]["userMessage"],
             },
         )
+        # 广播 facilitator 合成消息
+        if result["data"].get("facilitatorMessage"):
+            await ws_manager.broadcast(
+                session_id,
+                {
+                    "type": "facilitator_message",
+                    "message": result["data"]["facilitatorMessage"],
+                },
+            )
 
     return result
 

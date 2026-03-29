@@ -129,38 +129,26 @@ backend/python/src/wenexus/
   - [x] Wrangler secrets 注入（AUTH_SECRET, DATABASE_URL, PYTHON_BACKEND_URL）
   - [x] `dev.sh` 一键启动脚本（数据库 + 后端 + Tunnel + 前端 Workers 预览）
   - [x] CLAUDE.md 同步更新（部署架构、开发命令、环境变量文档）
-- [x] **邮箱验证修复**（`fix/email-verification-secret` 分支，已提交）
+- [x] **邮箱验证修复**（已合并到 main）
   - [x] Auth Secret 改为动态读取（兼容 Cloudflare Workers 运行时）
   - [x] Resend 邮件服务配置（RESEND_API_KEY + RESEND_SENDER_EMAIL）
+- [x] **LangGraph Agent 集成到 Roundtable 流程** ✨ NEW
+  - [x] `invoke_facilitator()` — 接受会话上下文，调用 LangGraph graph 生成 Facilitator 合成
+  - [x] `send_message()` autopilot 模式：专家回复后自动追加 Facilitator 合成消息（role=host）
+  - [x] WebSocket 广播 `facilitator_message` 事件
+  - [x] 响应体新增 `facilitatorMessage` 字段
 
 ### 当前分支与未提交变更
 
-**分支**：`fix/email-verification-secret`（领先 main 1 个 commit）
+**分支**：`main`
 
-**已提交但未合并到 main**：
-
-- `6713307` fix(email-verification): move auth secret to dynamic config for Cloudflare Workers
-
-**未提交的本地变更**（10 个文件）：
+**未提交的本地变更**（3 个文件）：
 
 | 文件 | 变更内容 |
 |------|---------|
-| `CLAUDE.md` | 更新部署架构文档、开发命令、环境变量说明 |
-| `backend/python/.env.example` | 新增 `FRONTEND_URLS` 配置项 |
-| `backend/python/pyproject.toml` | 新增 `langgraph-cli[inmem]` 开发依赖 |
-| `backend/python/src/wenexus/config/__init__.py` | 新增 `agent_model` 配置项 |
-| `backend/python/src/wenexus/facade/deps.py` | 新增 `raise_if_error()` 错误码转 HTTP 异常 |
-| `backend/python/src/wenexus/facade/roundtable.py` | 新增 `CreateSessionRequest` model、`raise_if_error` 集成 |
-| `backend/python/src/wenexus/facade/deliverable.py` | stub 改为返回 501 Not Implemented |
-| `docs/technical/deployment/` | 部署文档整理精简 |
-
-**未跟踪的新文件**：
-
-| 文件/目录 | 说明 |
-|-----------|------|
-| `backend/python/src/wenexus/agent/` | LangGraph AI Agent 模块（ReAct StateGraph + 工具） |
-| `backend/python/langgraph.json` | LangGraph CLI 配置 |
-| `docs/technical/develop/202603/260329-wechat-login-integration.md` | 微信登录接入技术方案文档 |
+| `backend/python/src/wenexus/agent/graph.py` | 新增 `invoke_facilitator()` 接入 Roundtable 业务 |
+| `backend/python/src/wenexus/service/roundtable.py` | autopilot 模式追加 Facilitator 合成 |
+| `backend/python/src/wenexus/facade/roundtable.py` | WebSocket 广播 facilitator_message 事件 |
 
 ### 认证系统状态
 
@@ -185,7 +173,6 @@ backend/python/src/wenexus/
 
 ### 未完成
 
-- [ ] LangGraph Agent 集成到 Roundtable 流程（agent 模块已有 scaffold，需接入业务）
 - [ ] Roundtable 域补充 API routes（edit session, delete message, end discussion）
 - [ ] WebSocket 实时消息推送优化（目前已有 WebSocket + 轮询降级）
 - [ ] Deliverable 域全部（当前 facade stub 返回 501）

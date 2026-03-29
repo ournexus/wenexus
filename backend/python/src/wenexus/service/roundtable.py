@@ -1,10 +1,10 @@
 """
 service.roundtable - Roundtable 域服务层。
 
-实现讨论会话的业务逻辑：消息发送、AI 专家回复生成。
+实现讨论会话的业务逻辑：消息发送、AI 专家回复生成、Facilitator 合成。
 纯数据访问已下沉到 repository.roundtable。
 
-Depends: repository.roundtable, util.llm
+Depends: repository.roundtable, util.llm, agent.graph
 Consumers: app.roundtable
 """
 
@@ -34,9 +34,10 @@ async def send_message(
     """发送消息到讨论会话（混合模式）。
 
     同步保存用户消息，异步生成 AI 专家回复。
+    在 autopilot 模式下，专家回复后追加 Facilitator 合成消息。
 
     Returns:
-        包含 userMessage, aiReplies, status 的响应字典
+        包含 userMessage, aiReplies, facilitatorMessage, status 的响应字典
     """
     # 1. 保存用户消息
     user_message = await save_message(
@@ -58,7 +59,9 @@ async def send_message(
     await update_session_status(db, session_id, "discussing")
 
     # 3. 生成 AI 专家回复
-    ai_replies = []
+    ai_replies: list[dict] = []
+    context = None
+    experts: list[dict] = []
     if generate_ai_reply:
         context = await get_session_context(db, session_id)
         if context:
@@ -81,11 +84,24 @@ async def send_message(
                             error=str(result),
                         )
 
+    # 4. Facilitator 合成（autopilot 模式 + 有专家回复时）
+    facilitator_message = None
+    if (
+        generate_ai_reply
+        and ai_replies
+        and context
+        and context.get("mode") == "autopilot"
+    ):
+        facilitator_message = await _generate_facilitator_synthesis(
+            db, session_id, context, experts, content, ai_replies
+        )
+
     return {
         "code": 0,
         "data": {
             "userMessage": user_message,
             "aiReplies": ai_replies,
+            "facilitatorMessage": facilitator_message,
             "status": "success" if generate_ai_reply else "pending",
             "sessionId": session_id,
         },
@@ -137,3 +153,50 @@ async def _generate_and_save_expert_response(
             error=str(e),
         )
         return None
+
+
+async def _generate_facilitator_synthesis(
+    db: AsyncSession,
+    session_id: str,
+    context: dict,
+    experts: list[dict],
+    user_message: str,
+    expert_replies: list[dict],
+) -> dict | None:
+    """Invoke LangGraph facilitator agent and save synthesis message."""
+    try:
+        from wenexus.agent.graph import invoke_facilitator
+
+        response_content = await invoke_facilitator(
+            topic_title=context.get("topicTitle", "Discussion"),
+            topic_description=context.get("topicDescription"),
+            experts=experts,
+            user_message=user_message,
+            expert_replies=expert_replies,
+            recent_messages=context.get("recentMessages"),
+        )
+
+        if response_content:
+            facilitator_msg = await save_message(
+                db,
+                session_id=session_id,
+                role="host",
+                content=response_content,
+            )
+            await logger.ainfo(
+                "facilitator_response_saved",
+                session_id=session_id,
+                message_id=facilitator_msg["id"],
+            )
+            return facilitator_msg
+
+        await logger.awarn("facilitator_response_empty", session_id=session_id)
+
+    except Exception as e:
+        await logger.aerror(
+            "facilitator_response_error",
+            session_id=session_id,
+            error=str(e),
+        )
+
+    return None
