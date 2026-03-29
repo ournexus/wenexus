@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     frontend_urls: str = "http://localhost:3000"
+    agent_model: str = "openai/gpt-4o-mini"
 
     @property
     def allowed_origins(self) -> list[str]:

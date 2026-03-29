@@ -1,0 +1,8 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "roundtable_agent": "./src/wenexus/agent/graph.py:graph"
+  },
+  "env": "./.env.development",
+  "python_version": "3.11"
+}
