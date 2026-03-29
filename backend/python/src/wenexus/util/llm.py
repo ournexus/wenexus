@@ -70,7 +70,7 @@ Focus on clarity, evidence-based reasoning, and constructive dialogue."""
                 f"{settings.openrouter_base_url}/chat/completions",
                 headers={
                     "Authorization": f"Bearer {settings.openrouter_api_key}",
-                    "HTTP-Referer": settings.frontend_url,
+                    "HTTP-Referer": settings.frontend_urls.split(",")[0].strip(),
                     "X-Title": "WeNexus",
                 },
                 json={
