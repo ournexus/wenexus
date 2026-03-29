@@ -43,7 +43,7 @@ DB_MAX_CONNECTIONS = "1"
 name = "wenexus-web-production"
 
 [env.production.vars]
-NEXT_PUBLIC_APP_URL = "https://wenexus-web.yihuimbin.workers.dev"
+NEXT_PUBLIC_APP_URL = "https://wenexus-web-production.yihuimbin.workers.dev"
 NEXT_PUBLIC_APP_NAME = "WeNexus"
 NEXT_PUBLIC_THEME = "default"
 NEXT_PUBLIC_APPEARANCE = "system"
