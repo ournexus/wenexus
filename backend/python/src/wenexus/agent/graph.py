@@ -40,7 +40,7 @@ class State(TypedDict):
 
 
 def _build_llm() -> ChatOpenAI:
-    return ChatOpenAI(
+    return ChatOpenAI(  # type: ignore[call-arg]
         model=settings.agent_model,
         openai_api_key=settings.openrouter_api_key,
         openai_api_base=settings.openrouter_base_url,
@@ -130,7 +130,7 @@ async def invoke_facilitator(
     prompt = "\n".join(parts)
 
     try:
-        result = await graph.ainvoke({"messages": [HumanMessage(content=prompt)]})  # type: ignore[arg-type]
+        result = await graph.ainvoke({"messages": [HumanMessage(content=prompt)]})  # type: ignore[arg-type,call-overload]
         messages = result.get("messages", [])
         if messages:
             last = messages[-1]
