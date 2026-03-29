@@ -2,7 +2,7 @@
 # WeNexus 本地开发环境一键启动脚本
 #
 # 用法：
-#   ./scripts/dev.sh           # 启动全部（数据库 + 前端 + Python 后端）
+#   ./scripts/dev.sh           # 启动全部（数据库 + 前端 + Python 后端 + Tunnel）
 #   ./scripts/dev.sh frontend  # 仅启动数据库 + 前端
 #   ./scripts/dev.sh stop      # 停止所有服务
 #
@@ -11,6 +11,14 @@
 #   2. Docker / docker-compose
 #
 # 日志文件输出到 scripts/logs/
+#
+# ── 域名配置（只需改这一处）────────────────────────────────────────────────────
+# 切换域名时更新以下变量，同步更新：
+#   ~/.cloudflared/config.yml  (hostname)
+#   backend/python/.env.development (FRONTEND_URLS)
+#   wrangler secret: pnpm exec wrangler secret put PYTHON_BACKEND_URL
+BACKEND_TUNNEL_DOMAIN="api.aispeeds.me"
+# ────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
@@ -101,19 +109,19 @@ setup_cloudflare_tunnel() {
   fi
 
   # 优先使用命名 Tunnel（固定域名），其次回退到临时快速隧道
-  if cloudflared tunnel list 2>/dev/null | grep -q "wenexus-backend" && \
+  if cloudflared tunnel list 2>/dev/null | grep -q "wenexus-dev" && \
      [[ -f ~/.cloudflared/config.yml ]]; then
-    log "启动 Cloudflare Tunnel（固定域名模式：wenexus-backend）..."
-    cloudflared tunnel run wenexus-backend > "$LOG_DIR/tunnel.log" 2>&1 &
+    log "启动 Cloudflare Tunnel（固定域名模式：wenexus-dev → ${BACKEND_TUNNEL_DOMAIN}）..."
+    cloudflared tunnel run wenexus-dev > "$LOG_DIR/tunnel.log" 2>&1 &
     echo $! > "$LOG_DIR/tunnel.pid"
-    sleep 3
-    ok "后端 Tunnel 已启动（固定域名，见 ~/.cloudflared/config.yml）"
+    sleep 2
+    ok "后端 Tunnel 已启动 → ${CYAN}https://${BACKEND_TUNNEL_DOMAIN}${RESET}"
   else
     log "启动 Cloudflare Tunnel（临时快速隧道，指向后端 :8000）..."
     cloudflared tunnel --url http://localhost:8000 > "$LOG_DIR/tunnel.log" 2>&1 &
     echo $! > "$LOG_DIR/tunnel.pid"
 
-    # 等待 tunnel 就绪并获取 URL
+    # 等待 tunnel 就绪并获取临时 URL
     local k=0
     while ! grep -q "https://.*\.trycloudflare\.com" "$LOG_DIR/tunnel.log" 2>/dev/null && (( k < 30 )); do
       sleep 1; (( k++ ))
@@ -122,7 +130,7 @@ setup_cloudflare_tunnel() {
     local public_url
     public_url=$(grep -o 'https://[^[:space:]]*\.trycloudflare\.com' "$LOG_DIR/tunnel.log" | head -1)
     if [[ -n "$public_url" ]]; then
-      ok "后端公网地址: ${CYAN}$public_url${RESET}"
+      ok "后端公网地址（临时）: ${CYAN}$public_url${RESET}"
       warn "临时 URL 每次重启会变化。配置固定域名见：docs/technical/deployment/backend-local-tunnel.md"
     else
       warn "无法获取公网 URL，请查看日志: $LOG_DIR/tunnel.log"
@@ -282,6 +290,21 @@ if [[ "$MODE" == "all" ]]; then
   ) > "$LOG_PYTHON" 2>&1 &
   echo $! > "$LOG_DIR/python.pid"
   ok "Python 后端已在后台启动 (PID $(cat "$LOG_DIR/python.pid"))，日志：$LOG_PYTHON"
+
+  # ── 等待后端就绪后再启动 Tunnel ───────────────────────────────────────────
+  log "等待 Python 后端就绪..."
+  local_k=0
+  until curl -sf http://localhost:8000/health &>/dev/null || \
+        curl -sf http://localhost:8000/docs  &>/dev/null; do
+    (( local_k++ ))
+    if (( local_k > 20 )); then
+      warn "后端就绪检测超时，仍尝试启动 Tunnel..."
+      break
+    fi
+    sleep 1
+  done
+
+  setup_cloudflare_tunnel
 fi
 
 # ── 等待前端就绪并打印访问地址 ───────────────────────────────────────────────
@@ -296,20 +319,19 @@ until curl -sf http://localhost:3000 &>/dev/null; do
   sleep 1
 done
 
-# ── 设置 Cloudflare Tunnel 公网访问 ──────────────────────────────────────────────
-setup_cloudflare_tunnel
-
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo -e "${GREEN}  WeNexus 本地环境已启动${RESET}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "  前端        →  ${CYAN}http://localhost:3000${RESET}"
-[[ "$MODE" == "all" ]] && echo -e "  Python API  →  ${CYAN}http://localhost:8000/docs${RESET}"
-echo -e "  PostgreSQL  →  ${CYAN}localhost:5432${RESET}"
-echo -e "  Redis       →  ${CYAN}localhost:6379${RESET}"
+echo -e "  前端（本地）  →  ${CYAN}http://localhost:3000${RESET}"
+if [[ "$MODE" == "all" ]]; then
+  echo -e "  Python API（本地） → ${CYAN}http://localhost:8000/docs${RESET}"
+  echo -e "  Python API（公网） → ${CYAN}https://${BACKEND_TUNNEL_DOMAIN}/docs${RESET}"
+fi
+echo -e "  PostgreSQL   →  ${CYAN}localhost:5432${RESET}"
 echo ""
 echo -e "  停止所有服务：${YELLOW}./scripts/dev.sh stop${RESET}"
 echo -e "  前端日志：    ${YELLOW}tail -f $LOG_FRONTEND${RESET}"
 [[ "$MODE" == "all" ]] && echo -e "  后端日志：    ${YELLOW}tail -f $LOG_PYTHON${RESET}"
-echo -e "  Tunnel 日志： ${YELLOW}tail -f $LOG_DIR/tunnel.log${RESET}"
+[[ "$MODE" == "all" ]] && echo -e "  Tunnel 日志： ${YELLOW}tail -f $LOG_DIR/tunnel.log${RESET}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"

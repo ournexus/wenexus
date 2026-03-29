@@ -110,18 +110,18 @@ brew install cloudflared
 cloudflared tunnel login
 
 # 创建命名 Tunnel
-cloudflared tunnel create wenexus-backend
-# 输出：Created tunnel wenexus-backend with id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+cloudflared tunnel create wenexus-dev
+# 输出：Created tunnel wenexus-dev with id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 创建 `~/.cloudflared/config.yml`：
 
 ```yaml
-tunnel: wenexus-backend
-credentials-file: ~/.cloudflared/<TUNNEL-UUID>.json
+tunnel: wenexus-dev
+credentials-file: /Users/mac/.cloudflared/6ede2604-00dd-4ca2-9a97-0978bbba6192.json
 
 ingress:
-  - hostname: api.wenexus.com    # 替换为你的域名
+  - hostname: api.aispeeds.me
     service: http://localhost:8000
   - service: http_status:404
 ```
@@ -129,7 +129,7 @@ ingress:
 绑定 DNS（需要在 Cloudflare 管理该域名）：
 
 ```bash
-cloudflared tunnel route dns wenexus-backend api.wenexus.com
+cloudflared tunnel route dns wenexus-dev api.aispeeds.me
 ```
 
 ### 4.2 日常启动
@@ -140,10 +140,10 @@ cd backend/python
 uv run uvicorn src.wenexus.main:app --host 0.0.0.0 --port 8000 --reload
 
 # 2. 启动 Tunnel（新终端）
-cloudflared tunnel run wenexus-backend
+cloudflared tunnel run wenexus-dev
 ```
 
-固定域名后，`PYTHON_BACKEND_URL` 永远是 `https://api.wenexus.com`，无需每次重启后更新 secret。
+固定域名后，`PYTHON_BACKEND_URL` 永远是 `https://api.aispeeds.me`，无需每次重启后更新 secret。
 
 ### 4.3 后端 CORS 配置
 
@@ -153,8 +153,8 @@ cloudflared tunnel run wenexus-backend
 # 本地开发（仅本机前端）
 FRONTEND_URLS=http://localhost:3000
 
-# 生产（本机开发 + Cloudflare Workers 默认域名 + 自定义域名）
-FRONTEND_URLS=http://localhost:3000,https://wenexus-web.yihuimbin.workers.dev,https://wenexus.com
+# 生产（本机开发 + Cloudflare Workers 默认域名）
+FRONTEND_URLS=http://localhost:3000,https://wenexus-web.yihuimbin.workers.dev
 ```
 
 ---
@@ -179,7 +179,7 @@ pnpm exec wrangler login
 # 设置 Secrets（仅首次或更换密钥时）
 pnpm exec wrangler secret put DATABASE_URL        # Supabase Transaction Pooler URL
 pnpm exec wrangler secret put AUTH_SECRET         # openssl rand -base64 32
-pnpm exec wrangler secret put PYTHON_BACKEND_URL  # https://api.your-domain.com
+pnpm exec wrangler secret put PYTHON_BACKEND_URL  # https://api.aispeeds.me
 
 # 构建并部署（默认环境）
 pnpm cf:deploy
@@ -271,19 +271,19 @@ push to develop / main
 
 ### 首次部署
 
-- [ ] Cloudflare Workers Paid 计划已开通
-- [ ] Supabase 项目已创建，schema 已初始化（`pnpm db:push && pnpm rbac:init`）
-- [ ] Cloudflare Tunnel 已创建并绑定固定域名（`api.your-domain.com`）
-- [ ] `FRONTEND_URLS` 已在 `backend/python/.env.development` 中包含 Workers 域名
-- [ ] Wrangler secrets 已设置（`DATABASE_URL`、`AUTH_SECRET`、`PYTHON_BACKEND_URL`）
-- [ ] GitHub Repository Secrets 已配置（`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）
-- [ ] GitHub Environment Secrets 已配置（`staging` 和 `production` 各三个）
+- [x] Cloudflare Workers Paid 计划已开通
+- [x] Supabase 项目已创建，schema 已初始化（`pnpm db:push && pnpm rbac:init`）
+- [x] Cloudflare Tunnel 已创建并绑定固定域名（`api.aispeeds.me`）
+- [x] `FRONTEND_URLS` 已在 `backend/python/.env.development` 中包含 Workers 域名
+- [x] Wrangler secrets 已设置（`DATABASE_URL`、`AUTH_SECRET`、`PYTHON_BACKEND_URL`）
+- [x] GitHub Repository Secrets 已配置（`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）
+- [x] GitHub Environment Secrets 已配置（`staging` 和 `production` 各三个）
 - [ ] 推送 `develop` 分支触发 CI/CD，确认 staging 部署成功
 
 ### 日常开发
 
 - [ ] 本地启动后端：`uv run uvicorn src.wenexus.main:app --port 8000 --reload`
-- [ ] 本地启动 Tunnel：`cloudflared tunnel run wenexus-backend`（固定域名，无需更新 secret）
+- [ ] 本地启动 Tunnel：`cloudflared tunnel run wenexus-dev`（固定域名 `api.aispeeds.me`，无需更新 secret）
 - [ ] 功能开发在 feature 分支，PR 合并到 `develop` 自动触发 staging 部署
 - [ ] `develop` → `main` PR 合并触发 production 部署
 

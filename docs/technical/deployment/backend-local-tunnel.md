@@ -71,7 +71,7 @@ pnpm cf:deploy
 
 URL 固定不变，每次重启后端/Tunnel 无需重新更新 secret。
 
-**前提**：需要在 Cloudflare 管理一个域名（如 `wenexus.com`）。
+**前提**：需要在 Cloudflare 管理一个域名（已配置：`aispeeds.me`）。
 
 ### 2.1 登录并创建 Tunnel
 
@@ -80,8 +80,8 @@ URL 固定不变，每次重启后端/Tunnel 无需重新更新 secret。
 cloudflared tunnel login
 
 # 创建命名 Tunnel（只需创建一次）
-cloudflared tunnel create wenexus-backend
-# 输出：Created tunnel wenexus-backend with id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+cloudflared tunnel create wenexus-dev
+# 输出：Created tunnel wenexus-dev with id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 # 同时在 ~/.cloudflared/ 下生成凭证文件
 ```
 
@@ -90,33 +90,30 @@ cloudflared tunnel create wenexus-backend
 创建 `~/.cloudflared/config.yml`：
 
 ```yaml
-tunnel: wenexus-backend
-credentials-file: /Users/mac/.cloudflared/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.json
+tunnel: wenexus-dev
+credentials-file: /Users/mac/.cloudflared/6ede2604-00dd-4ca2-9a97-0978bbba6192.json
 
 ingress:
-  - hostname: api.wenexus.com      # 替换为你的域名
+  - hostname: api.aispeeds.me
     service: http://localhost:8000
   - service: http_status:404
 ```
-
-> 将 `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 替换为上一步输出的 Tunnel ID。
-> 将 `api.wenexus.com` 替换为你实际的域名。
 
 ### 2.3 添加 DNS 记录
 
 ```bash
 # 在 Cloudflare DNS 中创建 CNAME 记录，将子域名指向 Tunnel
-cloudflared tunnel route dns wenexus-backend api.wenexus.com
+cloudflared tunnel route dns wenexus-dev api.aispeeds.me
 ```
 
 ### 2.4 启动 Tunnel
 
 ```bash
 # 使用配置文件启动
-cloudflared tunnel run wenexus-backend
+cloudflared tunnel run wenexus-dev
 ```
 
-启动后，`https://api.wenexus.com` 将固定转发到本地 `:8000`。
+启动后，`https://api.aispeeds.me` 将固定转发到本地 `:8000`。
 
 ### 2.5 设置为系统服务（可选，开机自启）
 
