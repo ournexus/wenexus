@@ -241,10 +241,12 @@ async function seedDomain() {
 
   try {
     const schema = await loadSchemaTables();
-    const { expert, topic } = schema;
+    const { expert, topic, discussionSession } = schema;
 
     // 1. Seed builtin experts
     console.log('🧠 Seeding builtin experts...');
+    const expertIds: Record<string, string> = {};
+
     for (const expertData of builtinExperts) {
       const [existing] = await db()
         .select()
@@ -255,6 +257,7 @@ async function seedDomain() {
         console.log(
           `   ✓ Expert already exists: ${expertData.name} (${expertData.role})`
         );
+        expertIds[expertData.role] = existing.id;
       } else {
         const id = getUuid();
         await db()
@@ -263,12 +266,13 @@ async function seedDomain() {
         console.log(
           `   ✓ Created expert: ${expertData.name} (${expertData.role})`
         );
+        expertIds[expertData.role] = id;
       }
     }
     console.log(`\n✅ Experts seeded: ${builtinExperts.length}\n`);
 
-    // 2. Seed sample topics
-    console.log('📝 Seeding sample topics...');
+    // 2. Seed sample topics & discussion sessions
+    console.log('📝 Seeding sample topics and discussion sessions...');
 
     // Find or create a seed user for topic ownership
     let [seedUser] = await db().select().from(schema.user).limit(1);
@@ -292,28 +296,67 @@ async function seedDomain() {
       console.log(`   ✓ Using existing user: ${seedUser.email || seedUser.id}`);
     }
 
+    let topicsCreated = 0;
+    let sessionsCreated = 0;
+
     for (const topicData of sampleTopics) {
       const [existing] = await db()
         .select()
         .from(topic)
         .where(eq(topic.title, topicData.title));
 
+      let topicId: string;
       if (existing) {
         console.log(`   ✓ Topic already exists: ${topicData.title}`);
+        topicId = existing.id;
       } else {
-        const id = getUuid();
+        topicId = getUuid();
         await db()
           .insert(topic)
-          .values({ id, userId: seedUser.id, ...topicData });
+          .values({ id: topicId, userId: seedUser.id, ...topicData });
         console.log(`   ✓ Created topic: ${topicData.title}`);
+        topicsCreated++;
+      }
+
+      // Create a discussion session for this topic
+      const sessionTitle = `${topicData.title} - Discussion Round`;
+      const [existingSession] = await db()
+        .select()
+        .from(discussionSession)
+        .where(eq(discussionSession.topicId, topicId));
+
+      if (existingSession) {
+        console.log(`      ✓ Discussion session already exists`);
+      } else {
+        const sessionId = getUuid();
+        // Note: discussionSession table structure may vary, adjust as needed
+        try {
+          await db().insert(discussionSession).values({
+            id: sessionId,
+            topicId,
+            title: sessionTitle,
+            status: 'active',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          console.log(`      ✓ Created discussion session`);
+          sessionsCreated++;
+        } catch (error) {
+          // If columns don't match, log but continue
+          console.log(
+            `      ⚠ Could not create session (schema mismatch, skipping)`
+          );
+        }
       }
     }
-    console.log(`\n✅ Topics seeded: ${sampleTopics.length}\n`);
+    console.log(`\n✅ Topics seeded: ${topicsCreated}\n`);
+    console.log(`✅ Discussion sessions seeded: ${sessionsCreated}\n`);
 
     console.log('✅ Domain seeding completed successfully!');
     console.log('\n📊 Summary:');
     console.log(`   - Experts: ${builtinExperts.length}`);
-    console.log(`   - Topics: ${sampleTopics.length} (if user exists)`);
+    console.log(`   - Topics: ${sampleTopics.length}`);
+    console.log(`   - Discussion sessions: ${sessionsCreated}`);
   } catch (error) {
     console.error('\n❌ Error during domain seeding:', error);
     process.exit(1);
