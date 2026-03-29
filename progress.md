@@ -87,6 +87,32 @@ backend/python/src/wenexus/
   - [x] PR 意见处理 Claude 命令
 - [x] **安全加固**（PR #31）
   - [x] .wrangler 和 .dev.vars 加入 .gitignore
+- [x] **E2E 测试可靠性优化**（PR #38, #39）✨ DONE
+  - [x] 增加测试超时到 120s（远程 DB 兼容）
+  - [x] 提取魔法数字为命名常量（E2E_TEST_TIMEOUT）
+  - [x] 优化 load strategy（networkidle → domcontentloaded）
+  - [x] 改进 API 调用方式（page.request → browser-side fetch）
+  - [x] 修复并发限流重试机制（6 次重试 + 随机延迟）
+- [x] **CI/CD 架构优化**（PR #38, #39）✨ DONE
+  - [x] 创建独立 test-e2e job（带 postgres 服务）
+  - [x] Playwright webServer 自动启动 Next.js（仅 CI）
+  - [x] 单元测试与 E2E 分离（减少 CI 时间）
+  - [x] 部署 job 依赖正确配置
+- [x] **OpenRouter API Key 配置** ✨ NEW
+  - [x] 后端已通过 Pydantic Settings 读取
+  - [x] 前端 .env.example 补充文档说明
+- [x] **种子数据扩展** ✨ NEW
+  - [x] 4 个内置专家 (求真者、经济学者、技术专家、伦理学者)
+  - [x] 3 个示例话题
+  - [x] 讨论会话自动创建
+- [x] **Discovery ExpertCount 计算** ✨ NEW
+  - [x] SQL 查询：统计每个 topic 的参与 experts
+  - [x] 使用 jsonb_array_elements 提取 expert_ids
+  - [x] 前端 TopicCard 已支持显示
+- [x] **Roundtable 消息发送 UI**（已实现）
+  - [x] message-input.tsx 完整表单
+  - [x] 前端 API 路由集成
+  - [x] WebSocket + 轮询实时更新
 
 ### 认证系统状态
 
@@ -111,25 +137,22 @@ backend/python/src/wenexus/
 
 ### 未完成
 
-- [ ] 前端集成 Roundtable 消息发送 UI（调用 POST /sessions/{id}/messages）
 - [ ] WebSocket 实时消息推送（替代轮询）
 - [ ] Roundtable 域其他 API routes（edit session, delete message, etc.）
 - [ ] Deliverable 域全部
 - [ ] Identity 域全部
 - [ ] 微信登录集成
-- [ ] 种子数据
-- [ ] OpenRouter API Key 配置（从环境变量读取）
-- [ ] Discovery ExpertCount 计算与 Roundtable 域集成
 
 ---
 
 ## CI/CD Pipeline 状态
 
-**全部 4 个 Job 稳定通过**
+**全部 5 个 Job 稳定通过**
 
 | Job | 内容 | 状态 |
 |-----|------|------|
 | test-frontend | pnpm lint + typecheck + test (Node 20, Turborepo) | ✅ |
+| test-e2e | Playwright E2E tests with auto-started Next.js | ✅ |
 | test-java-backend | mvn clean test + package | ✅ |
 | test-python-backend | ruff lint + mypy + pytest unit (uv) | ✅ |
 | security-scan | Trivy fs scan → SARIF → GitHub Security tab | ✅ |
