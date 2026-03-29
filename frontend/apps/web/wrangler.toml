@@ -19,6 +19,7 @@ binding = "ASSETS"
 #   PYTHON_BACKEND_URL
 
 [vars]
+NEXT_PUBLIC_APP_URL = "https://wenexus-web.yihuimbin.workers.dev"
 NEXT_PUBLIC_APP_NAME = "WeNexus"
 NEXT_PUBLIC_THEME = "default"
 NEXT_PUBLIC_APPEARANCE = "system"
