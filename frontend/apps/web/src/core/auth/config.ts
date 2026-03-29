@@ -25,10 +25,12 @@ const VERIFICATION_EMAIL_MIN_INTERVAL_MS = 60_000;
 
 // Static auth options - NO database connection
 // This ensures zero database calls during build time
+// Note: `secret` is intentionally NOT here — in Cloudflare Workers, AUTH_SECRET is
+// only available in process.env after populateProcessEnv (within request context).
+// Reading it here (module-init time) would capture an empty string. See getAuthOptions.
 const authOptions = {
   appName: envConfigs.app_name,
   baseURL: envConfigs.auth_url,
-  secret: envConfigs.auth_secret,
   trustedOrigins: [
     ...(envConfigs.app_url ? [envConfigs.app_url] : []),
     // 开发环境允许 localhost 和 127.0.0.1 互访
@@ -83,6 +85,8 @@ export async function getAuthOptions(configs: Record<string, string>) {
 
   return {
     ...authOptions,
+    // Read at request time: AUTH_SECRET is only in process.env after populateProcessEnv in CF Workers
+    secret: envConfigs.auth_secret,
     // Add database connection only when actually needed (runtime)
     database: envConfigs.database_url
       ? drizzleAdapter(db(), {

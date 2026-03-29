@@ -242,7 +242,11 @@ export function VerifyEmailPage({
         callbackURL: `${base}${nextUrl || '/'}`,
       });
       if (result?.error) {
-        toast.error(result.error.message || 'send verification email failed');
+        toast.error(
+          result.error.message ||
+            result.error.statusText ||
+            'send verification email failed'
+        );
         return;
       }
       markSentNow(email);
