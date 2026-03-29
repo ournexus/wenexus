@@ -278,7 +278,7 @@ push to develop / main
 - [x] Wrangler secrets 已设置（`DATABASE_URL`、`AUTH_SECRET`、`PYTHON_BACKEND_URL`）
 - [x] GitHub Repository Secrets 已配置（`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）
 - [x] GitHub Environment Secrets 已配置（`staging` 和 `production` 各三个）
-- [ ] 推送 `develop` 分支触发 CI/CD，确认 staging 部署成功
+- [x] 推送 `develop` 分支触发 CI/CD，确认 staging 部署成功
 
 ### 日常开发
 
