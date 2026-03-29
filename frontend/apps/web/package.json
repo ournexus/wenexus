@@ -22,6 +22,7 @@
     "rbac:assign": "tsx scripts/with-env.ts npx tsx scripts/assign-role.ts",
     "db:seed": "tsx scripts/with-env.ts npx tsx scripts/seed-domain.ts",
     "postinstall": "fumadocs-mdx",
+    "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf:upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
