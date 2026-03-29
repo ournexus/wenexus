@@ -55,13 +55,24 @@ wenexus/
 
 ## 常用开发命令
 
-### 前端开发
+### 本地开发启动
 
 ```bash
-cd frontend
+# 一键启动（推荐）
+./scripts/dev.sh           # 全栈：数据库 + 后端(--reload) + Tunnel + 前端 Workers 预览
+./scripts/dev.sh frontend  # 仅前端 Workers 预览（http://localhost:8787）
+./scripts/dev.sh stop      # 停止所有
+```
+
+前端使用 Cloudflare Workers 预览模式（`pnpm cf:preview`），模拟线上运行时，Secrets 读取自 `frontend/apps/web/.dev.vars`。
+
+### 前端单独命令
+
+```bash
+cd frontend/apps/web
 pnpm install                     # 安装依赖
-pnpm dev                         # 启动开发服务器
-pnpm build                       # 构建生产版本
+pnpm cf:preview                  # Workers 预览（模拟线上，http://localhost:8787）
+pnpm cf:deploy                   # 手动部署到 Cloudflare Workers
 pnpm lint                        # 代码检查
 pnpm typecheck                   # 类型检查
 ```
@@ -70,12 +81,14 @@ pnpm typecheck                   # 类型检查
 
 ```bash
 cd backend/python
-uv sync --dev                    # 安装依赖
-uv run uvicorn src.main:app --reload  # 启动开发服务器
-uv run pytest                    # 运行测试
-uv run ruff format .             # 格式化代码
-uv run ruff check --fix .        # 代码检查
+uv sync --dev                                                          # 安装依赖
+uv run uvicorn src.wenexus.main:app --host 0.0.0.0 --port 8000 --reload  # 启动开发服务器
+uv run pytest                                                          # 运行测试
+uv run ruff format .                                                   # 格式化代码
+uv run ruff check --fix .                                              # 代码检查
 ```
+
+> 后端已设置 LaunchAgent 开机自启（无 `--reload`）。开发时用 `dev.sh` 或手动启动带 `--reload` 的版本。
 
 ### 代码质量
 
@@ -162,6 +175,51 @@ pre-commit run --all-files       # 运行所有 pre-commit hooks
 - 修改代码时，同步更新同文件内的注释/docstring
 - 创建 commit 对应的技术文档（按上述格式）
 - 用户明确要求时，更新指定的文档文件
+
+## 部署架构与流程
+
+### 当前架构
+
+```
+用户 → Cloudflare Workers（前端 Next.js via OpenNext）
+           │  PYTHON_BACKEND_URL
+           ▼
+     Cloudflare Tunnel → 本地机器 :8000（FastAPI）
+                              ├── Supabase PostgreSQL（云数据库）
+                              └── Upstash Redis（云缓存）
+```
+
+| 层 | 服务 | 说明 |
+|----|------|------|
+| 前端 | Cloudflare Workers | Next.js via OpenNext，已开通 Paid 计划 |
+| 后端 | 本地机器 + Cloudflare Tunnel | FastAPI，固定域名 `https://api.aispeeds.me` |
+| 数据库 | Supabase (Transaction Pooler) | 生产用；本地开发连 `localhost:5432` |
+| CI/CD | GitHub Actions | `develop` → staging；`main` → production |
+
+### 推送到线上
+
+```
+# 前端（自动）
+git push origin develop   →  CI/CD 自动部署 → staging
+develop → main PR 合并    →  CI/CD 自动部署 → production
+
+# 后端（手动，运行在本机）
+# 改完代码重启服务即生效，git push 不影响后端
+launchctl stop com.wenexus.backend && launchctl start com.wenexus.backend
+```
+
+### 环境变量
+
+| 文件 | 用途 |
+|------|------|
+| `frontend/apps/web/.dev.vars` | 本地 Workers 预览的 Secrets（`DATABASE_URL`、`AUTH_SECRET`、`PYTHON_BACKEND_URL`） |
+| `backend/python/.env.development` | Python 后端本地配置 |
+| Cloudflare Workers Secrets | 生产/staging 的敏感变量，通过 CI/CD 注入 |
+| GitHub Environment Secrets | CI/CD 用（`CLOUDFLARE_API_TOKEN` 等） |
+
+> 详细部署文档 → `docs/technical/deployment/`
+
+---
 
 ## 最重要的原则
 

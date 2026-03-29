@@ -18,15 +18,23 @@ backend/python/src/wenexus/
 ├── config/
 │   └── __init__.py             # Settings（pydantic-settings）
 ├── facade/                     # API 网关层（HTTP 关注点）
-│   ├── deps.py                 # 共享依赖：get_session_token, get_current_user, get_optional_user
-│   ├── roundtable.py           # Roundtable 路由 (stub)
-│   └── deliverable.py          # Deliverable 路由 (stub)
-├── app/                        # 编排层（空，待实现）
+│   ├── deps.py                 # 共享依赖：get_session_token, get_current_user, get_optional_user, raise_if_error
+│   ├── roundtable.py           # Roundtable 路由（完整 CRUD + WebSocket）
+│   └── deliverable.py          # Deliverable 路由 (501 stub)
+├── app/                        # 编排层
+│   ├── discovery.py            # Discovery 域用例
+│   └── roundtable.py           # Roundtable 域用例
+├── agent/                      # LangGraph AI Agent 模块（新）
+│   ├── graph.py                # ReAct-style StateGraph（Roundtable Facilitator）
+│   └── tools.py                # Agent 工具（日期、讨论格式化、专家推荐）
 ├── service/
-│   └── auth.py                 # authenticate(), revoke_session()
+│   ├── auth.py                 # authenticate(), revoke_session()
+│   └── roundtable.py           # send_message (混合模式)
 ├── repository/
 │   ├── db.py                   # engine, get_db, check_db_connection
-│   └── auth.py                 # query_user_by_token(), delete_session()
+│   ├── auth.py                 # query_user_by_token(), delete_session()
+│   ├── discovery.py            # find_public_topics (含 expertCount)
+│   └── roundtable.py           # session/message CRUD
 └── util/
     └── schema.py               # UserInfo 跨层 DTO
 ```
@@ -113,6 +121,46 @@ backend/python/src/wenexus/
   - [x] message-input.tsx 完整表单
   - [x] 前端 API 路由集成
   - [x] WebSocket + 轮询实时更新
+- [x] **部署架构完善** ✨ NEW
+  - [x] Cloudflare Workers 部署（前端 Next.js via OpenNext）
+  - [x] Cloudflare Tunnel 后端固定域名 `https://api.aispeeds.me`
+  - [x] Supabase PostgreSQL 生产数据库
+  - [x] CI/CD deploy-staging（develop 分支）和 deploy-production（main 分支）
+  - [x] Wrangler secrets 注入（AUTH_SECRET, DATABASE_URL, PYTHON_BACKEND_URL）
+  - [x] `dev.sh` 一键启动脚本（数据库 + 后端 + Tunnel + 前端 Workers 预览）
+  - [x] CLAUDE.md 同步更新（部署架构、开发命令、环境变量文档）
+- [x] **邮箱验证修复**（`fix/email-verification-secret` 分支，已提交）
+  - [x] Auth Secret 改为动态读取（兼容 Cloudflare Workers 运行时）
+  - [x] Resend 邮件服务配置（RESEND_API_KEY + RESEND_SENDER_EMAIL）
+
+### 当前分支与未提交变更
+
+**分支**：`fix/email-verification-secret`（领先 main 1 个 commit）
+
+**已提交但未合并到 main**：
+
+- `6713307` fix(email-verification): move auth secret to dynamic config for Cloudflare Workers
+
+**未提交的本地变更**（10 个文件）：
+
+| 文件 | 变更内容 |
+|------|---------|
+| `CLAUDE.md` | 更新部署架构文档、开发命令、环境变量说明 |
+| `backend/python/.env.example` | 新增 `FRONTEND_URLS` 配置项 |
+| `backend/python/pyproject.toml` | 新增 `langgraph-cli[inmem]` 开发依赖 |
+| `backend/python/src/wenexus/config/__init__.py` | 新增 `agent_model` 配置项 |
+| `backend/python/src/wenexus/facade/deps.py` | 新增 `raise_if_error()` 错误码转 HTTP 异常 |
+| `backend/python/src/wenexus/facade/roundtable.py` | 新增 `CreateSessionRequest` model、`raise_if_error` 集成 |
+| `backend/python/src/wenexus/facade/deliverable.py` | stub 改为返回 501 Not Implemented |
+| `docs/technical/deployment/` | 部署文档整理精简 |
+
+**未跟踪的新文件**：
+
+| 文件/目录 | 说明 |
+|-----------|------|
+| `backend/python/src/wenexus/agent/` | LangGraph AI Agent 模块（ReAct StateGraph + 工具） |
+| `backend/python/langgraph.json` | LangGraph CLI 配置 |
+| `docs/technical/develop/202603/260329-wechat-login-integration.md` | 微信登录接入技术方案文档 |
 
 ### 认证系统状态
 
@@ -131,17 +179,18 @@ backend/python/src/wenexus/
 | 跨层 DTO (`util/schema.py`) | ✅ 已实现 | `UserInfo` dataclass |
 | 反向代理 Cookie 传递 | ✅ 已实现 | Next.js rewrites `/api/py/v1/*` → `http://localhost:8000/api/v1/*` |
 | 集成测试（真实 DB） | ✅ 已完成 | 13 passed; Cookie提取、依赖注入、异常流程验证 |
-| 微信登录 | ⬜ 待实现 | Generic OAuth Plugin 方案已设计 |
+| 微信登录 | 📝 方案已完成 | 技术方案文档 `260329-wechat-login-integration.md` 已写，待实现 |
 
 > **注意**：设计文档 2.4 节中引用的文件路径 `common/auth.py` 和 `common/database.py` 已过时，实际代码已按分层架构重新组织。
 
 ### 未完成
 
-- [ ] WebSocket 实时消息推送（替代轮询）
-- [ ] Roundtable 域其他 API routes（edit session, delete message, etc.）
-- [ ] Deliverable 域全部
+- [ ] LangGraph Agent 集成到 Roundtable 流程（agent 模块已有 scaffold，需接入业务）
+- [ ] Roundtable 域补充 API routes（edit session, delete message, end discussion）
+- [ ] WebSocket 实时消息推送优化（目前已有 WebSocket + 轮询降级）
+- [ ] Deliverable 域全部（当前 facade stub 返回 501）
 - [ ] Identity 域全部
-- [ ] 微信登录集成
+- [ ] 微信登录集成（技术方案文档已完成：`260329-wechat-login-integration.md`）
 
 ---
 
@@ -165,11 +214,11 @@ backend/python/src/wenexus/
 
 | 中间件 | 方案 | 启动方式 |
 |--------|------|---------|
-| PostgreSQL 16 | Homebrew | `brew services start postgresql@16` |
-| Redis 8 | Homebrew | `brew services start redis` |
-| AI Provider | OpenRouter | 需在 `.env.development` 配置 API Key |
-| Frontend | pnpm + Turbopack | `pnpm dev --filter @wenexus/web` → localhost:3000 |
-| Python Backend | uvicorn | `uv run uvicorn src.main:app --reload` → localhost:8000 |
+| PostgreSQL 16 | Supabase（生产）/ Homebrew（本地） | 生产云托管；本地 `brew services start postgresql@16` |
+| Redis | Upstash（生产）/ Homebrew（本地） | 生产云托管；本地 `brew services start redis` |
+| AI Provider | OpenRouter | `.env.development` 配置 API Key |
+| Frontend | Cloudflare Workers / pnpm | 生产 Workers；本地 `pnpm cf:preview` → localhost:8787 |
+| Python Backend | FastAPI + Cloudflare Tunnel | 生产 `https://api.aispeeds.me`；本地 `:8000` |
 
 ### 数据库
 
@@ -180,14 +229,20 @@ backend/python/src/wenexus/
 ### 快速启动
 
 ```bash
+# 推荐：一键启动
+./scripts/dev.sh           # 全栈：数据库 + 后端(--reload) + Tunnel + 前端 Workers 预览
+./scripts/dev.sh frontend  # 仅前端 Workers 预览（http://localhost:8787）
+./scripts/dev.sh stop      # 停止所有
+
+# 或手动启动
 # 1. 中间件
 brew services start postgresql@16 && brew services start redis
 
 # 2. Python 后端
-cd backend/python && uv run uvicorn wenexus.main:app --reload --port 8000
+cd backend/python && uv run uvicorn src.wenexus.main:app --host 0.0.0.0 --port 8000 --reload
 
 # 3. 前端（新终端）
-cd frontend && pnpm dev --filter @wenexus/web
+cd frontend/apps/web && pnpm cf:preview
 ```
 
 ---
@@ -195,13 +250,17 @@ cd frontend && pnpm dev --filter @wenexus/web
 ## 架构概览
 
 ```
-Frontend (Next.js :3000)          Python Backend (FastAPI :8000)
-  ├── UI 渲染                       ├── facade/ (HTTP 路由 + 认证依赖)
-  ├── Auth (Better Auth)            ├── app/ (编排层, 待实现)
-  ├── Discovery CRUD (直接 DB)      ├── service/ (认证业务逻辑)
-  ├── Identity CRUD (直接 DB)       ├── repository/ (DB 连接 + 认证查询)
-  └── BFF → Python (AI 相关)       └── util/ (UserInfo DTO)
+用户 → Cloudflare Workers（Next.js via OpenNext :8787 本地/:443 生产）
+           │  PYTHON_BACKEND_URL
+           ▼
+     Cloudflare Tunnel → FastAPI :8000
+          ├── facade/           HTTP 路由 + raise_if_error
+          ├── app/              编排层（Discovery, Roundtable）
+          ├── agent/            LangGraph AI Agent（Facilitator）
+          ├── service/          业务逻辑（auth, roundtable）
+          ├── repository/       DB 查询（auth, discovery, roundtable）
+          └── config/           Pydantic Settings
 
-                    PostgreSQL (Homebrew :5432)
-                    Redis (Homebrew :6379)
+          Supabase PostgreSQL（生产）/ localhost:5432（开发）
+          Upstash Redis（生产）/ localhost:6379（开发）
 ```

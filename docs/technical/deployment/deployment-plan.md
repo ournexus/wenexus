@@ -98,157 +98,37 @@ docker compose up -d postgres
 
 ## 4. 后端：本地机器 + Cloudflare Tunnel
 
-FastAPI 后端在本地机器运行，通过 Cloudflare Tunnel 对外暴露固定 HTTPS URL。
+FastAPI 在本地运行，通过 Cloudflare Tunnel 暴露固定域名 `https://api.aispeeds.me`。
+后端（`com.wenexus.backend` LaunchAgent）和 Tunnel（`com.cloudflare.cloudflared` LaunchDaemon）均已设置**开机自启**。
 
-### 4.1 首次配置（仅做一次）
-
-```bash
-# 安装 cloudflared
-brew install cloudflared
-
-# 登录 Cloudflare 账号
-cloudflared tunnel login
-
-# 创建命名 Tunnel
-cloudflared tunnel create wenexus-dev
-# 输出：Created tunnel wenexus-dev with id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
-
-创建 `~/.cloudflared/config.yml`：
-
-```yaml
-tunnel: wenexus-dev
-credentials-file: /Users/mac/.cloudflared/6ede2604-00dd-4ca2-9a97-0978bbba6192.json
-
-ingress:
-  - hostname: api.aispeeds.me
-    service: http://localhost:8000
-  - service: http_status:404
-```
-
-绑定 DNS（需要在 Cloudflare 管理该域名）：
-
-```bash
-cloudflared tunnel route dns wenexus-dev api.aispeeds.me
-```
-
-### 4.2 日常启动
-
-```bash
-# 1. 启动后端
-cd backend/python
-uv run uvicorn src.wenexus.main:app --host 0.0.0.0 --port 8000 --reload
-
-# 2. 启动 Tunnel（新终端）
-cloudflared tunnel run wenexus-dev
-```
-
-固定域名后，`PYTHON_BACKEND_URL` 永远是 `https://api.aispeeds.me`，无需每次重启后更新 secret。
-
-### 4.3 后端 CORS 配置
-
-后端通过环境变量 `FRONTEND_URLS`（逗号分隔）控制允许的来源，在 `.env.development` 或生产环境变量中设置：
-
-```bash
-# 本地开发（仅本机前端）
-FRONTEND_URLS=http://localhost:3000
-
-# 生产（本机开发 + Cloudflare Workers 默认域名）
-FRONTEND_URLS=http://localhost:3000,https://wenexus-web.yihuimbin.workers.dev
-```
+首次配置步骤、CORS 设置、故障排查 → [backend-local-tunnel.md](./backend-local-tunnel.md)
 
 ---
 
 ## 5. 前端：Cloudflare Workers
 
-### 5.1 Cloudflare Workers Paid 计划
+Next.js 通过 OpenNext 部署到 Cloudflare Workers（Paid 计划 $5/月，已开通）。
 
-当前 bundle gzip ~5.3 MiB，**必须**使用 Workers Paid 计划（$5/月，10 MiB 上限）：
+| 场景 | 命令 |
+|------|------|
+| 本地预览（模拟线上） | `./scripts/dev.sh frontend`（读取 `.dev.vars`） |
+| 手动部署 | `cd frontend/apps/web && pnpm cf:deploy` |
+| CI/CD 自动部署 | push 到 `develop` / `main` 自动触发 |
 
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. **Workers & Pages** → **Usage Model / Subscription** → **Upgrade to Paid**
-
-### 5.2 手动部署（首次 / 紧急修复）
-
-```bash
-cd frontend/apps/web
-
-# 登录 Cloudflare
-pnpm exec wrangler login
-
-# 设置 Secrets（仅首次或更换密钥时）
-pnpm exec wrangler secret put DATABASE_URL        # Supabase Transaction Pooler URL
-pnpm exec wrangler secret put AUTH_SECRET         # openssl rand -base64 32
-pnpm exec wrangler secret put PYTHON_BACKEND_URL  # https://api.aispeeds.me
-
-# 构建并部署（默认环境）
-pnpm cf:deploy
-```
-
-### 5.3 本地 Workers 预览
-
-```bash
-# 在 .dev.vars 中填入 Supabase URL 和 AUTH_SECRET，然后：
-pnpm cf:preview
-```
+部署命令详解、多环境配置、常见问题 → [cloudflare-workers.md](./cloudflare-workers.md)
 
 ---
 
 ## 6. CI/CD：GitHub Actions
 
-详细说明见 [github-cicd.md](./github-cicd.md)，此处列出核心流程。
+`develop` push → staging 自动部署；`main` push → production 自动部署。所有 GitHub Secrets 已配置完成。
 
-### 分支 → 环境映射
+| 分支 | 目标环境 |
+|------|----------|
+| `develop` | `wenexus-web-staging.workers.dev` |
+| `main` | `wenexus-web.yihuimbin.workers.dev` |
 
-| 分支 | 触发 Job | 目标环境 |
-|------|---------|---------|
-| `develop` | `deploy-staging` | `wenexus-web-staging.workers.dev` |
-| `main` | `deploy-production` | `wenexus-web.yihuimbin.workers.dev`（或自定义域名） |
-
-### 必须在 GitHub 配置的 Secrets
-
-在 **Settings → Secrets and variables → Actions** 中添加：
-
-**Repository Secrets（两个环境共用）：**
-
-| Secret | 说明 |
-|--------|------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（需要 `Workers Scripts:Edit` 权限） |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID |
-
-**Environment Secrets — `staging`：**
-
-| Secret | 说明 |
-|--------|------|
-| `STAGING_AUTH_SECRET` | staging 环境 Auth 密钥 |
-| `STAGING_DATABASE_URL` | Supabase Transaction Pooler URL（staging 项目） |
-| `STAGING_PYTHON_BACKEND_URL` | 后端 Tunnel URL（固定域名） |
-
-**Environment Secrets — `production`：**
-
-| Secret | 说明 |
-|--------|------|
-| `PROD_AUTH_SECRET` | 生产 Auth 密钥 |
-| `PROD_DATABASE_URL` | Supabase Transaction Pooler URL（生产项目） |
-| `PROD_PYTHON_BACKEND_URL` | 后端 Tunnel URL（固定域名） |
-
-### CI/CD 流程
-
-```
-push to develop / main
-    │
-    ├── test-frontend   (lint + typecheck + unit tests)
-    ├── test-e2e        (Playwright, 使用临时 CI Postgres)
-    ├── test-python-backend (ruff + mypy + pytest)
-    ├── test-java-backend
-    └── security-scan (Trivy)
-            │
-            ▼ (all pass)
-    deploy-staging (develop) / deploy-production (main)
-        ├── Build: opennextjs-cloudflare build
-        ├── Secrets: wrangler secret put (DATABASE_URL / AUTH_SECRET / PYTHON_BACKEND_URL)
-        └── Deploy: wrangler deploy --env <staging|production>
-```
+Secrets 配置方法、Jobs 说明、常见报错 → [github-cicd.md](./github-cicd.md)
 
 ---
 
@@ -282,18 +162,7 @@ push to develop / main
 
 ### 日常开发
 
-- [ ] 本地启动后端：`uv run uvicorn src.wenexus.main:app --port 8000 --reload`
-- [ ] 本地启动 Tunnel：`cloudflared tunnel run wenexus-dev`（固定域名 `api.aispeeds.me`，无需更新 secret）
+- 后端 + Tunnel 已**开机自启**，无需手动启动
+- [ ] 本地预览前端：`./scripts/dev.sh frontend`（Workers 预览，`http://localhost:8787`）
 - [ ] 功能开发在 feature 分支，PR 合并到 `develop` 自动触发 staging 部署
 - [ ] `develop` → `main` PR 合并触发 production 部署
-
----
-
-## 9. 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [github-cicd.md](./github-cicd.md) | GitHub Actions CI/CD 详细配置指南 |
-| [cloudflare-workers.md](./cloudflare-workers.md) | Workers 部署命令、bundle 大小、常见问题 |
-| [backend-local-tunnel.md](./backend-local-tunnel.md) | Cloudflare Tunnel 详细配置（含固定域名） |
-| [external-dependencies.md](./external-dependencies.md) | 所有外部服务依赖清单 |
