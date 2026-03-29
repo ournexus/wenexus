@@ -1,295 +1,366 @@
 # 外部依赖与服务配置清单
 
-项目运行所需的全部外部服务依赖。分为**必需**（项目无法启动）和**可选**（按需启用）两级。
+> 凡涉及密钥的配置，**不要写入版本控制**。本地用 `.env.*`，生产用 Wrangler secrets / GitHub Environment Secrets。
 
 ---
 
-## 1. 必需依赖（项目启动必备）
+## 0. 状态速览
 
-### 1.1 PostgreSQL 数据库
+| 依赖 / 配置 | 本地开发 | Staging | Production | 配置方式 |
+|-------------|---------|---------|------------|---------|
+| PostgreSQL（Supabase） | ✅ 本地 Docker/Homebrew | ✅ Supabase | ✅ Supabase | `.env.*` / Wrangler secret |
+| Redis | ✅ 本地 | ❌ 未配置 | ❌ 未配置 | `.env.*` / 需 Upstash |
+| `AUTH_SECRET` | ✅ | ✅ | ✅ | Wrangler secret |
+| `OPENROUTER_API_KEY` | ✅ | ✅ | ✅ | Wrangler secret |
+| `PYTHON_BACKEND_URL` | ✅ | ✅ `api.aispeeds.me` | ✅ `api.aispeeds.me` | Wrangler secret |
+| `FRONTEND_URLS`（后端 CORS） | ✅ | ✅ | ✅ | `.env.*` |
+| Google / GitHub OAuth | ❌ | ❌ | ❌ | Admin Panel |
+| Resend（邮件） | ❌ | ❌ | ❌ | Admin Panel |
+| Cloudflare R2（存储） | ❌ | ❌ | ❌ | Admin Panel |
+| Stripe / PayPal / Creem | ❌ | ❌ | ❌ | Admin Panel |
+| AI（Replicate / Fal / Gemini / Kie） | ❌ | ❌ | ❌ | Admin Panel |
 
-前端 (Next.js / Drizzle ORM) 和后端 (Python / SQLAlchemy) 共享同一数据库。
+---
 
-| 项目 | 值 |
-|------|------|
-| 镜像 | `postgres:16` |
-| 本地端口 | `5432` |
-| 数据库名 | `wenexus_dev` |
-| 用户/密码 | `wenexus` / `wenexus_dev_pwd` |
+## 1. 基础设施配置（环境变量 / Secrets）
 
-**启动方式**：
+> **配置位置说明**
+>
+> | 环境 | 前端配置文件 | 后端配置文件 |
+> |------|------------|------------|
+> | 本地开发 | `frontend/apps/web/.env.development` | `backend/python/.env.development` |
+> | Workers 本地预览 | `frontend/apps/web/.dev.vars` | — |
+> | Staging / Production | Wrangler secrets + `wrangler.toml [vars]` | 机器上 `.env.production` |
+> | CI/CD | GitHub Environment Secrets | — |
 
-```bash
-docker compose up -d postgres
+---
+
+### 1.1 PostgreSQL 数据库 ✅
+
+前端 (Drizzle ORM) 和 Python 后端 (SQLAlchemy) 共享同一数据库。
+
+**本地开发**（Docker / Homebrew 自动创建）：
+
+| 变量名 | 本地示例值 |
+|--------|-----------|
+| 前端 `DATABASE_URL` | `postgresql://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev` |
+| 前端 `DATABASE_PROVIDER` | `postgresql` |
+| 前端 `DB_SINGLETON_ENABLED` | `true` |
+| 前端 `DB_MAX_CONNECTIONS` | `1` |
+| Python `DATABASE_URL` | `postgresql+asyncpg://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev` |
+
+**生产环境**（Supabase Transaction Pooler，格式不同）：
+
+```
+# 前端 Wrangler secret
+postgresql://postgres.<project>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
+
+# Python 后端 .env.production（asyncpg 不兼容 pgbouncer，用 Session Pooler port 5432）
+postgresql+asyncpg://postgres.<project>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
 ```
 
-**环境变量**：
-
-| 服务 | 变量名 | 示例值 |
-|------|--------|--------|
-| Frontend (.env) | `DATABASE_URL` | `postgresql://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev` |
-| Frontend (.env) | `DATABASE_PROVIDER` | `postgresql` |
-| Python (.env) | `DATABASE_URL` | `postgresql+asyncpg://wenexus:wenexus_dev_pwd@localhost:5432/wenexus_dev` |
-
-**初始化**：
+**初始化**（首次部署后执行一次）：
 
 ```bash
 cd frontend/apps/web
-pnpm db:push        # 推送 schema 到数据库
-pnpm db:migrate     # 运行迁移
-pnpm rbac:init      # 初始化 RBAC 角色
+pnpm db:push    # 推送 schema
+pnpm rbac:init  # 初始化 RBAC 角色
 ```
 
-### 1.2 Redis
+---
+
+### 1.2 Redis ✅（本地）/ ❌（生产待配置）
 
 Python 后端用于缓存和会话管理。
 
-| 项目 | 值 |
-|------|------|
-| 镜像 | `redis:7` |
-| 本地端口 | `6379` |
+| 变量名 | 本地值 | 生产建议 |
+|--------|--------|---------|
+| Python `REDIS_URL` | `redis://localhost:6379/0` | [Upstash](https://upstash.com) 免费套餐 `rediss://...` |
 
-**启动方式**：
-
-```bash
-docker compose up -d redis
-```
-
-**环境变量**：
-
-| 服务 | 变量名 | 示例值 |
-|------|--------|--------|
-| Python (.env) | `REDIS_URL` | `redis://localhost:6379/0` |
-
-### 1.3 AUTH_SECRET
-
-Next.js 认证系统 (better-auth) 所需的密钥。
-
-```bash
-# 生成方式
-openssl rand -base64 32
-```
-
-| 服务 | 变量名 | 说明 |
-|------|--------|------|
-| Frontend (.env) | `AUTH_SECRET` | 认证签名密钥，必须设置 |
+> **生产环境 Redis 尚未配置**。如果后端功能依赖 Redis，上线前需在 `.env.production` 设置 Upstash 或其他 Redis 服务的连接串。
 
 ---
 
-## 2. 可选依赖（按功能需求启用）
+### 1.3 前端环境变量 ✅
 
-> 以下服务通过**管理后台** (`/admin/settings`) 动态配置，存储在数据库中。
-> 部分也可通过 `.env` 文件设置。
+**`frontend/apps/web/.env.development`**（本地开发，gitignored）：
 
-### 2.1 AI 服务
+| 变量名 | 说明 |
+|--------|------|
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` |
+| `NEXT_PUBLIC_APP_NAME` | `WeNexus` |
+| `NEXT_PUBLIC_THEME` | `default` |
+| `NEXT_PUBLIC_APPEARANCE` | `system` |
+| `DATABASE_URL` | 本地 PostgreSQL |
+| `DATABASE_PROVIDER` | `postgresql` |
+| `DB_SINGLETON_ENABLED` | `true` |
+| `DB_MAX_CONNECTIONS` | `1` |
+| `AUTH_SECRET` | `openssl rand -base64 32` 生成 |
+| `PYTHON_BACKEND_URL` | `http://localhost:8000` |
+| `NEXT_PUBLIC_WEBSOCKET_BASE_URL` | `ws://localhost:8000`（可留空，由 host 推导） |
+| `OPENROUTER_API_KEY` | OpenRouter API Key |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` |
 
-#### OpenRouter（LLM 对话 / 文本生成）
+**`frontend/apps/web/.dev.vars`**（Workers 本地预览专用，gitignored）：
 
-前端和 Python 后端均使用，兼容 OpenAI API 格式。
+| 变量名 | 说明 |
+|--------|------|
+| `DATABASE_URL` | Supabase 连接串（Workers 预览需要真实 DB） |
+| `AUTH_SECRET` | 与 `.env.development` 相同 |
 
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Key | `openrouter_api_key` | OpenRouter API 密钥 (`sk-or-xxx`) |
-| Base URL | `openrouter_base_url` | 默认 `https://openrouter.ai/api/v1`，可替换为任意 OpenAI 兼容 API |
+**`frontend/apps/web/wrangler.toml [vars]`**（公开变量，已提交版本控制）：
 
-> **需要用户提供**：OpenRouter API Key（或兼容的 API Key）
-
-#### Replicate（图像/视频/音乐生成）
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Token | `replicate_api_token` | Replicate API Token (`r8_xxx`) |
-| Custom Storage | `replicate_custom_storage` | 是否用自定义存储保存生成文件 |
-
-#### Fal（图像/视频生成）
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Key | `fal_api_key` | Fal API Key (`fal_xxx`) |
-| Custom Storage | `fal_custom_storage` | 是否用自定义存储保存生成文件 |
-
-#### Gemini（Google AI 图像生成）
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Key | `gemini_api_key` | Google Gemini API Key (`AIza...`) |
-
-#### Kie（音乐/图像/视频生成）
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Key | `kie_api_key` | Kie API Key |
-| Custom Storage | `kie_custom_storage` | 是否用自定义存储保存生成文件 |
+| 变量名 | 说明 |
+|--------|------|
+| `NEXT_PUBLIC_APP_URL` | 各环境 Workers URL |
+| `NEXT_PUBLIC_APP_NAME` | `WeNexus` |
+| `NEXT_PUBLIC_THEME` | `default` |
+| `NEXT_PUBLIC_APPEARANCE` | `system` |
+| `DATABASE_PROVIDER` | `postgresql` |
+| `DB_SINGLETON_ENABLED` | `true` |
+| `DB_MAX_CONNECTIONS` | `1` |
 
 ---
 
-### 2.2 支付服务
+### 1.4 Python 后端环境变量 ✅
 
-#### Stripe
+**`backend/python/.env.development`**（本地，gitignored）：
 
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| Publishable Key | `stripe_publishable_key` | 公钥 (`pk_xxx`) |
-| Secret Key | `stripe_secret_key` | 密钥 (`sk_xxx`) |
-| Signing Secret | `stripe_signing_secret` | Webhook 签名密钥 (`whsec_xxx`) |
-| Payment Methods | `stripe_payment_methods` | 支付方式：card / wechat_pay / alipay |
-| Promotion Codes | `stripe_promotion_codes` | 产品 ID 到促销码的 JSON 映射 |
+| 变量名 | 示例值 | 说明 |
+|--------|--------|------|
+| `APP_ENV` | `development` | 控制加载哪个 `.env.*` 文件 |
+| `APP_PORT` | `8000` | 后端监听端口 |
+| `DATABASE_URL` | `postgresql+asyncpg://...` | 本地 PostgreSQL |
+| `REDIS_URL` | `redis://localhost:6379/0` | 本地 Redis |
+| `OPENROUTER_API_KEY` | `sk-or-xxx` | OpenRouter API Key |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | 可替换为兼容 API |
+| `FRONTEND_URLS` | `http://localhost:3000,https://wenexus-web.yihuimbin.workers.dev` | CORS 允许源，逗号分隔 |
 
-#### PayPal
+**`backend/python/.env.production`**（生产机器，gitignored）：
 
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| Client ID | `paypal_client_id` | PayPal Client ID |
-| Client Secret | `paypal_client_secret` | PayPal Client Secret |
-| Webhook ID | `paypal_webhook_id` | Webhook 验证用 |
-| Environment | `paypal_environment` | `sandbox` 或 `production` |
-
-#### Creem
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Key | `creem_api_key` | Creem API Key |
-| Signing Secret | `creem_signing_secret` | Webhook 签名密钥 |
-| Product IDs | `creem_product_ids` | 产品 ID 映射 JSON |
-| Environment | `creem_environment` | `sandbox` 或 `production` |
+| 变量名 | 值 |
+|--------|-----|
+| `APP_ENV` | `production` |
+| `DATABASE_URL` | Supabase Session Pooler（asyncpg 格式） |
+| `REDIS_URL` | Upstash Redis URL（待配置） |
+| `OPENROUTER_API_KEY` | 同开发环境或专用 key |
+| `FRONTEND_URLS` | `https://wenexus-web-staging.yihuimbin.workers.dev,https://wenexus-web-production.yihuimbin.workers.dev` |
 
 ---
 
-### 2.3 邮件服务
+### 1.5 Wrangler Secrets ✅
 
-#### Resend
+通过 `wrangler secret put <NAME>` 或 Cloudflare Dashboard 设置，**不出现在代码中**：
 
-用于发送验证邮件、通知邮件等。
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| API Key | `resend_api_key` | Resend API Key |
-| Sender Email | `resend_sender_email` | 发件人地址，如 `WeNexus <no-reply@mail.wenexus.com>` |
-
----
-
-### 2.4 对象存储
-
-#### Cloudflare R2
-
-用于用户上传文件、AI 生成文件存储。
-
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| Access Key | `r2_access_key` | Cloudflare R2 Access Key ID |
-| Secret Key | `r2_secret_key` | Cloudflare R2 Secret Access Key |
-| Bucket Name | `r2_bucket_name` | 存储桶名称 |
-| Upload Path | `r2_upload_path` | 上传路径前缀，默认 `uploads` |
-| Endpoint | `r2_endpoint` | `https://<account-id>.r2.cloudflarestorage.com` |
-| Domain | `r2_domain` | 自定义公开访问域名 |
-
-> 代码也支持 **AWS S3** 作为存储后端（`S3Provider`），但管理后台目前只暴露 R2 配置。
+| Secret 名 | 用途 | 当前状态 |
+|-----------|------|---------|
+| `AUTH_SECRET` | better-auth 签名密钥 | ✅ 已设置 |
+| `DATABASE_URL` | Supabase 连接串 | ✅ 已设置 |
+| `PYTHON_BACKEND_URL` | `https://api.aispeeds.me` | ✅ 已设置 |
+| `OPENROUTER_API_KEY` | OpenRouter API Key | ✅ 已设置 |
 
 ---
 
-### 2.5 OAuth 社交登录
+### 1.6 GitHub CI/CD Secrets ✅
+
+**Repository Secrets**（所有环境共用）：
+
+| Secret 名 | 当前状态 |
+|-----------|---------|
+| `CLOUDFLARE_API_TOKEN` | ✅ 已设置 |
+| `CLOUDFLARE_ACCOUNT_ID` | ✅ 已设置 |
+
+**Environment Secrets**（`staging` 和 `production` 各自独立）：
+
+| Secret 名 | 说明 | 当前状态 |
+|-----------|------|---------|
+| `STAGING_AUTH_SECRET` / `PROD_AUTH_SECRET` | Auth 密钥 | ✅ 已设置 |
+| `STAGING_DATABASE_URL` / `PROD_DATABASE_URL` | Supabase URL | ✅ 已设置 |
+| `STAGING_PYTHON_BACKEND_URL` / `PROD_PYTHON_BACKEND_URL` | `https://api.aispeeds.me` | ✅ 已设置 |
+
+---
+
+## 2. 功能配置（Admin Panel `/admin/settings`，按需启用）
+
+> 以下配置均通过管理后台动态写入数据库，无需修改代码或重新部署。
+
+---
+
+### 2.1 认证 ❌（未配置）
 
 #### Google OAuth
 
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| Client ID | `google_client_id` | Google OAuth Client ID |
-| Client Secret | `google_client_secret` | Google OAuth Client Secret |
-| One Tap | `google_one_tap_enabled` | 是否启用 Google One Tap 登录 |
+| Admin 设置名 | 说明 | 获取方式 |
+|-------------|------|---------|
+| `google_auth_enabled` | 开关 | — |
+| `google_client_id` | Client ID | [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials |
+| `google_client_secret` | Client Secret | 同上 |
+| `google_one_tap_enabled` | 一键登录 | — |
 
 #### GitHub OAuth
 
-| 配置项 | Admin 设置名 | 说明 |
-|--------|-------------|------|
-| Client ID | `github_client_id` | GitHub OAuth Client ID |
-| Client Secret | `github_client_secret` | GitHub OAuth Client Secret |
+| Admin 设置名 | 说明 | 获取方式 |
+|-------------|------|---------|
+| `github_auth_enabled` | 开关 | — |
+| `github_client_id` | Client ID | GitHub → Settings → Developer settings → OAuth Apps |
+| `github_client_secret` | Client Secret | 同上 |
+
+> Callback URL 设为：`https://wenexus-web-production.yihuimbin.workers.dev/api/auth/callback/<provider>`
 
 ---
 
-### 2.6 数据分析
+### 2.2 邮件 ❌（未配置）
 
-| 服务 | 配置项 | 说明 |
-|------|--------|------|
-| Google Analytics | `google_analytics_id` | GA Tracking ID |
-| Microsoft Clarity | `clarity_id` | Clarity Project ID |
-| Plausible | `plausible_domain` + `plausible_src` | 自托管或 SaaS |
-| OpenPanel | `openpanel_client_id` | OpenPanel Client ID |
-| Vercel Analytics | `vercel_analytics_enabled` | 仅 Vercel 部署时可用 |
+| Admin 设置名 | 说明 | 获取方式 |
+|-------------|------|---------|
+| `resend_api_key` | Resend API Key | [resend.com](https://resend.com) |
+| `resend_sender_email` | 发件人 | 如 `WeNexus <no-reply@mail.wenexus.com>` |
 
----
-
-### 2.7 客服系统
-
-| 服务 | 配置项 | 说明 |
-|------|--------|------|
-| Crisp | `crisp_website_id` | Crisp 在线客服 Widget ID |
-| Tawk | `tawk_property_id` + `tawk_widget_id` | Tawk.to 在线客服 |
+> 开启邮件验证还需在 Admin → Auth 中打开 `email_verification_enabled`。
 
 ---
 
-### 2.8 广告
+### 2.3 对象存储 ❌（未配置）
 
-| 服务 | 配置项 | 说明 |
-|------|--------|------|
-| Google AdSense | `adsense_code` | AdSense 代码 (`ca-pub-xxx`) |
+用于用户上传文件、AI 生成文件持久化。
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `r2_access_key` | Cloudflare R2 Access Key ID |
+| `r2_secret_key` | Cloudflare R2 Secret Access Key |
+| `r2_bucket_name` | 存储桶名称 |
+| `r2_upload_path` | 上传路径前缀（默认 `uploads`） |
+| `r2_endpoint` | `https://<account-id>.r2.cloudflarestorage.com` |
+| `r2_domain` | 自定义公开访问域名 |
+
+> Cloudflare Dashboard → R2 → 创建 Bucket → Manage R2 API Tokens 获取密钥。
 
 ---
 
-### 2.9 联盟营销
+### 2.4 支付 ❌（未配置）
 
-| 服务 | 配置项 | 说明 |
-|------|--------|------|
-| Affonso | `affonso_id` + `affonso_cookie_duration` | Affonso 联盟 ID |
-| PromoteKit | `promotekit_id` | PromoteKit 联盟 ID |
+先在 Admin → Payment → Basic 选择默认支付商，再填对应密钥。
+
+#### Stripe
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `stripe_enabled` | 开关 |
+| `stripe_publishable_key` | `pk_xxx` |
+| `stripe_secret_key` | `sk_xxx` |
+| `stripe_signing_secret` | Webhook 签名密钥 `whsec_xxx` |
+| `stripe_payment_methods` | `card` / `wechat_pay` / `alipay` |
+| `stripe_promotion_codes` | 产品 ID → 促销码 JSON |
+| `stripe_allow_promotion_codes` | 是否允许用户输入自定义促销码 |
+
+#### PayPal
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `paypal_enabled` | 开关 |
+| `paypal_client_id` | Client ID |
+| `paypal_client_secret` | Client Secret |
+| `paypal_webhook_id` | Webhook ID |
+| `paypal_environment` | `sandbox` / `production` |
+
+#### Creem
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `creem_enabled` | 开关 |
+| `creem_api_key` | API Key |
+| `creem_signing_secret` | Webhook 签名密钥 |
+| `creem_product_ids` | 产品 ID 映射 JSON |
+| `creem_environment` | `sandbox` / `production` |
 
 ---
 
-## 3. 本地开发快速启动
+### 2.5 AI 服务（OpenRouter 已配置，其余未配置）
 
-### 最小启动配置
+#### OpenRouter ✅（LLM 对话，前端 + 后端均使用）
 
-只需以下步骤即可在本地运行项目：
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `openrouter_api_key` | `sk-or-xxx`（已通过 Wrangler secret 设置） |
+| `openrouter_base_url` | 默认 `https://openrouter.ai/api/v1`，支持任意 OpenAI 兼容 API |
+
+#### Replicate ❌（图像/视频/音乐生成）
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `replicate_api_token` | `r8_xxx` |
+| `replicate_custom_storage` | 是否用 R2 保存生成文件 |
+
+#### Fal ❌（图像/视频生成）
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `fal_api_key` | `fal_xxx` |
+| `fal_custom_storage` | 是否用 R2 保存生成文件 |
+
+#### Gemini ❌（Google 图像生成）
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `gemini_api_key` | `AIza...` |
+
+#### Kie ❌（音乐/图像/视频生成）
+
+| Admin 设置名 | 说明 |
+|-------------|------|
+| `kie_api_key` | Kie API Key |
+| `kie_custom_storage` | 是否用 R2 保存生成文件 |
+
+---
+
+### 2.6 数据分析 ❌（未配置）
+
+| Admin 设置名 | 服务 | 说明 |
+|-------------|------|------|
+| `google_analytics_id` | Google Analytics | GA4 Tracking ID（`G-xxx`） |
+| `clarity_id` | Microsoft Clarity | Project ID |
+| `plausible_domain` + `plausible_src` | Plausible | 自托管或 SaaS |
+| `openpanel_client_id` | OpenPanel | Client ID |
+| `vercel_analytics_enabled` | Vercel Analytics | 仅 Vercel 部署可用，当前 Workers 部署无效 |
+
+---
+
+### 2.7 客服 ❌（未配置）
+
+| Admin 设置名 | 服务 | 说明 |
+|-------------|------|------|
+| `crisp_website_id` | Crisp | Website ID |
+| `tawk_property_id` + `tawk_widget_id` | Tawk.to | Property ID + Widget ID |
+
+---
+
+### 2.8 广告 ❌（未配置）
+
+| Admin 设置名 | 服务 | 说明 |
+|-------------|------|------|
+| `adsense_code` | Google AdSense | `ca-pub-xxx` |
+
+---
+
+### 2.9 联盟营销 ❌（未配置）
+
+| Admin 设置名 | 服务 | 说明 |
+|-------------|------|------|
+| `affonso_id` + `affonso_cookie_duration` | Affonso | Program ID + Cookie 有效期（天） |
+| `promotekit_id` | PromoteKit | Program ID |
+
+---
+
+## 3. 一键本地启动
 
 ```bash
-# 1. 启动基础设施
-docker compose up -d                    # 启动 PostgreSQL + Redis
-
-# 2. 前端
-cd frontend/apps/web
-cp .env.example .env.development        # 复制并编辑环境变量
-pnpm install
-pnpm db:push                            # 初始化数据库 schema
-pnpm dev                                # 启动前端 http://localhost:3000
-
-# 3. Python 后端
-cd backend/python
-cp .env.example .env.development        # 复制并编辑环境变量
-uv sync --dev
-uv run uvicorn src.main:app --reload    # 启动后端 http://localhost:8000
+./scripts/dev.sh           # 全栈：数据库 + 后端 + Tunnel + 前端 Workers 预览
+./scripts/dev.sh frontend  # 仅前端：数据库 + 前端 Workers 预览
+./scripts/dev.sh stop      # 停止后台服务
 ```
 
-### 环境变量文件
-
-| 文件 | 位置 | 用途 |
-|------|------|------|
-| `.env.development` | `frontend/apps/web/` | 前端环境变量 |
-| `.env.development` | `backend/python/` | Python 后端环境变量 |
-| `docker-compose.yml` | 项目根目录 | PostgreSQL + Redis 容器 |
-
-### 需要用户手动提供的配置
-
-以下配置无法自动生成，需要从对应服务商获取：
-
-| 优先级 | 配置 | 获取方式 |
-|--------|------|----------|
-| **必需** | PostgreSQL + Redis | `docker compose up -d` 自动创建 |
-| **必需** | `AUTH_SECRET` | `openssl rand -base64 32` 自动生成 |
-| 推荐 | `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) 注册获取 |
-| 可选 | Stripe / PayPal / Creem 密钥 | 对应平台开发者后台 |
-| 可选 | Google / GitHub OAuth | 对应平台开发者控制台 |
-| 可选 | Resend API Key | [resend.com](https://resend.com) |
-| 可选 | Cloudflare R2 密钥 | Cloudflare Dashboard |
-| 可选 | AI 服务密钥 | 各 AI 平台开发者控制台 |
+前端访问：`http://localhost:8787`（Workers 预览）
+后端 API：`http://localhost:8000/docs`（本地）/ `https://api.aispeeds.me/docs`（公网）
 
 ---
 
@@ -297,10 +368,10 @@ uv run uvicorn src.main:app --reload    # 启动后端 http://localhost:8000
 
 | 依赖 | 版本 |
 |------|------|
-| Node.js | >= 18 |
+| Node.js | >= 20 |
 | Python | >= 3.11 |
 | Java | 17 |
-| pnpm | 最新版 |
+| pnpm | >= 9 |
 | uv | 最新版 |
 | Maven | >= 3.8 |
 | Docker | 最新版 |
