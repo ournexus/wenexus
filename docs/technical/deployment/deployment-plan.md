@@ -118,7 +118,7 @@ cloudflared tunnel create wenexus-backend
 
 ```yaml
 tunnel: wenexus-backend
-credentials-file: /Users/<你的用户名>/.cloudflared/<TUNNEL-UUID>.json
+credentials-file: ~/.cloudflared/<TUNNEL-UUID>.json
 
 ingress:
   - hostname: api.wenexus.com    # 替换为你的域名
@@ -163,7 +163,7 @@ FRONTEND_URLS=http://localhost:3000,https://wenexus-web.yihuimbin.workers.dev,ht
 
 ### 5.1 Cloudflare Workers Paid 计划
 
-当前 bundle gzip ~4.5 MiB，**必须**使用 Workers Paid 计划（$5/月，10 MiB 上限）：
+当前 bundle gzip ~5.3 MiB，**必须**使用 Workers Paid 计划（$5/月，10 MiB 上限）：
 
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
 2. **Workers & Pages** → **Usage Model / Subscription** → **Upgrade to Paid**

@@ -50,7 +50,7 @@ WeNexus 使用 GitHub Actions 自动化测试和部署。配置文件：`.github
 |-------------|---|
 | `PROD_AUTH_SECRET` | `openssl rand -base64 32` 生成（与 staging 不同） |
 | `PROD_DATABASE_URL` | Supabase 生产项目的 Transaction Pooler URL |
-| `PROD_PYTHON_BACKEND_URL` | `https://api.your-domain.com`（同 staging 或不同子域） |
+| `PROD_PYTHON_BACKEND_URL` | `https://api.prod.your-domain.com`（必须与 staging 环境的后端 URL 不同） |
 
 > 建议为 `production` Environment 开启 **Required reviewers**（Settings → Environments → production → Protection rules），防止误操作直接触发生产部署。
 
