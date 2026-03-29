@@ -13,10 +13,11 @@
  */
 import { expect, test } from '@playwright/test';
 
+import { E2E_TEST_TIMEOUT } from '../../config';
 import { AuthPage } from '../../fixtures';
 
 test.describe('完整注册流程', () => {
-  test.setTimeout(60_000);
+  test.setTimeout(E2E_TEST_TIMEOUT);
   // CI 环境下跳过：注册流程依赖完整的 auth 服务和邮箱验证
   test.skip(
     !!process.env.CI,
@@ -28,39 +29,19 @@ test.describe('完整注册流程', () => {
 
     // 生成唯一测试邮箱（避免重复）
     const timestamp = Date.now();
-    const testEmail = `test-${timestamp}@wenexus-e2e.test`;
-    const testPassword = 'TestPassword123!';
+    const testUser = {
+      name: `Test User ${timestamp}`,
+      email: `test-${timestamp}@wenexus-e2e.test`,
+      password: 'TestPassword123!',
+    };
 
-    console.log(`Testing signup with email: ${testEmail}`);
+    console.log(`Testing signup with email: ${testUser.email}`);
 
-    // 1. 访问注册页面
-    console.log('Step 1: Navigate to signup page');
-    await page.goto('/sign-up');
-    await page.waitForLoadState('networkidle');
+    // 1-4. 注册并等待 API 响应完成
+    const result = await auth.register(testUser);
+    console.log(`Registration result: ${result}`);
 
-    // 2. 填写注册表单
-    console.log('Step 2: Fill signup form');
-    const nameInput = page.locator('#name');
-    const emailInput = page.locator('#email');
-    const passwordInput = page.locator('#password');
-    const submitButton = page.locator('button[type="submit"]');
-
-    await expect(nameInput).toBeVisible({ timeout: 10_000 });
-    await nameInput.fill('Test User');
-    await emailInput.fill(testEmail);
-    await passwordInput.fill(testPassword);
-
-    // 3. 提交注册
-    console.log('Step 3: Submit signup form');
-    await submitButton.click();
-
-    // 4. 等待页面跳转（注册成功后应跳转到首页或仪表板）
-    console.log('Step 4: Wait for redirect after signup');
-    await page.waitForURL((url) => !url.pathname.includes('sign-up'), {
-      timeout: 15_000,
-    });
-
-    // 5. 验证已登录（检查是否有用户菜单或登出按钮）
+    // 5. 验证已登录
     console.log('Step 5: Verify user is logged in');
     await auth.expectLoggedIn();
 
@@ -74,7 +55,7 @@ test.describe('完整注册流程', () => {
 
     // 8. 使用刚注册的账号重新登录
     console.log('Step 8: Re-login with registered account');
-    await auth.login(testEmail, testPassword);
+    await auth.login(testUser.email, testUser.password);
 
     // 9. 验证重新登录成功
     console.log('Step 9: Verify re-login successful');

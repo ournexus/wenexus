@@ -58,7 +58,7 @@ export class AuthPage {
   async register(user: TestUser): Promise<'success' | 'verify'> {
     // Stage 1: Navigate and wait for page to be interactive
     await this.page.goto(withLocale(AUTH_CONFIG.routes.signUp));
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
 
     // Stage 2: Wait for form fields to be visible and ready
     const nameInput = this.page.locator('#name');
@@ -168,20 +168,17 @@ export class AuthPage {
       console.log(
         `Registration completed for ${user.email}, verifying session...`,
       );
-      // Verify session is active instead of using arbitrary delay
-      const sessionResponse = await this.page.request.get(
-        '/api/auth/get-session',
-        { headers: { Origin: new URL(this.page.url()).origin } },
-      );
-      if (sessionResponse.ok()) {
-        const session = await sessionResponse.json();
-        if (session?.session?.userId) {
-          console.log(
-            `Session confirmed for userId: ${session.session.userId}`,
-          );
-        } else {
-          console.warn('Registration succeeded but no active session found');
-        }
+      // Verify session is active using browser-side fetch
+      const session = await this.page.evaluate(async () => {
+        const res = await fetch('/api/auth/get-session', {
+          credentials: 'include',
+        });
+        return res.ok ? await res.json() : null;
+      });
+      if (session?.session?.userId) {
+        console.log(`Session confirmed for userId: ${session.session.userId}`);
+      } else {
+        console.warn('Registration succeeded but no active session found');
       }
     }
 
@@ -193,7 +190,7 @@ export class AuthPage {
 
     // Stage 1: Navigate and wait for page to be interactive
     await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
 
     // Stage 2: Wait for form fields to be visible and ready
     await expect(this.page.locator('#email')).toBeVisible({
@@ -282,26 +279,29 @@ export class AuthPage {
   async logout(): Promise<void> {
     console.log('Logging out...');
 
-    // Call sign-out API using page.request (Playwright native API)
-    // This is more reliable and handles headers correctly
+    // Call sign-out API using browser-side fetch to avoid proxy/ECONNRESET issues
     try {
-      const response = await this.page.request.post('/api/auth/sign-out', {
-        headers: {
-          'Content-Type': 'application/json',
-          Origin: new URL(this.page.url()).origin,
-        },
-        data: {},
+      const result = await this.page.evaluate(async () => {
+        const res = await fetch('/api/auth/sign-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: '{}',
+        });
+        return {
+          status: res.status,
+          ok: res.ok,
+          body: res.ok
+            ? null
+            : await res.text().catch(() => '(unable to read body)'),
+        };
       });
 
-      const responseStatus = response.status();
-      console.log(`Sign-out API returned status ${responseStatus}`);
+      console.log(`Sign-out API returned status ${result.status}`);
 
-      if (!response.ok()) {
-        const responseBody = await response
-          .text()
-          .catch(() => '(unable to read body)');
+      if (!result.ok) {
         throw new Error(
-          `Sign-out API failed with status ${responseStatus}: ${responseBody}`,
+          `Sign-out API failed with status ${result.status}: ${result.body}`,
         );
       }
 
@@ -332,23 +332,27 @@ export class AuthPage {
       console.warn('Error clearing storage:', error);
     }
 
-    // Verify session is actually cleared via API
-    const sessionCheck = await this.page.request.get('/api/auth/get-session', {
-      headers: { Origin: new URL(this.page.url()).origin },
-    });
-    if (sessionCheck.ok()) {
-      const session = await sessionCheck.json();
+    // Verify session is actually cleared via browser-side fetch
+    try {
+      const session = await this.page.evaluate(async () => {
+        const res = await fetch('/api/auth/get-session', {
+          credentials: 'include',
+        });
+        return res.ok ? await res.json() : null;
+      });
       if (session?.session?.userId) {
         console.warn(
           'Session still active after logout, cookies may not be fully cleared',
         );
       }
+    } catch {
+      // Session check failure after logout is acceptable
     }
 
     // Navigate to sign-in page to ensure we're in a clean state
     try {
       await this.page.goto(withLocale(AUTH_CONFIG.routes.signIn));
-      await this.page.waitForLoadState('networkidle');
+      await this.page.waitForLoadState('domcontentloaded');
       console.log('Navigated to sign-in page after logout');
     } catch (error) {
       console.warn('Error navigating after logout:', error);
@@ -357,19 +361,25 @@ export class AuthPage {
 
   async isLoggedIn(): Promise<boolean> {
     try {
-      // Use session API for reliable auth state check instead of URL matching
-      // Retry on 429 (rate limit) since parallel tests can trigger it
-      const origin = new URL(this.page.url()).origin;
+      // Use browser-side fetch for session check to avoid proxy/ECONNRESET issues
+      // with Playwright's external APIRequestContext
       let attempts = 0;
 
       while (attempts < AUTH_CONFIG.retry.maxAttempts) {
-        const response = await this.page.request.get('/api/auth/get-session', {
-          headers: { Origin: origin },
+        const result = await this.page.evaluate(async () => {
+          const res = await fetch('/api/auth/get-session', {
+            credentials: 'include',
+          });
+          return {
+            status: res.status,
+            retryAfter: res.headers.get('retry-after'),
+            body: res.ok ? await res.json() : null,
+          };
         });
 
-        if (response.status() === 429) {
+        if (result.status === 429) {
           attempts++;
-          const retryAfter = Number(response.headers()['retry-after'] || 1);
+          const retryAfter = Number(result.retryAfter || 1);
           const jitter = Math.random() * AUTH_CONFIG.retry.jitterMs;
           console.log(
             `get-session rate limited (attempt ${attempts}/${AUTH_CONFIG.retry.maxAttempts}), waiting ${retryAfter}s + ${Math.round(jitter)}ms jitter...`,
@@ -378,17 +388,16 @@ export class AuthPage {
           continue;
         }
 
-        if (!response.ok()) {
+        if (result.status < 200 || result.status >= 300) {
           console.log(
-            `isLoggedIn check: false (session API returned ${response.status()})`,
+            `isLoggedIn check: false (session API returned ${result.status})`,
           );
           return false;
         }
 
-        const session = await response.json();
-        const loggedIn = !!session?.session?.userId;
+        const loggedIn = !!result.body?.session?.userId;
         console.log(
-          `isLoggedIn check: ${loggedIn} (session userId: ${session?.session?.userId ?? 'none'})`,
+          `isLoggedIn check: ${loggedIn} (session userId: ${result.body?.session?.userId ?? 'none'})`,
         );
         return loggedIn;
       }
