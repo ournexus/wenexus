@@ -1,0 +1,816 @@
+# Instincts generated from https://github.com/ournexus/wenexus
+# Generated: 2026-04-01T08:37:45.623Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: wenexus-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix, docs, chore
+
+## Evidence
+
+- 71 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat(planning): add Sprint Planning and Story 1.5 Fact Checker Deep Agent, fix(deploy): correct production NEXT_PUBLIC_APP_URL to match actual worker domain
+
+---
+id: wenexus-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Length
+
+## Action
+
+Write moderate-length commit messages (~63 characters)
+
+## Evidence
+
+- Average commit message length: 63 chars
+- Based on 71 commits
+
+---
+id: wenexus-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Naming Files
+
+## Action
+
+Use kebab-case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: kebab-case
+
+---
+id: wenexus-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: wenexus-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: wenexus-arch-feature-based
+trigger: "when adding a new feature"
+confidence: 0.85
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Arch Feature Based
+
+## Action
+
+Create a new folder in src/features/ with all related code colocated
+
+## Evidence
+
+- Feature-based module organization detected
+- Structure: src/features/[feature-name]/
+
+---
+id: wenexus-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Framework
+
+## Action
+
+Use playwright as the test framework
+
+## Evidence
+
+- Test framework detected: playwright
+- File pattern: *.spec.ts
+
+---
+id: wenexus-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Naming
+
+## Action
+
+Name test files using the pattern: *.spec.ts
+
+## Evidence
+
+- File pattern: *.spec.ts
+- Consistent across test files
+
+---
+id: wenexus-test-types
+trigger: "when planning tests for a feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Types
+
+## Action
+
+Write unit, integration, e2e tests to match project standards
+
+## Evidence
+
+- Test types detected: unit, integration, e2e
+- Coverage config: yes
+
+---
+id: wenexus-workflow-database-migration
+trigger: "when modifying the database schema or adding tables"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Database Migration
+
+## Action
+
+Follow the database-migration workflow:
+1. Create migration file
+2. Update schema definitions
+3. Generate/update types
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: **/schema.*, **/types.ts, migrations/*
+
+---
+id: wenexus-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~18x per month
+- Files: frontend/apps/web/*, frontend/apps/web/scripts/*, frontend/apps/web/src/app/[locale]/(admin)/admin/ai-tasks/*
+
+---
+id: wenexus-workflow-test-driven-development
+trigger: "when adding new functionality"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Test Driven Development
+
+## Action
+
+Follow the test-driven-development workflow:
+1. Write failing test
+2. Implement code to pass test
+3. Refactor if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: **/*.test.*, **/*.spec.*, src/**/*
+
+---
+id: wenexus-workflow-refactoring
+trigger: "when refactoring code"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Refactoring
+
+## Action
+
+Follow the refactoring workflow:
+1. Ensure tests pass before refactor
+2. Refactor code structure
+3. Verify tests still pass
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~6x per month
+- Files: src/**/*
+
+---
+id: wenexus-workflow-feature-api-endpoint-development
+trigger: "when doing feature api endpoint development"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Api Endpoint Development
+
+## Action
+
+Follow the feature-api-endpoint-development workflow:
+1. Create or update endpoint in facade (e.g., facade/roundtable.py)
+2. Implement business logic in app/service/repository layers
+3. Update or create models as needed
+4. Add or update integration/unit tests
+5. Update progress.md to reflect new feature
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: backend/python/src/wenexus/app/*.py, backend/python/src/wenexus/facade/*.py, backend/python/src/wenexus/service/*.py
+
+---
+id: wenexus-workflow-backend-layered-architecture-refactor
+trigger: "when doing backend layered architecture refactor"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Backend Layered Architecture Refactor
+
+## Action
+
+Follow the backend-layered-architecture-refactor workflow:
+1. Move SQL queries from service to repository layer
+2. Introduce or update app orchestration layer
+3. Adjust imports and dependencies to match new structure
+4. Update tests to match new layout
+5. Update architecture documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: backend/python/src/wenexus/app/*.py, backend/python/src/wenexus/service/*.py, backend/python/src/wenexus/repository/*.py
+
+---
+id: wenexus-workflow-e2e-test-infrastructure-update
+trigger: "when doing e2e test infrastructure update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow E2e Test Infrastructure Update
+
+## Action
+
+Follow the e2e-test-infrastructure-update workflow:
+1. Add or update Playwright config and test files
+2. Move or refactor E2E test packages (e.g., apps/web/e2e → packages/e2e)
+3. Update CI/CD workflow to run or skip E2E tests as needed
+4. Add scripts for DB initialization or test setup
+5. Document test strategy or fixes
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: frontend/packages/e2e/**, frontend/apps/web/scripts/init-db-e2e.ts, .github/workflows/ci-cd.yml
+
+---
+id: wenexus-workflow-deployment-pipeline-and-config-update
+trigger: "when doing deployment pipeline and config update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Deployment Pipeline And Config Update
+
+## Action
+
+Follow the deployment-pipeline-and-config-update workflow:
+1. Edit wrangler.toml and/or deployment scripts
+2. Update .env.example or backend/python/.env.example
+3. Modify CI/CD workflow YAML
+4. Update deployment documentation
+5. Test deployment in staging/production
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: frontend/apps/web/wrangler.toml, backend/python/.env.example, .github/workflows/ci-cd.yml
+
+---
+id: wenexus-workflow-documentation-structure-and-progress-update
+trigger: "when doing documentation structure and progress update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Documentation Structure And Progress Update
+
+## Action
+
+Follow the documentation-structure-and-progress-update workflow:
+1. Edit or add files in docs/bmad/planning-artifacts or docs/technical
+2. Update progress.md with completed features
+3. Reorganize doc directories or move files
+4. Add or update BMAD/PRD/architecture/epics/UX docs
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: docs/bmad/planning-artifacts/*.md, docs/technical/**/*.md, progress.md
+
+---
+id: wenexus-workflow-bm-ad-skill-and-workflow-management
+trigger: "when doing bm ad skill and workflow management"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Bm Ad Skill And Workflow Management
+
+## Action
+
+Follow the bm-ad-skill-and-workflow-management workflow:
+1. Add or update files in .claude/skills/ or .claude/commands/
+2. Track or untrack BMAD skills in version control
+3. Update .gitignore or .markdownlintignore as needed
+4. Document new skills or workflows
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: .claude/skills/**, .claude/commands/**, .gitignore
+
+---
+id: wenexus-coding-file-naming
+trigger: "When creating a new file in the codebase."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Coding File Naming
+
+## Action
+
+Name the file using kebab-case (e.g., user-profile.ts).
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+- Consistent kebab-case in frontend/apps/web/
+
+---
+id: wenexus-coding-function-naming
+trigger: "When defining a new function."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Coding Function Naming
+
+## Action
+
+Use camelCase for function names (e.g., getUserProfile).
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+- Seen in backend/python/src/wenexus/app/*.py
+
+---
+id: wenexus-coding-class-naming
+trigger: "When defining a new class."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Coding Class Naming
+
+## Action
+
+Use PascalCase for class names (e.g., UserProfile).
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+- Seen in backend/python/src/wenexus/app/*.py
+
+---
+id: wenexus-coding-constant-naming
+trigger: "When defining a constant."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Coding Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constants (e.g., MAX_RETRIES).
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: wenexus-coding-import-style
+trigger: "When importing modules."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Coding Import Style
+
+## Action
+
+Use alias import style as configured in tsconfig.json.
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+- frontend/apps/web/tsconfig.json
+
+---
+id: wenexus-coding-export-style
+trigger: "When exporting modules or functions."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Coding Export Style
+
+## Action
+
+Use default export style.
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+- frontend/apps/web/src/app/[locale]/(admin)/admin/ai-tasks/*
+
+---
+id: wenexus-testing-file-pattern
+trigger: "When creating a test file."
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Testing File Pattern
+
+## Action
+
+Name the test file with the .spec.ts suffix (e.g., user-profile.spec.ts).
+
+## Evidence
+
+- Pattern in testing.filePattern
+- frontend/packages/e2e/*.spec.ts
+
+---
+id: wenexus-testing-framework
+trigger: "When writing automated tests."
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Testing Framework
+
+## Action
+
+Use Playwright as the testing framework.
+
+## Evidence
+
+- Pattern in testing.framework
+- frontend/packages/e2e/playwright.config.ts
+
+---
+id: wenexus-testing-coverage-config
+trigger: "When configuring or updating tests."
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Testing Coverage Config
+
+## Action
+
+Ensure test coverage is configured and measured.
+
+## Evidence
+
+- Pattern in testing.coverageConfig
+
+---
+id: wenexus-testing-types
+trigger: "When writing tests."
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Testing Types
+
+## Action
+
+Include unit, integration, and e2e tests as appropriate for the feature.
+
+## Evidence
+
+- Pattern in testing.testTypes
+- frontend/packages/e2e/*.spec.ts
+- backend/python/tests/integration/**/*.py
+
+---
+id: wenexus-git-commit-format
+trigger: "When writing a commit message."
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Git Commit Format
+
+## Action
+
+Use conventional commit prefixes: feat, fix, docs, chore, refactor.
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Seen in commit 'feat(planning): add Sprint Planning and Story 1.5 Fact Checker Deep Agent'
+
+---
+id: wenexus-git-commit-length
+trigger: "When writing a commit message."
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Git Commit Length
+
+## Action
+
+Keep commit messages concise, ideally around 60-70 characters.
+
+## Evidence
+
+- Pattern in commits.averageLength
+- Examples in commit history
+
+---
+id: wenexus-git-commit-scope
+trigger: "When writing a commit message."
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Git Commit Scope
+
+## Action
+
+Include an optional scope in parentheses after the prefix (e.g., feat(frontend): ...).
+
+## Evidence
+
+- Pattern in commits.examples
+- Seen in commit 'feat(frontend): integrate ShipAny template as web app foundation (#18)'
+
+---
+id: wenexus-workflow-feature-api-endpoint-development
+trigger: "When someone wants to add or expand an API endpoint for a domain."
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Api Endpoint Development
+
+## Action
+
+Follow the sequence: update facade, implement business logic in app/service/repository, update models, add/update tests, update progress.md.
+
+## Evidence
+
+- Workflow 'feature-api-endpoint-development'
+- Files: backend/python/src/wenexus/app/*.py, .../facade/*.py, .../service/*.py, .../repository/*.py, .../tests/integration/**/*.py, progress.md
+
+---
+id: wenexus-workflow-backend-layered-architecture-refactor
+trigger: "When someone needs to improve separation of concerns or address technical debt in backend structure."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Workflow Backend Layered Architecture Refactor
+
+## Action
+
+Move queries to repository, update app orchestration, adjust imports, update tests and architecture docs.
+
+## Evidence
+
+- Workflow 'backend-layered-architecture-refactor'
+- Files: backend/python/src/wenexus/app/*.py, .../service/*.py, .../repository/*.py, .../facade/*.py, .../tests/**, docs/bmad/planning-artifacts/architecture.md
+
+---
+id: wenexus-workflow-e2e-test-infrastructure-update
+trigger: "When someone wants to add new E2E tests, migrate test location, or improve CI reliability for E2E."
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Workflow E2e Test Infrastructure Update
+
+## Action
+
+Update Playwright config, move/refactor E2E packages, update CI/CD, add DB/init scripts, document strategy/fixes.
+
+## Evidence
+
+- Workflow 'e2e-test-infrastructure-update'
+- Files: frontend/packages/e2e/**, frontend/apps/web/scripts/init-db-e2e.ts, .github/workflows/ci-cd.yml, docs/technical/260310-e2e-timeout-fix.md, docs/technical/260311-database-initialization-fix.md, CLAUDE.md
+
+---
+id: wenexus-workflow-deployment-pipeline-and-config-update
+trigger: "When someone needs to change deployment targets, environment variables, or CI/CD steps."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Workflow Deployment Pipeline And Config Update
+
+## Action
+
+Edit wrangler.toml/deployment scripts, update .env.example, modify CI/CD YAML, update deployment docs, test deployment.
+
+## Evidence
+
+- Workflow 'deployment-pipeline-and-config-update'
+- Files: frontend/apps/web/wrangler.toml, backend/python/.env.example, .github/workflows/ci-cd.yml, scripts/dev.sh, docs/technical/deployment/*.md
+
+---
+id: wenexus-workflow-documentation-structure-and-progress-update
+trigger: "When someone wants to record new progress, reorganize docs, or add planning artifacts."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Workflow Documentation Structure And Progress Update
+
+## Action
+
+Edit/add docs in docs/bmad/planning-artifacts or docs/technical, update progress.md, reorganize doc directories, add/update BMAD/PRD/architecture/epics/UX docs.
+
+## Evidence
+
+- Workflow 'documentation-structure-and-progress-update'
+- Files: docs/bmad/planning-artifacts/*.md, docs/technical/**/*.md, progress.md
+
+---
+id: wenexus-workflow-bmad-skill-and-workflow-management
+trigger: "When someone wants to introduce new BMAD skills, update workflows, or share agent configurations."
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Workflow Bmad Skill And Workflow Management
+
+## Action
+
+Add/update files in .claude/skills/ or .claude/commands/, update .gitignore/.markdownlintignore, document new skills/workflows.
+
+## Evidence
+
+- Workflow 'bm-ad-skill-and-workflow-management'
+- Files: .claude/skills/**, .claude/commands/**, .gitignore, .markdownlintignore
+
