@@ -143,18 +143,22 @@ backend/python/src/wenexus/
   - [x] DELETE `/sessions/{id}/messages/{mid}` — 软删除消息（仅作者或会话所有者）
   - [x] Repository: `update_session_fields`, `find_message_by_id`, `soft_delete_message`
   - [x] App: 权限检查 + 状态冲突检测（409 已完成/已删除）
+- [x] **Agent 代码质量优化** ✨ NEW
+- [x] 解决 LangGraph/langchain mypy 类型检查不兼容（添加 `type: ignore`）
+- [x] 修复 deps.py E402 导入顺序错误（PEP8 compliance）
+- [x] **生产部署配置** ✨ NEW
+- [x] Cloudflare Workers 生产域名配置更新
+- [x] `.langgraph_api/` 目录加入 gitignore
 
 ### 当前分支与未提交变更
 
 **分支**：`main`
 
-**未提交的本地变更**（3 个文件）：
+**未提交的本地变更**（1 个文件）：
 
 | 文件 | 变更内容 |
 |------|---------|
-| `backend/python/src/wenexus/agent/graph.py` | 新增 `invoke_facilitator()` 接入 Roundtable 业务 |
-| `backend/python/src/wenexus/service/roundtable.py` | autopilot 模式追加 Facilitator 合成 |
-| `backend/python/src/wenexus/facade/roundtable.py` | WebSocket 广播 facilitator_message 事件 |
+| `frontend/apps/web/wrangler.toml` | Staging 环境的 worker domain 调整为 yihuimbin 子域 |
 
 ### 认证系统状态
 
