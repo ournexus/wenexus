@@ -219,7 +219,7 @@ class FactCheckState(TypedDict):
 
 ### 本地参考实现
 
-**[Source: /Users/mac/Desktop/code-open/deep_research_from_scratch/]**
+**[Source: ../deep_research_from_scratch/]**
 
 用户本地已有完整 Deep Research 实现，可直接参考/复用：
 
