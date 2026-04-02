@@ -92,7 +92,6 @@ class TestFactCheckerAPI:
         except Exception as e:
             print(f"Error: {e}")
             # 测试期间可能返回 500，但结构应正确
-            pass
 
 
 class TestLangGraphDevIntegration:

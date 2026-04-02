@@ -1,10 +1,10 @@
 """Fact Report ORM Model."""
 
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -15,12 +15,14 @@ class FactReportORM(Base):
 
     __tablename__ = "fact_reports"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    topic_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("topics.id"), nullable=False
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
     )
-    session_id: Mapped[str | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("roundtable_sessions.id"), nullable=True
+    topic_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("topics.id"), nullable=False
+    )
+    session_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("roundtable_sessions.id"), nullable=True
     )
 
     # Deep Agents 输出

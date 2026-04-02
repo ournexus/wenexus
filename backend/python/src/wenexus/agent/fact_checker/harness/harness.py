@@ -25,13 +25,14 @@ class FactCheckerHarness:
         model: str = "openai:gpt-4o-mini",
         temperature: float = 0.2,
         max_iterations: int = 5,
+        search_provider: Any = None,
     ):
         self.config = HarnessConfig(
             model=model,
             temperature=temperature,
             max_iterations=max_iterations,
         )
-        self.search_provider = MockSearchProvider()
+        self.search_provider = search_provider or MockSearchProvider()
         self.graph = create_fact_checker_graph(
             search_provider=self.search_provider,
             max_iterations=self.config.max_iterations,
