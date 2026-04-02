@@ -26,7 +26,7 @@ class FactCheckResponse(BaseModel):
 
 
 @router.post("", response_model=FactCheckResponse)
-async def create_fact_check(request: FactCheckRequest):
+async def create_fact_check(request: FactCheckRequest) -> FactCheckResponse:
     """为话题创建事实核查报告.
 
     调用 FactChecker Harness 执行多轮搜索和事实提取.

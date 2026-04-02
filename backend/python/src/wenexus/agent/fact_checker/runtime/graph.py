@@ -4,6 +4,7 @@ import time
 from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from ..interfaces.search import SearchProvider
 from .nodes import (
@@ -16,7 +17,9 @@ from .nodes import (
 from .state import FactCheckState
 
 
-def create_fact_checker_graph(search_provider: SearchProvider, max_iterations: int = 3):
+def create_fact_checker_graph(
+    search_provider: SearchProvider, max_iterations: int = 3
+) -> CompiledStateGraph:
     """创建 Fact Checker Graph."""
 
     def init(state: FactCheckState) -> FactCheckState:

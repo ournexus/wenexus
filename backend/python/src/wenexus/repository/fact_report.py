@@ -36,7 +36,7 @@ class FactReportRepository:
             .where(FactReportORM.topic_id == topic_id)
             .order_by(FactReportORM.created_at.desc())
         )
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def update_status(
         self, report_id: UUID, status: str, report_data: dict | None = None
@@ -52,8 +52,10 @@ class FactReportRepository:
             report.search_iterations = report_data.get("iterations")
             report.sources = report_data.get("sources")
             report.credibility_distribution = report_data.get("credibility_dist")
-            report.total_tokens = report_data.get("total_tokens")
-            report.execution_time_ms = report_data.get("execution_time_ms")
+            tokens = report_data.get("total_tokens")
+            report.total_tokens = int(tokens) if tokens is not None else None  # type: ignore[assignment]
+            exec_time = report_data.get("execution_time_ms")
+            report.execution_time_ms = int(exec_time) if exec_time is not None else None  # type: ignore[assignment]
 
         await self.session.commit()
         await self.session.refresh(report)

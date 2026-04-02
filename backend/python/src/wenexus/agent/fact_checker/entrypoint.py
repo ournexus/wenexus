@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
 
 
@@ -30,33 +31,35 @@ class FactReport:
 class FCState(TypedDict):
     topic: str
     iteration: int
+    items_found: int
     queries: list[str]
     should_continue: bool
     report: FactReport | None
 
 
-def create_fact_checker_graph_entrypoint():
+def create_fact_checker_graph_entrypoint() -> CompiledStateGraph:
     """创建简单可用的 Fact Checker Graph."""
 
-    def init(state: FCState):
+    def init(state: FCState) -> FCState:
         state["iteration"] = 0
+        state["items_found"] = 0
         state["queries"] = [f"{state['topic']} 数据", f"{state['topic']} 研究"]
         state["should_continue"] = True
         return state
 
-    def plan(state: FCState):
+    def plan(state: FCState) -> FCState:
         state["iteration"] += 1
         return state
 
-    def search(state: FCState):
+    def search(state: FCState) -> FCState:
         state["items_found"] = 5
         return state
 
-    def analyze(state: FCState):
+    def analyze(state: FCState) -> FCState:
         state["should_continue"] = state["iteration"] < 3
         return state
 
-    def report(state: FCState):
+    def report(state: FCState) -> FCState:
         state["report"] = FactReport(
             topic=state["topic"],
             summary=f"已完成{state['iteration']}轮搜索，找到相关事实",

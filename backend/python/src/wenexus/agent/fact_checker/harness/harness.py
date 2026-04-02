@@ -70,7 +70,8 @@ class FactCheckerHarness:
         result = self.graph.invoke(initial_state)
         if result["final_report"] is None:
             raise RuntimeError(f"Fact checker failed: {result.get('error', 'Unknown')}")
-        return result["final_report"]
+        final_report: FactReport = result["final_report"]
+        return final_report
 
     def health_check(self) -> dict[str, Any]:
         return {"status": "ok", "graph": "compiled"}
