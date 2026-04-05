@@ -8,7 +8,6 @@ Consumers: main (router inclusion)
 """
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from wenexus.app.roundtable import (
@@ -23,35 +22,17 @@ from wenexus.app.roundtable import (
     update_session,
 )
 from wenexus.facade.deps import get_current_user, raise_if_error
+from wenexus.facade.model.req.roundtable import (
+    CreateSessionRequest,
+    SendMessageRequest,
+    UpdateSessionRequest,
+)
 from wenexus.repository.db import get_db
 from wenexus.repository.roundtable import find_session_by_id
 from wenexus.util.schema import UserInfo
 from wenexus.util.websocket import ws_manager
 
 router = APIRouter(prefix="/roundtable", tags=["roundtable"])
-
-
-class SendMessageRequest(BaseModel):
-    """Request body for sending a message to a discussion session."""
-
-    content: str
-    generate_ai_reply: bool = True
-
-
-class CreateSessionRequest(BaseModel):
-    """Request body for creating a new discussion session."""
-
-    topic_id: str
-    mode: str = "autopilot"
-    is_private: bool = False
-    expert_ids: list[str] | None = None
-
-
-class UpdateSessionRequest(BaseModel):
-    """Request body for updating a discussion session."""
-
-    mode: str | None = None
-    is_private: bool | None = None
 
 
 @router.get("/experts")

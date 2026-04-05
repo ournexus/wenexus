@@ -1,8 +1,8 @@
 """
-agent.tools - LangGraph agent tools for roundtable facilitation.
+service.agent.facilitator.tools - LangGraph agent tools for roundtable facilitation.
 
 Depends: langchain_core
-Consumers: agent.graph
+Consumers: service.agent.facilitator.agent
 """
 
 from datetime import datetime
@@ -22,7 +22,7 @@ def format_discussion_points(topic: str, perspectives: list[str]) -> str:
 
     Args:
         topic: The discussion topic or question.
-        perspectives: List of perspectives to cover (e.g., ["economic", "social", "technical"]).
+        perspectives: List of perspectives to cover.
 
     Returns:
         A formatted discussion outline string.

@@ -496,5 +496,5 @@ def _parse_expert_ids(raw: object) -> list[Any]:
         if isinstance(raw, list):
             return raw
         return []
-    except (json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError):  # fmt: skip
         return []

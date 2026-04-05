@@ -1,11 +1,11 @@
 """
-agent.graph - LangGraph StateGraph for WeNexus roundtable facilitator agent.
+service.agent.facilitator.agent - Facilitator Agent（BaseAgent 实现）。
 
-Implements a ReAct-style agent that can facilitate discussion topics,
-suggest expert roles, and format discussion points using LangGraph.
+LangGraph ReAct-style agent 用于圆桌讨论 facilitation。
+从 agent/graph.py 迁入，适配 BaseAgent 接口。
 
-Depends: langchain_openai, langgraph, config, agent.tools
-Consumers: langgraph CLI (via langgraph.json), service.roundtable
+Depends: langgraph, langchain_openai, config, service.agent.base, model.agent
+Consumers: app.agent_registry, service.roundtable
 """
 
 from typing import Annotated
@@ -18,8 +18,16 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from typing_extensions import TypedDict
 
-from wenexus.agent.tools import TOOLS
 from wenexus.config import settings
+from wenexus.model.agent import (
+    AgentCard,
+    AgentTaskInput,
+    AgentTaskOutput,
+    AgentType,
+)
+
+from ..base import BaseAgent
+from .tools import TOOLS
 
 logger = structlog.get_logger()
 
@@ -35,7 +43,7 @@ Always be concise, constructive, and balanced. Proactively use your tools
 when they can add value to the conversation."""
 
 
-class State(TypedDict):
+class _FacilitatorState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
@@ -48,7 +56,7 @@ def _build_llm() -> ChatOpenAI:
     )
 
 
-def _call_model(state: State) -> dict:
+def _call_model(state: _FacilitatorState) -> dict:
     """Invoke the LLM with injected system prompt and current messages."""
     llm_with_tools = _build_llm().bind_tools(TOOLS)
     messages = [SystemMessage(content=_SYSTEM_PROMPT), *state["messages"]]
@@ -57,7 +65,7 @@ def _call_model(state: State) -> dict:
 
 
 def _build_graph() -> StateGraph:
-    builder = StateGraph(State)
+    builder = StateGraph(_FacilitatorState)
     builder.add_node("agent", _call_model)
     builder.add_node("tools", ToolNode(TOOLS))
     builder.add_edge(START, "agent")
@@ -70,6 +78,60 @@ graph = _build_graph().compile()
 graph.name = "Roundtable Facilitator"
 
 
+class FacilitatorAgent(BaseAgent):
+    """Facilitator Agent — 圆桌讨论引导者。"""
+
+    def card(self) -> AgentCard:
+        return AgentCard(
+            name="facilitator",
+            display_name="圆桌引导者",
+            description="引导多视角讨论，合成专家观点",
+            agent_type=AgentType.FUNCTIONAL,
+            capabilities=("roundtable_facilitation", "discussion_synthesis"),
+        )
+
+    async def run(self, task_input: AgentTaskInput) -> AgentTaskOutput:
+        """执行 facilitation 任务。"""
+        import time
+
+        start = time.time()
+        prompt = task_input.params.get("prompt", "")
+        if not prompt:
+            return AgentTaskOutput(
+                agent_name="facilitator",
+                status="error",
+                error="Missing 'prompt' in params",
+            )
+        try:
+            result = await graph.ainvoke(
+                {"messages": [HumanMessage(content=str(prompt))]}  # type: ignore[arg-type]
+            )
+            messages = result.get("messages", [])
+            content = ""
+            if messages:
+                last = messages[-1]
+                if hasattr(last, "content") and last.content:
+                    content = str(last.content)
+            elapsed = int((time.time() - start) * 1000)
+            return AgentTaskOutput(
+                agent_name="facilitator",
+                status="completed",
+                result={"content": content},
+                execution_time_ms=elapsed,
+            )
+        except Exception as exc:
+            await logger.aerror("facilitator_run_error", error=str(exc))
+            return AgentTaskOutput(
+                agent_name="facilitator",
+                status="error",
+                error=str(exc),
+            )
+
+    async def health_check(self) -> bool:
+        """健康检查。"""
+        return True
+
+
 async def invoke_facilitator(
     topic_title: str,
     topic_description: str | None,
@@ -78,18 +140,9 @@ async def invoke_facilitator(
     expert_replies: list[dict],
     recent_messages: list[dict] | None = None,
 ) -> str | None:
-    """Invoke the facilitator agent to synthesize expert responses and guide discussion.
+    """Invoke the facilitator agent to synthesize expert responses.
 
-    Args:
-        topic_title: Discussion topic title.
-        topic_description: Topic description (optional).
-        experts: Expert dicts with keys: id, name, role, stance.
-        user_message: The user's message that triggered this round.
-        expert_replies: Expert reply dicts with keys: content, expertId.
-        recent_messages: Earlier conversation messages for context.
-
-    Returns:
-        Facilitator response text, or None on failure.
+    保留原有函数签名，供 service.roundtable 调用。
     """
     expert_map = {e["id"]: e["name"] for e in experts}
 

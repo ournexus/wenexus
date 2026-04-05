@@ -48,7 +48,7 @@ Java-specific hooks in `java/.pre-commit-config.yaml`:
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.14+
 - [uv](https://docs.astral.sh/uv/) (fast Python package manager)
 
 ### Setup

@@ -4,7 +4,7 @@ Python services for WeNexus platform - AI/ML and data processing.
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.14+
 - [uv](https://docs.astral.sh/uv/) (fast Python package manager)
 
 ## Setup

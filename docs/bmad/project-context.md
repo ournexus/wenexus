@@ -49,7 +49,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ### Infrastructure
 
 - **数据库**: PostgreSQL 16 (唯一数据库), Redis 7 (缓存)
-- **CI/CD**: GitHub Actions (Node 20, Java 17, Python 3.11)
+- **CI/CD**: GitHub Actions (Node 20, Java 17, Python 3.14)
 - **E2E**: Playwright 1.52.0 (CI 中配合 PostgreSQL 服务容器)
 - **安全**: Trivy 扫描, conventional commits 强制
 

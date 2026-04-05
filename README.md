@@ -58,7 +58,7 @@ wenexus/
 - pnpm 9+ (`npm install -g pnpm`)
 - Docker & Docker Compose（本地数据库）
 - Java 17+（仅 Java 后端开发需要）
-- Python 3.11+ & uv（仅 Python 后端开发需要）
+- Python 3.14+ & uv（仅 Python 后端开发需要）
 
 ### 一键本地启动
 

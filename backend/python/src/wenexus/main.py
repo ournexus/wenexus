@@ -12,9 +12,11 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from wenexus.app.agent_registry import init_agent_registry
 from wenexus.config import settings
 from wenexus.facade.deliverable import router as deliverable_router
 from wenexus.facade.discovery import router as discovery_router
+from wenexus.facade.fact_checker import router as fact_checker_router
 from wenexus.facade.roundtable import router as roundtable_router
 from wenexus.repository.db import check_db_connection
 
@@ -22,7 +24,7 @@ logger = structlog.get_logger()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Handle application startup and shutdown."""
     await logger.ainfo(
         "starting wenexus-python",
@@ -35,6 +37,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await logger.ainfo("database connection verified")
     else:
         await logger.awarn("database connection failed - service starting without DB")
+
+    registry = init_agent_registry(app)
+    agents = registry.list_agents()
+    await logger.ainfo(
+        "agent_registry_initialized",
+        agent_count=len(agents),
+        agents=[a.name for a in agents],
+    )
 
     yield
 
@@ -70,3 +80,4 @@ async def health() -> dict[str, str]:
 app.include_router(roundtable_router, prefix="/api/v1")
 app.include_router(deliverable_router, prefix="/api/v1")
 app.include_router(discovery_router, prefix="/api/v1")
+app.include_router(fact_checker_router, prefix="/api/v1")
