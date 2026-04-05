@@ -10,10 +10,10 @@ Consumers: model.fact_report, model.agent, service, app, facade
 
 import re
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class CredibilityLevel(str, Enum):
+class CredibilityLevel(StrEnum):
     """可信度等级。"""
 
     HIGH = "high"
@@ -22,7 +22,7 @@ class CredibilityLevel(str, Enum):
     UNCERTAIN = "uncertain"
 
 
-class SourceType(str, Enum):
+class SourceType(StrEnum):
     """来源类型。"""
 
     WEB = "web"
@@ -31,7 +31,7 @@ class SourceType(str, Enum):
     GOV = "gov"
 
 
-class VerificationStatus(str, Enum):
+class VerificationStatus(StrEnum):
     """验证状态。"""
 
     VERIFIED = "verified"
@@ -39,7 +39,7 @@ class VerificationStatus(str, Enum):
     DISPUTED = "disputed"
 
 
-class AgentStatus(str, Enum):
+class AgentStatus(StrEnum):
     """Agent 执行状态。"""
 
     PENDING = "pending"

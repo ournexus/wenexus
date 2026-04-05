@@ -10,10 +10,10 @@ Consumers: service.agent, app.agent_registry, facade
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class AgentType(str, Enum):
+class AgentType(StrEnum):
     """Agent 类型。
 
     FUNCTIONAL: 功能性 Agent，各有独立实现（如 FactChecker, Facilitator）
