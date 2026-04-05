@@ -1,0 +1,331 @@
+# Instincts generated from https://github.com/ournexus/wenexus
+# Generated: 2026-04-05T15:01:38.195Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: wenexus-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat
+
+## Evidence
+
+- 13 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: add wenexus-conventions ECC bundle (.claude/ecc-tools.json), feat: add wenexus-conventions ECC bundle (.claude/skills/wenexus/SKILL.md)
+
+---
+id: wenexus-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Length
+
+## Action
+
+Write moderate-length commit messages (~75 characters)
+
+## Evidence
+
+- Average commit message length: 75 chars
+- Based on 13 commits
+
+---
+id: wenexus-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: wenexus-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: wenexus-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: wenexus-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: wenexus-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~30x per month
+- Files: .claude/commands/*
+
+---
+id: wenexus-workflow-add-ecc-bundle-component
+trigger: "when doing add ecc bundle component"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Add Ecc Bundle Component
+
+## Action
+
+Follow the add-ecc-bundle-component workflow:
+1. Create a new file in a relevant subdirectory (e.g., .claude/skills/wenexus/, .agents/skills/wenexus/, .codex/agents/)
+2. Name the file according to the component type (e.g., SKILL.md, .toml, .yaml, .json, .md)
+3. Commit the new file with a standardized commit message referencing the ECC bundle
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~12x per month
+- Files: .claude/skills/wenexus/SKILL.md, .agents/skills/wenexus/SKILL.md, .agents/skills/wenexus/agents/openai.yaml
+
+---
+id: wenexus-instinct-file-naming
+trigger: "When creating a new file in the repository"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct File Naming
+
+## Action
+
+Name the file using camelCase for regular files, PascalCase for classes, and SCREAMING_SNAKE_CASE for constants
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+- Pattern in codeStyle.namingConventions.classes
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: wenexus-instinct-import-style
+trigger: "When importing modules in TypeScript files"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+
+---
+id: wenexus-instinct-export-style
+trigger: "When exporting modules or functions in TypeScript files"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+
+---
+id: wenexus-instinct-commit-format
+trigger: "When making a git commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Commit Format
+
+## Action
+
+Format the commit message using the conventional commits style, starting with 'feat:' for features
+
+## Evidence
+
+- Seen in commit 'feat: add wenexus-conventions ECC bundle (.claude/ecc-tools.json)'
+- Pattern in commits.prefixes
+
+---
+id: wenexus-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Commit Length
+
+## Action
+
+Keep the commit message around 75 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: wenexus-instinct-feature-dev-test
+trigger: "When implementing a new feature"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Feature Dev Test
+
+## Action
+
+Add corresponding tests for the feature in a separate location after implementation
+
+## Evidence
+
+- Pattern in workflows[0].commitSequence: 'Add tests for feature'
+
+---
+id: wenexus-instinct-feature-dev-docs
+trigger: "When implementing a new feature"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Feature Dev Docs
+
+## Action
+
+Update documentation related to the feature after adding tests
+
+## Evidence
+
+- Pattern in workflows[0].commitSequence: 'Update documentation'
+
+---
+id: wenexus-instinct-add-ecc-bundle-component
+trigger: "When extending the ECC bundle with a new capability, configuration, or documentation for wenexus-conventions"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Add Ecc Bundle Component
+
+## Action
+
+Create a new file in the appropriate subdirectory, name it according to its type, and commit it with a standardized message referencing the ECC bundle
+
+## Evidence
+
+- Pattern in workflows[1].steps
+- Seen in commits: 'feat: add wenexus-conventions ECC bundle (.claude/ecc-tools.json)'
+
