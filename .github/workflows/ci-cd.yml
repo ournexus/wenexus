@@ -140,6 +140,7 @@ jobs:
       - name: Run linting
         run: |
           uv run ruff check .
+          uv run ruff format --diff . || true
           uv run ruff format --check .
 
       - name: Run type checking
