@@ -1,0 +1,658 @@
+# Instincts generated from https://github.com/ournexus/wenexus
+# Generated: 2026-04-05T11:10:05.537Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: wenexus-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix, refactor, chore, docs
+
+## Evidence
+
+- 14 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: implement Fact Checker Deep Agent, fix: 修复 PR review 发现的问题
+
+---
+id: wenexus-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Length
+
+## Action
+
+Keep commit messages concise (~47 characters)
+
+## Evidence
+
+- Average commit message length: 47 chars
+- Based on 14 commits
+
+---
+id: wenexus-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: wenexus-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: wenexus-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: wenexus-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: 
+
+---
+id: wenexus-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: wenexus-test-types
+trigger: "when planning tests for a feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Types
+
+## Action
+
+Write unit, integration, e2e tests to match project standards
+
+## Evidence
+
+- Test types detected: unit, integration, e2e
+- Coverage config: no
+
+---
+id: wenexus-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~11x per month
+- Files: frontend/apps/web/src/app/[locale]/(landing)/agent/*, frontend/apps/web/src/components/agent/components/*, frontend/apps/web/src/components/agent/hooks/*
+
+---
+id: wenexus-workflow-refactoring
+trigger: "when refactoring code"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Refactoring
+
+## Action
+
+Follow the refactoring workflow:
+1. Ensure tests pass before refactor
+2. Refactor code structure
+3. Verify tests still pass
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~6x per month
+- Files: src/**/*
+
+---
+id: wenexus-workflow-feature-development-python-backend-agent
+trigger: "when doing feature development python backend agent"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Development Python Backend Agent
+
+## Action
+
+Follow the feature-development-python-backend-agent workflow:
+1. Add or modify files under src/wenexus/service/agent/[agent_name] (e.g., agent.py, graph.py, state.py, providers/)
+2. Update or create corresponding model files under src/wenexus/model/ and/or src/wenexus/repository/model/
+3. Update or create facade entrypoints under src/wenexus/facade/ (e.g., facade/fact_checker.py)
+4. Update main.py to wire up new agent or capability
+5. Add or update tests under tests/unit/service/agent/[agent_name]/ or tests/agent/[agent_name]/
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: backend/python/src/wenexus/service/agent/*, backend/python/src/wenexus/model/*, backend/python/src/wenexus/repository/model/*
+
+---
+id: wenexus-workflow-api-endpoint-addition-or-major-extension
+trigger: "when doing api endpoint addition or major extension"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Api Endpoint Addition Or Major Extension
+
+## Action
+
+Follow the api-endpoint-addition-or-major-extension workflow:
+1. Create or update router files under src/wenexus/facade/[api_name]/routers/
+2. Add or update API models under src/wenexus/model/ or src/wenexus/facade/model/
+3. Implement or update service logic under src/wenexus/service/[api_name]/
+4. Wire up new endpoint in main.py or facade main router
+5. Add or update tests for new endpoint
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: backend/python/src/wenexus/facade/*/routers/*, backend/python/src/wenexus/model/*, backend/python/src/wenexus/facade/model/*
+
+---
+id: wenexus-workflow-python-backend-refactor-ddd-or-async
+trigger: "when doing python backend refactor ddd or async"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Python Backend Refactor Ddd Or Async
+
+## Action
+
+Follow the python-backend-refactor-ddd-or-async workflow:
+1. Move or rename files to new DDD structure under service/, model/, facade/
+2. Update imports and wiring in main.py
+3. Refactor function signatures and logic for async/await if needed
+4. Update or migrate corresponding tests
+5. Update documentation if architecture changes
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: backend/python/src/wenexus/service/agent/*, backend/python/src/wenexus/model/*, backend/python/src/wenexus/facade/*
+
+---
+id: wenexus-workflow-python-type-checking-and-linting-fix
+trigger: "when doing python type checking and linting fix"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Python Type Checking And Linting Fix
+
+## Action
+
+Follow the python-type-checking-and-linting-fix workflow:
+1. Update type annotations in affected Python files (service, model, facade, repository)
+2. Update pyproject.toml config for mypy or ruff
+3. Fix or suppress linter warnings (e.g., UP042, UP043)
+4. Commit with fix: or chore: message referencing type/lint issue
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: backend/python/src/wenexus/*/*.py, backend/python/pyproject.toml
+
+---
+id: wenexus-workflow-frontend-agent-ui-feature
+trigger: "when doing frontend agent ui feature"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Frontend Agent Ui Feature
+
+## Action
+
+Follow the frontend-agent-ui-feature workflow:
+1. Add or update page under src/app/[locale]/(landing)/agent/
+2. Implement or modify React components under components/agent/components/
+3. Add or update hooks and providers under components/agent/hooks/ and components/agent/providers/
+4. Update types in components/agent/types/
+5. Update package.json and pnpm-lock.yaml for new dependencies
+6. Update auth config if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: frontend/apps/web/src/app/[locale]/(landing)/agent/*, frontend/apps/web/src/components/agent/components/*, frontend/apps/web/src/components/agent/hooks/*
+
+---
+id: wenexus-instinct-file-naming-snake-case
+trigger: "When creating or renaming a Python file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct File Naming Snake Case
+
+## Action
+
+Use snake_case for the file name
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+- Observed in backend/python/src/wenexus/agent/fact_checker/entrypoint.py
+
+---
+id: wenexus-instinct-function-naming-camelCase
+trigger: "When defining a Python function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Function Naming CamelCase
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+
+---
+id: wenexus-instinct-class-naming-pascal-case
+trigger: "When defining a Python class"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Class Naming Pascal Case
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+
+---
+id: wenexus-instinct-constant-naming-screaming-snake-case
+trigger: "When defining a constant in Python"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Constant Naming Screaming Snake Case
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: wenexus-instinct-import-style-alias
+trigger: "When importing modules in Python"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Import Style Alias
+
+## Action
+
+Use alias imports where appropriate
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+
+---
+id: wenexus-instinct-export-style-named
+trigger: "When exporting from a module"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Export Style Named
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+
+---
+id: wenexus-instinct-test-file-pattern
+trigger: "When adding a test file in the frontend"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Test File Pattern
+
+## Action
+
+Name the file with the pattern *.test.ts
+
+## Evidence
+
+- Pattern in testing.filePattern
+- Seen in frontend/apps/web/src/components/agent/components/*.test.ts
+
+---
+id: wenexus-instinct-test-types
+trigger: "When writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Test Types
+
+## Action
+
+Include unit, integration, and e2e tests as appropriate
+
+## Evidence
+
+- Pattern in testing.testTypes
+
+---
+id: wenexus-instinct-test-location-mixed
+trigger: "When placing test files"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Test Location Mixed
+
+## Action
+
+Place tests in both source and dedicated test folders as needed
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: wenexus-instinct-commit-conventional-format
+trigger: "When writing a commit message"
+confidence: 0.95
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Commit Conventional Format
+
+## Action
+
+Use Conventional Commits format with prefixes: feat, fix, refactor, chore, docs, ci
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Seen in commit: 'feat: implement Fact Checker Deep Agent'
+- Seen in commit: 'fix: 修复 mypy 类型检查错误'
+
+---
+id: wenexus-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Commit Length
+
+## Action
+
+Keep the commit message concise (around 47 characters on average)
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: wenexus-instinct-feature-development-python-backend-agent
+trigger: "When adding a new agent or major agent feature to the backend"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Feature Development Python Backend Agent
+
+## Action
+
+Add/modify files under service/agent, update/create models, update/create facade entrypoints, wire up in main.py, and add/update tests
+
+## Evidence
+
+- Workflow: feature-development-python-backend-agent
+- Example commits and files in workflow definition
+
+---
+id: wenexus-instinct-api-endpoint-addition-or-major-extension
+trigger: "When exposing a new API endpoint or major API surface"
+confidence: 0.88
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Api Endpoint Addition Or Major Extension
+
+## Action
+
+Create/update router files, models, service logic, wire up in main.py, and add/update tests
+
+## Evidence
+
+- Workflow: api-endpoint-addition-or-major-extension
+- Example commits and files in workflow definition
+
+---
+id: wenexus-instinct-python-backend-refactor-ddd-or-async
+trigger: "When restructuring backend code for DDD or switching to async execution"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Python Backend Refactor Ddd Or Async
+
+## Action
+
+Move/rename files to DDD structure, update imports/wiring, refactor for async/await, update/migrate tests, and update docs
+
+## Evidence
+
+- Workflow: python-backend-refactor-ddd-or-async
+- Example commits and files in workflow definition
+
+---
+id: wenexus-instinct-python-type-checking-and-linting-fix
+trigger: "When resolving type/lint errors after changes or upgrades"
+confidence: 0.87
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Python Type Checking And Linting Fix
+
+## Action
+
+Update type annotations, pyproject.toml, fix/suppress linter warnings, and commit with fix: or chore: message
+
+## Evidence
+
+- Workflow: python-type-checking-and-linting-fix
+- Example commits and files in workflow definition
+
+---
+id: wenexus-instinct-frontend-agent-ui-feature
+trigger: "When adding or improving agent chat features in the frontend"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: ournexus/wenexus
+---
+
+# Wenexus Instinct Frontend Agent Ui Feature
+
+## Action
+
+Add/update agent page, implement/modify React components, update hooks/providers/types, update dependencies and auth config as needed
+
+## Evidence
+
+- Workflow: frontend-agent-ui-feature
+- Example commits and files in workflow definition
+
