@@ -43,10 +43,13 @@ def create_fact_checker_graph(
             return "loop"
         return "done"
 
+    async def _search(s: FactCheckState) -> FactCheckState:
+        return await search_node(s, search_provider)
+
     builder = StateGraph(FactCheckState)
     builder.add_node("init", init)
     builder.add_node("plan", planning_node)
-    builder.add_node("search", lambda s: search_node(s, search_provider))
+    builder.add_node("search", _search)  # type: ignore[arg-type]
     builder.add_node("extract", extraction_node)
     builder.add_node("analyze", analysis_node)
     builder.add_node("synthesize", synthesis_node)

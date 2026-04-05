@@ -37,10 +37,11 @@ class TestFactCheckerGraph:
         graph = create_fact_checker_graph(provider, max_iterations=2)
         assert graph is not None
 
-    def test_graph_execution(self) -> None:
+    @pytest.mark.asyncio
+    async def test_graph_execution(self) -> None:
         provider = MockSearchProvider()
         graph = create_fact_checker_graph(provider, max_iterations=2)
-        result = graph.invoke(
+        result = await graph.ainvoke(
             {
                 "topic_title": "彩礼",
                 "topic_description": "关于彩礼的争议",

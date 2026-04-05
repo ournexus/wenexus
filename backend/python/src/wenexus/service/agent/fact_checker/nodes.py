@@ -4,9 +4,6 @@ Depends: model.fact_report, service.agent.fact_checker.interfaces.search
 Consumers: service.agent.fact_checker.graph
 """
 
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-
 from wenexus.model.base import SourceType
 from wenexus.model.fact_report import (
     CoverageAnalysis,
@@ -35,7 +32,7 @@ def planning_node(state: FactCheckState) -> FactCheckState:
     return state
 
 
-def search_node(
+async def search_node(
     state: FactCheckState, search_provider: SearchProvider
 ) -> FactCheckState:
     """执行搜索."""
@@ -46,9 +43,7 @@ def search_node(
     )
 
     query = SearchQuery(query=query_text, limit=5)
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(lambda: asyncio.run(search_provider.search(query)))
-        results = future.result()
+    results = await search_provider.search(query)
 
     sources = [
         Source(

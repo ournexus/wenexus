@@ -84,7 +84,7 @@ class FactCheckerAgent(BaseAgent):
         }
 
         try:
-            result = self._graph.invoke(initial_state)
+            result = await self._graph.ainvoke(initial_state)  # type: ignore[arg-type]
             final_report: FactReport | None = result.get("final_report")
             if final_report is None:
                 return AgentTaskOutput(
