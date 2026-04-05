@@ -24,7 +24,7 @@ logger = structlog.get_logger()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Handle application startup and shutdown."""
     await logger.ainfo(
         "starting wenexus-python",

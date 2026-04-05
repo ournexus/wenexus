@@ -205,7 +205,7 @@ WeNexus 是 Brownfield 项目，技术栈已完整确定并投入使用，无需
 **Language & Runtime:**
 
 - 前端：TypeScript ^5（strict mode），React 19 Server Components 默认
-- 后端：Python 3.11+（全异步，`async def` + `AsyncSession`），类型标注强制（`disallow_untyped_defs: true`）
+- 后端：Python 3.14+（全异步，`async def` + `AsyncSession`），类型标注强制（`disallow_untyped_defs: true`）
 - 数据库字段命名：DB snake_case，API/前端 camelCase
 
 **Frontend Architecture:**
@@ -231,7 +231,7 @@ WeNexus 是 Brownfield 项目，技术栈已完整确定并投入使用，无需
 
 - 部署：@opennextjs/cloudflare + wrangler（优先利用平台优势）
 - 数据库：PostgreSQL 16 + Redis 7
-- CI/CD：GitHub Actions（Node 20, Java 17, Python 3.11）
+- CI/CD：GitHub Actions（Node 20, Java 17, Python 3.14）
 - E2E：Playwright 1.52.0
 - 安全：Trivy 扫描，conventional commits 强制
 - Monorepo：pnpm 9.0.0 + Turborepo 2.8.10

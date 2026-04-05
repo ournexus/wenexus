@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+def event_loop() -> Generator[asyncio.AbstractEventLoop]:
     """创建一个 session 级别的事件循环。"""
     loop = asyncio.new_event_loop()
     yield loop
@@ -29,7 +29,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncGenerator[AsyncClient, None]:
+async def client() -> AsyncGenerator[AsyncClient]:
     """
     异步 HTTP 测试客户端。
 
@@ -46,7 +46,7 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest_asyncio.fixture
-async def db_session() -> AsyncGenerator[None, None]:
+async def db_session() -> AsyncGenerator[None]:
     """
     数据库 session fixture（集成测试用）。
 

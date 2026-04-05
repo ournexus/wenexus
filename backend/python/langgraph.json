@@ -5,5 +5,5 @@
     "fact_checker": "./src/wenexus/service/agent/fact_checker/graph.py:create_fact_checker_graph"
   },
   "env": "./.env.development",
-  "python_version": "3.11"
+  "python_version": "3.14"
 }
