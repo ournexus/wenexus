@@ -1,0 +1,174 @@
+# Instincts generated from https://github.com/ournexus/wenexus
+# Generated: 2026-04-05T15:01:01.445Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: wenexus-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat
+
+## Evidence
+
+- 14 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: add wenexus ECC bundle (.claude/ecc-tools.json), feat: add wenexus ECC bundle (.claude/skills/wenexus/SKILL.md)
+
+---
+id: wenexus-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Commit Length
+
+## Action
+
+Write moderate-length commit messages (~64 characters)
+
+## Evidence
+
+- Average commit message length: 64 chars
+- Based on 14 commits
+
+---
+id: wenexus-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: wenexus-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: wenexus-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: wenexus-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: wenexus-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~30x per month
+- Files: 
+
+---
+id: wenexus-workflow-add-ecc-bundle-component
+trigger: "when doing add ecc bundle component"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/ournexus/wenexus
+---
+
+# Wenexus Workflow Add Ecc Bundle Component
+
+## Action
+
+Follow the add-ecc-bundle-component workflow:
+1. Create or copy a new ECC-related file in the appropriate directory (e.g., .claude/skills/wenexus/, .agents/skills/wenexus/, .claude/commands/, .codex/agents/).
+2. Commit the file with a message indicating addition to the ECC bundle.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: .claude/skills/wenexus/SKILL.md, .agents/skills/wenexus/SKILL.md, .agents/skills/wenexus/agents/openai.yaml
+
