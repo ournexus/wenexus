@@ -48,7 +48,7 @@ development_status:
   1-2-topic-data-model-management-api: done
   1-3-topic-dimension-decomposition: done
   1-4-content-lifecycle-state-management: done
-  1-5-fact-checker-deep-agent: ready-for-dev
+  1-5-fact-checker-deep-agent: in-progress
   1-6-ai-expert-persona-framework: done
   1-7-automatic-viewpoint-generation: backlog
   1-8-automatic-verification-pipeline: backlog

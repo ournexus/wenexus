@@ -1,11 +1,105 @@
-"""Fact Report Repository."""
+"""Fact Report Repository — DO ↔ Entity 映射 + CRUD。
+
+Depends: sqlalchemy, model.fact_report, repository.model.fact_report
+Consumers: app.fact_checker
+"""
 
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..repository.model.fact_report import FactReportORM
+from wenexus.model.base import CredibilityLevel, SourceType, VerificationStatus
+from wenexus.model.fact_report import (
+    Fact,
+    FactReport,
+    Source,
+)
+
+from .model.fact_report import FactReportORM
+
+
+def entity_to_do(entity: FactReport, topic_id: UUID) -> dict:
+    """FactReport Entity → DO 字段字典（用于创建 ORM 实例）。"""
+    return {
+        "id": entity.id,
+        "topic_id": topic_id,
+        "report": {
+            "topic_title": entity.topic_title,
+            "summary": entity.summary,
+            "facts": [
+                {
+                    "content": f.content,
+                    "claim": f.claim,
+                    "source": {
+                        "title": f.source.title,
+                        "url": f.source.url,
+                        "source_type": f.source.source_type.value,
+                        "credibility": f.source.credibility.value,
+                    },
+                    "credibility": f.credibility.value,
+                    "verification_status": f.verification_status.value,
+                    "notes": f.notes,
+                }
+                for f in entity.facts
+            ],
+        },
+        "sources": [
+            {
+                "title": s.title,
+                "url": s.url,
+                "snippet": s.snippet,
+                "source_type": s.source_type.value,
+            }
+            for s in entity.sources
+        ],
+        "credibility_distribution": entity.credibility_distribution,
+        "status": "completed",
+        "iterations": len(entity.facts),
+    }
+
+
+def do_to_entity(orm: FactReportORM) -> FactReport:
+    """FactReportORM DO → FactReport Entity。"""
+    report_data = orm.report or {}
+    facts_data = report_data.get("facts", [])
+
+    facts = []
+    sources = []
+    for fd in facts_data:
+        sd = fd.get("source", {})
+        source = Source(
+            title=sd.get("title", ""),
+            url=sd.get("url", ""),
+            snippet="",
+            source_type=SourceType(sd.get("source_type", "web")),
+            credibility=CredibilityLevel(sd.get("credibility", "uncertain")),
+        )
+        fact = Fact(
+            content=fd.get("content", ""),
+            claim=fd.get("claim", ""),
+            source=source,
+            credibility=CredibilityLevel(fd.get("credibility", "uncertain")),
+            verification_status=VerificationStatus(
+                fd.get("verification_status", "pending")
+            ),
+            notes=fd.get("notes", ""),
+        )
+        facts.append(fact)
+        sources.append(source)
+
+    cred_dist = orm.credibility_distribution or {}
+
+    entity = FactReport(
+        id=orm.id,
+        topic_title=report_data.get("topic_title", ""),
+        summary=report_data.get("summary", ""),
+        coverage_analysis=None,
+        credibility_distribution=cred_dist,
+    )
+    entity.facts = facts
+    entity.sources = sources
+    return entity
 
 
 class FactReportRepository:

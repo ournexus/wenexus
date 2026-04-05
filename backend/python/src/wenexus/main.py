@@ -12,6 +12,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from wenexus.app.agent_registry import init_agent_registry
 from wenexus.config import settings
 from wenexus.facade.deliverable import router as deliverable_router
 from wenexus.facade.discovery import router as discovery_router
@@ -36,6 +37,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await logger.ainfo("database connection verified")
     else:
         await logger.awarn("database connection failed - service starting without DB")
+
+    registry = init_agent_registry(app)
+    agents = registry.list_agents()
+    await logger.ainfo(
+        "agent_registry_initialized",
+        agent_count=len(agents),
+        agents=[a.name for a in agents],
+    )
 
     yield
 

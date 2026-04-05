@@ -1,53 +1,53 @@
-"""Fact Checker API Facade."""
+"""Fact Checker API Facade.
+
+Depends: fastapi, service.agent.fact_checker, model.agent
+Consumers: main (router inclusion)
+"""
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
 
-from wenexus.agent.fact_checker.harness.harness import FactCheckerHarness
-from wenexus.agent.fact_checker.providers.mock import MockSearchProvider
+from wenexus.facade.model.req.fact_checker import FactCheckRequest
+from wenexus.facade.model.res.fact_checker import FactCheckResponse
+from wenexus.model.agent import AgentTaskInput
+from wenexus.service.agent.fact_checker.agent import FactCheckerAgent
+from wenexus.service.agent.fact_checker.providers.mock import MockSearchProvider
 
 router = APIRouter(prefix="/fact-check", tags=["fact-check"])
 
 
-class FactCheckRequest(BaseModel):
-    topic_id: str = Field(..., description="话题ID")
-    topic_title: str = Field(..., description="话题标题")
-    topic_description: str | None = Field(None, description="话题描述")
-
-
-class FactCheckResponse(BaseModel):
-    report_id: str = Field(..., description="报告ID")
-    status: str = Field(..., description="状态: pending/completed/error")
-    topic_title: str
-    summary: str
-    facts_count: int
-    sources_count: int
-    credibility_distribution: dict
-
-
 @router.post("", response_model=FactCheckResponse)
 async def create_fact_check(request: FactCheckRequest) -> FactCheckResponse:
-    """为话题创建事实核查报告.
-
-    调用 FactChecker Harness 执行多轮搜索和事实提取.
-    """
+    """为话题创建事实核查报告."""
     try:
-        harness = FactCheckerHarness(search_provider=MockSearchProvider())
-        report = await harness.run(
-            topic_title=request.topic_title,
-            topic_description=request.topic_description,
-            topic_id=request.topic_id,
+        agent = FactCheckerAgent(search_provider=MockSearchProvider())
+        task_input = AgentTaskInput(
+            agent_name="fact_checker",
+            params={
+                "topic_id": request.topic_id,
+                "topic_title": request.topic_title,
+                "topic_description": request.topic_description,
+            },
         )
+        output = await agent.run(task_input)
 
+        if output.status == "error":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Fact check failed: {output.error}",
+            )
+
+        result: dict[str, object] = output.result
         return FactCheckResponse(
-            report_id=request.topic_id,  # 简化用 topic_id
+            report_id=request.topic_id,
             status="completed",
-            topic_title=report.topic_title,
-            summary=report.summary,
-            facts_count=len(report.facts),
-            sources_count=len(report.sources),
-            credibility_distribution=report.credibility_distribution,
+            topic_title=str(result.get("topic_title", "")),
+            summary=str(result.get("summary", "")),
+            facts_count=int(result.get("facts_count", 0)),  # type: ignore[call-overload]
+            sources_count=int(result.get("sources_count", 0)),  # type: ignore[call-overload]
+            credibility_distribution=dict(result.get("credibility_distribution") or {}),  # type: ignore[call-overload]
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

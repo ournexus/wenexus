@@ -165,7 +165,7 @@ async def _generate_facilitator_synthesis(
 ) -> dict | None:
     """Invoke LangGraph facilitator agent and save synthesis message."""
     try:
-        from wenexus.agent.graph import invoke_facilitator
+        from wenexus.service.agent.facilitator.agent import invoke_facilitator
 
         response_content = await invoke_facilitator(
             topic_title=context.get("topicTitle", "Discussion"),

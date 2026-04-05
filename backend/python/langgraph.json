@@ -1,8 +1,8 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "roundtable_agent": "./src/wenexus/agent/graph.py:graph",
-    "fact_checker": "./src/wenexus/agent/fact_checker/entrypoint.py:create_fact_checker_graph_entrypoint"
+    "roundtable_agent": "./src/wenexus/service/agent/facilitator/agent.py:graph",
+    "fact_checker": "./src/wenexus/service/agent/fact_checker/graph.py:create_fact_checker_graph"
   },
   "env": "./.env.development",
   "python_version": "3.11"
