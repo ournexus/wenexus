@@ -35,7 +35,12 @@ const authOptions = {
     ...(envConfigs.app_url ? [envConfigs.app_url] : []),
     // 开发环境允许 localhost 和 127.0.0.1 互访
     ...(process.env.NODE_ENV !== 'production'
-      ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+      ? [
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          'http://localhost:3001',
+          'http://127.0.0.1:3001',
+        ]
       : []),
   ],
   user: {

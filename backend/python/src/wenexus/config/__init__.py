@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     frontend_urls: str = "http://localhost:3000"
     agent_model: str = "openai/gpt-4o-mini"
+    tavily_api_key: str = ""
+    langsmith_tracing: str = ""
+    langsmith_endpoint: str = ""
+    langsmith_api_key: str = ""
+    langsmith_project: str = ""
+    log_level: str = "INFO"
+    log_file_backend: str = ""
+    log_file_backend_error: str = ""
 
     @property
     def allowed_origins(self) -> list[str]:
