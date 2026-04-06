@@ -334,9 +334,18 @@ async def execute_stream_run(
                     # 回退为普通 (agent_mode, chunk) 逻辑
                     agent_mode, chunk = agent_chunk  # type: ignore[misc]
             else:
-                # 不开启 subgraphs 时，LangGraph 通常返回 (agent_mode, chunk)
-                # 如有结构变化，抛给后续序列化逻辑处理
-                agent_mode, chunk = agent_chunk  # type: ignore[misc]
+                # LangGraph returns (mode, chunk) tuples when stream_mode is a list.
+                # When it's a bare dict/value (single mode passed as string), wrap it.
+                if (
+                    isinstance(agent_chunk, tuple)
+                    and len(agent_chunk) == 2
+                    and isinstance(agent_chunk[0], str)
+                ):
+                    agent_mode, chunk = agent_chunk  # type: ignore[misc]
+                else:
+                    # Bare chunk (unexpected) — assign primary mode
+                    agent_mode = agent_modes[0] if agent_modes else "values"
+                    chunk = agent_chunk
 
             step += 1
             # Only emit SDK events whose expected agent_mode matches the current chunk's mode.

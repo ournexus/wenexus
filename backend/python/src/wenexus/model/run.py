@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class StreamMode(str, Enum):
@@ -49,6 +49,13 @@ class RunStreamRequest(BaseModel):
     interrupt_before: list[str] | None = None
     interrupt_after: list[str] | None = None
     multitask_strategy: str | None = None
+
+    @field_validator("stream_mode", mode="before")
+    @classmethod
+    def coerce_stream_mode(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [v]
+        return v
 
 
 class StreamEvent(BaseModel):

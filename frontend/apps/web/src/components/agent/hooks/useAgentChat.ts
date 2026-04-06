@@ -60,12 +60,13 @@ export function useAgentChat({
     threadId: threadId ?? null,
     onThreadId: setThreadId,
     defaultHeaders: { 'x-auth-scheme': 'langsmith' },
+    streamMode: 'values',
     // Revalidate thread list when stream finishes, errors, or creates new thread
     onFinish: onHistoryRevalidate,
     onError: onHistoryRevalidate,
     onCreated: onHistoryRevalidate,
     experimental_thread: thread,
-    fetchStateHistory: true,
+    fetchStateHistory: false,
   });
 
   const sendMessage = useCallback(
